@@ -2,34 +2,53 @@
 __pycache__/
 *.py[cod]
 *.so
+.Python
 venv/
+ENV/
+build/
+dist/
+*.egg-info/
 
-# Node
+# Node/Next.js
 node_modules/
 .next/
 out/
+build/
+*.pack
+*.pack.gz
 
-# IDE
+# Development
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Logs
-logs/
-*.log
-
-# Docker
-.docker/
-
-# Environment variables
+# Environment
 .env
 .env.*
 !.env.sample
-!.env.example
-.env.local
-.env.development
-.env.production
 
-# Secrets and keys
-*.pem
-*.key
-*.secret
+# Logs and cache
+logs/
+*.log
+.cache/
+**/.cache/
+webpack/
+
+# Testing
+.coverage
+coverage/
+
+# Large binary files
+*.node
+*.csv
+*.pkl
+*.model
+*.h5
+*.tar.gz
+*.zip
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
