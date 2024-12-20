@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+
+# Docker
+.docker/
+
+# Logs
+logs/
+*.log
+
+# Auth files
+cookies/*.json
+cookies/*.pkl
+
+# Environment variables
+.env
+.env.*
+!.env.sample
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets
+*.pem
+*.key
+
+# Large files
+*.csv
+*.pkl
+*.model
+*.h5
+*.tar.gz
+*.zip
+*.rar
+
+# Node
+node_modules/
+.next/
+out/
+build/
+
+# Next.js
+.next/
+out/
+build/
+*.pack
+*.pack.gz
+
+# Cache
+.cache/
+**/cache/
+webpack/
+
+# Large binary files
+*.node
+
+# Development artifacts
+.turbo
+.vercel
+.coverage
+coverage/
+
+# Debug files
+debug_html.txt
+debug/
