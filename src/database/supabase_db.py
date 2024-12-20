@@ -11,16 +11,8 @@ class SupabaseClient:
         if not url or not key:
             raise ValueError("Missing Supabase credentials in environment variables")
         
-        print(f"Initializing Supabase client with URL: {url}")
-        # Print first 10 chars of key for debugging
-        print(f"Using key starting with: {key[:10]}...")
-        
-        try:
-            self.client = create_client(url, key)
-            print("Supabase client initialized")
-        except Exception as e:
-            print(f"Error initializing Supabase client: {str(e)}")
-            raise
+        self.client = create_client(url, key)
+        print("Supabase client initialized")
 
     def store_listing(self, listing_data: Dict) -> str:
         """Store a listing in the database"""
