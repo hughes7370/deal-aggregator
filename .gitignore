@@ -34,6 +34,7 @@ logs/
 .cache/
 **/.cache/
 webpack/
+.pytest_cache/
 
 # Testing
 .coverage
@@ -52,3 +53,8 @@ coverage/
 *.tmp
 *.temp
 .DS_Store
+debug_html.txt
+
+# Backup files
+*.bak
+package-lock.json.bak

@@ -14,6 +14,7 @@ from src.scrapers.empire_flippers.scraper import EmpireFlippersScraper
 from src.scrapers.latonas.scraper import LatonasScraper
 from src.scrapers.flippa.scraper import FlippaScraper
 from src.scrapers.transworld.scraper import TransWorldScraper
+from src.scrapers.sunbelt.scraper import SunbeltScraper
 
 def get_all_listings(limit: int, queries: Dict[str, Dict[str, str]]) -> Dict[str, List[Dict]]:
     """
@@ -69,6 +70,12 @@ def get_all_listings(limit: int, queries: Dict[str, Dict[str, str]]) -> Dict[str
         if transworld_results:
             all_results['TransWorld'] = transworld_results
             print(f"Found {len(transworld_results)} listings from TransWorld")
+            
+        print("\nFetching listings from Sunbelt...")
+        sunbelt_results = fetch_sunbelt_listings(max_pages=1)
+        if sunbelt_results:
+            all_results['Sunbelt'] = sunbelt_results
+            print(f"Found {len(sunbelt_results)} listings from Sunbelt")
         
     except Exception as e:
         print(f"Error fetching listings: {e}")
@@ -129,6 +136,13 @@ def fetch_transworld_listings(max_pages: int) -> List[Dict]:
     Fetch listings from tworld.com
     """
     scraper = TransWorldScraper()
+    return scraper.get_listings(max_pages=max_pages)
+
+def fetch_sunbelt_listings(max_pages: int) -> List[Dict]:
+    """
+    Fetch listings from sunbeltnetwork.com
+    """
+    scraper = SunbeltScraper()
     return scraper.get_listings(max_pages=max_pages)
 
 def parse_websiteclosers_listing(container) -> Dict:
