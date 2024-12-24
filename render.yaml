@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: deal-aggregator-frontend
+    env: node
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: PORT
+        value: 3000
+    autoDeploy: true 
