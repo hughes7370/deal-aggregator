@@ -15,77 +15,60 @@ from backend.src.scrapers.latonas.scraper import LatonasScraper
 from backend.src.scrapers.flippa.scraper import FlippaScraper
 from backend.src.scrapers.transworld.scraper import TransWorldScraper
 from backend.src.scrapers.sunbelt.scraper import SunbeltScraper
-from backend.src.scrapers.murphy.scraper import MurphyScraper
 
-def get_all_listings(limit: int, queries: Dict[str, Dict[str, str]]) -> Dict[str, List[Dict]]:
+def get_all_listings(limit: int = None, queries: Dict[str, Dict[str, str]] = None) -> Dict[str, List[Dict]]:
     """
-    Fetch business listings from multiple platforms
+    Fetch listings from all platforms
     """
     all_results = {}
     
-    try:
-        print("\nFetching listings from Website Closers...")
-        results = fetch_websiteclosers_listings(max_pages=1)
-        if results:
-            all_results['WebsiteClosers'] = results
-            print(f"Found {len(results)} listings from Website Closers")
-            
-        print("\nFetching listings from Business Exits...")
-        biz_exits_results = fetch_businessexits_listings(max_pages=1)
-        if biz_exits_results:
-            all_results['BusinessExits'] = biz_exits_results
-            print(f"Found {len(biz_exits_results)} listings from Business Exits")
-            
-        print("\nFetching listings from BizBuySell...")
-        bizbuysell_results = fetch_bizbuysell_listings(max_pages=1)
-        if bizbuysell_results:
-            all_results['BizBuySell'] = bizbuysell_results
-            print(f"Found {len(bizbuysell_results)} listings from BizBuySell")
-            
-        print("\nFetching listings from QuietLight...")
-        quietlight_results = fetch_quietlight_listings(max_pages=1)
-        if quietlight_results:
-            all_results['QuietLight'] = quietlight_results
-            print(f"Found {len(quietlight_results)} listings from QuietLight")
-        
-        print("\nFetching listings from Empire Flippers...")
-        empire_flippers_results = fetch_empire_flippers_listings(max_pages=1)
-        if empire_flippers_results:
-            all_results['EmpireFlippers'] = empire_flippers_results
-            print(f"Found {len(empire_flippers_results)} listings from Empire Flippers")
-        
-        print("\nFetching listings from Latonas...")
-        latonas_results = fetch_latonas_listings(max_pages=1)
-        if latonas_results:
-            all_results['Latonas'] = latonas_results
-            print(f"Found {len(latonas_results)} listings from Latonas")
-        
-        print("\nFetching listings from Flippa...")
-        flippa_results = fetch_flippa_listings(max_pages=1)
-        if flippa_results:
-            all_results['Flippa'] = flippa_results
-            print(f"Found {len(flippa_results)} listings from Flippa")
-        
-        print("\nFetching listings from TransWorld...")
-        transworld_results = fetch_transworld_listings(max_pages=1)
-        if transworld_results:
-            all_results['TransWorld'] = transworld_results
-            print(f"Found {len(transworld_results)} listings from TransWorld")
-            
-        print("\nFetching listings from Sunbelt...")
-        sunbelt_results = fetch_sunbelt_listings(max_pages=1)
-        if sunbelt_results:
-            all_results['Sunbelt'] = sunbelt_results
-            print(f"Found {len(sunbelt_results)} listings from Sunbelt")
-            
-        print("\nFetching listings from Murphy Business...")
-        murphy_results = fetch_murphy_listings(max_pages=1)
-        if murphy_results:
-            all_results['MurphyBusiness'] = murphy_results
-            print(f"Found {len(murphy_results)} listings from Murphy Business")
-        
-    except Exception as e:
-        print(f"Error fetching listings: {e}")
+    print("\nFetching listings from Website Closers...")
+    website_closers_results = fetch_websiteclosers_listings(max_pages=1)
+    if website_closers_results:
+        all_results['WebsiteClosers'] = website_closers_results
+        print(f"Found {len(website_closers_results)} listings from Website Closers")
+    
+    print("\nFetching listings from Business Exits...")
+    business_exits_results = fetch_businessexits_listings(max_pages=1)
+    if business_exits_results:
+        all_results['BusinessExits'] = business_exits_results
+        print(f"Found {len(business_exits_results)} listings from Business Exits")
+    
+    print("\nFetching listings from Empire Flippers...")
+    empire_flippers_results = fetch_empireflippers_listings(max_pages=1)
+    if empire_flippers_results:
+        all_results['EmpireFlippers'] = empire_flippers_results
+        print(f"Found {len(empire_flippers_results)} listings from Empire Flippers")
+    
+    print("\nFetching listings from Flippa...")
+    flippa_results = fetch_flippa_listings(max_pages=1)
+    if flippa_results:
+        all_results['Flippa'] = flippa_results
+        print(f"Found {len(flippa_results)} listings from Flippa")
+    
+    print("\nFetching listings from Quiet Light...")
+    quietlight_results = fetch_quietlight_listings(max_pages=1)
+    if quietlight_results:
+        all_results['QuietLight'] = quietlight_results
+        print(f"Found {len(quietlight_results)} listings from Quiet Light")
+    
+    print("\nFetching listings from Latonas...")
+    latonas_results = fetch_latonas_listings(max_pages=1)
+    if latonas_results:
+        all_results['Latonas'] = latonas_results
+        print(f"Found {len(latonas_results)} listings from Latonas")
+    
+    print("\nFetching listings from BizBuySell...")
+    bizbuysell_results = fetch_bizbuysell_listings(max_pages=1)
+    if bizbuysell_results:
+        all_results['BizBuySell'] = bizbuysell_results
+        print(f"Found {len(bizbuysell_results)} listings from BizBuySell")
+    
+    print("\nFetching listings from Transworld...")
+    transworld_results = fetch_transworld_listings(max_pages=1)
+    if transworld_results:
+        all_results['Transworld'] = transworld_results
+        print(f"Found {len(transworld_results)} listings from Transworld")
     
     return all_results
 
@@ -117,7 +100,7 @@ def fetch_quietlight_listings(max_pages: int) -> List[Dict]:
     scraper = QuietLightScraper()
     return scraper.get_listings(max_pages=max_pages)
 
-def fetch_empire_flippers_listings(max_pages: int) -> List[Dict]:
+def fetch_empireflippers_listings(max_pages: int) -> List[Dict]:
     """
     Fetch listings from empireflippers.com
     """
@@ -143,20 +126,6 @@ def fetch_transworld_listings(max_pages: int) -> List[Dict]:
     Fetch listings from tworld.com
     """
     scraper = TransWorldScraper()
-    return scraper.get_listings(max_pages=max_pages)
-
-def fetch_sunbelt_listings(max_pages: int) -> List[Dict]:
-    """
-    Fetch listings from sunbeltnetwork.com
-    """
-    scraper = SunbeltScraper()
-    return scraper.get_listings(max_pages=max_pages)
-
-def fetch_murphy_listings(max_pages: int) -> List[Dict]:
-    """
-    Fetch listings from murphybusiness.com
-    """
-    scraper = MurphyScraper()
     return scraper.get_listings(max_pages=max_pages)
 
 def parse_websiteclosers_listing(container) -> Dict:

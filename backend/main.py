@@ -4,6 +4,7 @@ from backend.src.services.listing_details_scraper import ListingDetailsScraper
 from config.search_queries import get_queries_from_db
 import json
 from datetime import datetime
+from backend.src.database.supabase_db import SupabaseClient
 
 def main():
     try:
@@ -51,6 +52,34 @@ def main():
         import traceback
         print(traceback.format_exc())
         return None
+
+def run_scrapers():
+    """
+    Run all scrapers and store results in the database
+    """
+    try:
+        # Initialize database client
+        db = SupabaseClient()
+        
+        # Get listings from all sources
+        print("Starting scraper run...")
+        all_listings = get_all_listings()
+        
+        # Store listings in database
+        for platform, listings in all_listings.items():
+            print(f"\nProcessing {len(listings)} listings from {platform}")
+            for listing in listings:
+                try:
+                    db.store_listing(listing)
+                except Exception as e:
+                    print(f"Error storing listing: {e}")
+                    continue
+        
+        print("\nScraper run completed successfully")
+        
+    except Exception as e:
+        print(f"Error in scraper run: {e}")
+        raise
 
 if __name__ == "__main__":
     main()

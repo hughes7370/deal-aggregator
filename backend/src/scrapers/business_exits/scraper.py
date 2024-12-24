@@ -143,13 +143,6 @@ class BusinessExitsScraper(BaseScraper):
                                 # Store in Supabase
                                 listing_id = self.supabase.store_listing(parsed_listing)
                                 print(f"Successfully stored listing in Supabase with ID: {listing_id}")
-                                
-                                # Save the full listing data for debugging
-                                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                                with open(f'listing_data_{timestamp}.json', 'w') as f:
-                                    json.dump(parsed_listing, f, indent=2)
-                                print(f"Saved listing data to listing_data_{timestamp}.json")
-                                
                             except Exception as e:
                                 print(f"Error storing listing in Supabase: {e}")
                                 print("Listing data:", json.dumps(parsed_listing, indent=2))

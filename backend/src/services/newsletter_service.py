@@ -2,18 +2,19 @@ import requests
 from typing import List, Dict, Optional
 import os
 from datetime import datetime
-from backend.src.database.supabase_db import SupabaseClient  # Assuming you have this
+from backend.src.database.supabase_db import SupabaseClient
 import json
-import asyncio
-from resend import Resend
+import resend
 
 class NewsletterService:
     def __init__(self):
         self.from_email = os.getenv('RESEND_FROM_EMAIL', 'alerts@dealsight.co')
-        self.resend = Resend(os.getenv('RESEND_API_KEY'))
+        resend.api_key = os.getenv('RESEND_API_KEY')
         self.db = SupabaseClient()
+        print(f"NewsletterService initialized with from_email: {self.from_email}")
+        print(f"Resend API Key available: {'Yes' if resend.api_key else 'No'}")
 
-    async def send_personalized_newsletters(self):
+    def send_personalized_newsletters(self):
         """Send personalized newsletters to all users based on their preferences"""
         try:
             # Get all user preferences
@@ -29,6 +30,7 @@ class NewsletterService:
             
             success_count = 0
             error_count = 0
+            skipped_count = 0
             
             # Process each user
             for user_preferences in preferences_result.data:
@@ -41,7 +43,8 @@ class NewsletterService:
                         .execute()
                     
                     if not user_result.data:
-                        print(f"⚠️ User not found for preferences {user_preferences['id']}")
+                        print(f"ℹ️ Skipping: User not found for preferences {user_preferences['id']}")
+                        skipped_count += 1
                         continue
                         
                     user = user_result.data
@@ -50,14 +53,15 @@ class NewsletterService:
                     # Get matching listings for this user
                     listings_result = self.db.client.table('listings')\
                         .select('*')\
-                        .gte('asking_price', user_preferences['min_price'])\
-                        .lte('asking_price', user_preferences['max_price'])\
-                        .in_('industry', user_preferences['industries'])\
+                        .gte('asking_price', user_preferences.get('min_price', 0))\
+                        .lte('asking_price', user_preferences.get('max_price', float('inf')))\
+                        .in_('industry', user_preferences.get('industries', []))\
                         .limit(3)\
                         .execute()
                         
                     if not listings_result.data:
-                        print(f"ℹ️ No matching listings found for user {user['email']}")
+                        print(f"ℹ️ Skipping: No matching listings found for user {user['email']}")
+                        skipped_count += 1
                         continue
                         
                     matching_listings = listings_result.data
@@ -65,7 +69,7 @@ class NewsletterService:
                     
                     # Send newsletter
                     print(f"📤 Sending newsletter to {user['email']}...")
-                    email_id = await self.send_newsletter(
+                    email_id = self.send_newsletter(
                         user={
                             'email': user['email'],
                             'preferences': user_preferences
@@ -77,26 +81,35 @@ class NewsletterService:
                         print(f"✅ Newsletter sent successfully to {user['email']}!")
                         success_count += 1
                         
-                        # Update last notification sent timestamp
-                        self.db.client.table('user_preferences')\
-                            .update({'last_notification_sent': datetime.now().isoformat()})\
-                            .eq('id', user_preferences['id'])\
-                            .execute()
+                        try:
+                            # Update last notification sent timestamp
+                            self.db.client.table('user_preferences')\
+                                .update({'last_notification_sent': datetime.now().isoformat()})\
+                                .eq('id', user_preferences['id'])\
+                                .execute()
+                        except Exception as e:
+                            # If we can't update the timestamp, log it but don't count as an error
+                            print(f"⚠️ Could not update last_notification_sent for {user['email']}: {str(e)}")
                     else:
                         print(f"❌ Failed to send newsletter to {user['email']}")
                         error_count += 1
                     
-                    # Add a small delay between sends
-                    await asyncio.sleep(1)
-                    
                 except Exception as e:
-                    print(f"❌ Error processing user {user_preferences.get('user_id')}: {str(e)}")
-                    error_count += 1
+                    if 'PGRST116' in str(e):
+                        print(f"ℹ️ Skipping: User data not found")
+                        skipped_count += 1
+                    elif 'PGRST204' in str(e):
+                        print(f"⚠️ Note: last_notification_sent column not found - continuing anyway")
+                        # Don't count this as an error
+                    else:
+                        print(f"❌ Error processing user {user_preferences.get('user_id')}: {str(e)}")
+                        error_count += 1
                     continue
             
             # Print summary
             print("\n📊 Newsletter Send Summary")
             print(f"✅ Successfully sent: {success_count}")
+            print(f"⚠️ Skipped: {skipped_count}")
             print(f"❌ Errors: {error_count}")
             print(f"📧 Total processed: {len(preferences_result.data)}")
             
@@ -104,21 +117,25 @@ class NewsletterService:
             print(f"❌ Error in send_personalized_newsletters: {str(e)}")
             raise
 
-    async def send_newsletter(self, user: dict, listings: list) -> str:
+    def send_newsletter(self, user: dict, listings: list) -> str:
         """Send a newsletter to a single user"""
         try:
             # Create email content
-            email_content = self._generate_email_content(user, listings)
+            email_content = self.generate_html_content(user, listings)
+            
+            # Prepare email parameters
+            params = {
+                "from": self.from_email,
+                "to": [user['email']],
+                "subject": "Your Personalized Deal Updates",
+                "html": email_content
+            }
             
             # Send email using Resend
-            response = await self.resend.emails.send({
-                'from': self.from_email,
-                'to': user['email'],
-                'subject': 'Your Personalized Deal Updates',
-                'html': email_content
-            })
+            response = resend.Emails.send(params)
             
-            return response.id if response else None
+            # Response is a dictionary with 'id' key
+            return response.get('id') if response else None
             
         except Exception as e:
             print(f"❌ Error sending newsletter to {user['email']}: {str(e)}")

@@ -8,20 +8,35 @@
   - `run.py` - Main Flask application entry point
   - `src/` - Backend source code
     - `api/` - API route handlers
+      - `listings_api.py` - Listings API endpoints
     - `database/` - Database models and operations
+      - `supabase_db.py` - Supabase client and operations
     - `scrapers/` - Web scraping implementations
+      - `base_scraper.py` - Base scraper class
+      - `business_exits/` - BusinessExits scraper
+      - `empire_flippers/` - EmpireFlippers scraper
+      - `quietlight/` - QuietLight scraper
     - `services/` - Business logic services
+      - `scheduler_service.py` - APScheduler service
+      - `newsletter_service.py` - Email newsletter service
+      - `listing_parser.py` - Listing data parser
     - `tests/` - Backend tests
     - `utils/` - Utility functions
-  - `logs/` - Server logs
   - `requirements.txt` - Python dependencies for backend
 
 - `frontend/` - Frontend service implementation
   - `src/` - Frontend source code
     - `app/` - Next.js application pages and routes
+      - `page.tsx` - Home page
+      - `dashboard/` - Dashboard routes
+      - `(auth)/` - Authentication routes
     - `components/` - Reusable React components
+      - `home/` - Home page components
+      - `dashboard/` - Dashboard components
     - `constants/` - Frontend constants and content
-    - `lib/` - Shared libraries (e.g., Supabase client)
+      - `home.ts` - Home page constants
+    - `lib/` - Shared libraries
+      - `supabase.ts` - Supabase client configuration
     - `tests/` - Frontend tests
   - `public/` - Static assets
   - `package.json` - Node.js project configuration
@@ -33,8 +48,8 @@
 
 - `config/` - Shared configuration files
 - `instructions/` - Project documentation and instructions
-- `runners/` - Task runners and scripts
-- `supabase/` - Supabase database configuration
+  - `deployment_setup` - Deployment instructions
+  - `folder_structure` - Project structure documentation
 - `node_modules/` - Node.js dependencies (gitignored)
 - `venv/` - Python virtual environment (gitignored)
 - `.next/` - Next.js build output (gitignored)
@@ -46,10 +61,12 @@
   - Supabase database integration
   - Tailwind CSS styling
   - Protected routes and user dashboard
+  - Email preference management
 
 - Backend:
   - Flask web server
   - Automated scrapers for multiple platforms
   - Scheduled tasks with APScheduler
-  - Newsletter generation and distribution
-  - Health monitoring endpoints 
+  - Newsletter generation with Resend
+  - Health monitoring endpoints
+  - Supabase database integration 

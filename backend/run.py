@@ -95,8 +95,8 @@ app = create_app()
 
 if __name__ == '__main__':
     try:
-        # Get port from environment variable or default to 5000
-        port = int(os.getenv('PORT', 5000))
+        # Get port from environment variable or default to 5001
+        port = int(os.getenv('PORT', 5001))
         
         # Start Flask app
         app.run(host='0.0.0.0', port=port, debug=False)

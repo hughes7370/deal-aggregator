@@ -156,3 +156,52 @@ class SupabaseClient:
         except Exception as e:
             print(f"Error creating user with preferences: {e}")
             raise
+
+    def get_users_for_newsletter(self) -> List[Dict]:
+        """Get users who should receive newsletters based on their preferences"""
+        try:
+            result = self.client.table('user_preferences')\
+                .select('*')\
+                .execute()
+            
+            return result.data if result.data else []
+            
+        except Exception as e:
+            print(f"Error getting users for newsletter: {e}")
+            return []
+
+    def update_last_notification_sent(self, user_id: str):
+        """Update the last notification sent timestamp for a user"""
+        try:
+            self.client.table('user_preferences')\
+                .update({'last_notification_sent': datetime.now().isoformat()})\
+                .eq('user_id', user_id)\
+                .execute()
+            
+        except Exception as e:
+            print(f"Error updating last notification sent: {e}")
+            raise
+
+    def get_filtered_listings(self, min_price: float = None, max_price: float = None, industries: str = None, last_sent: datetime = None) -> List[Dict]:
+        """Get listings filtered by user preferences"""
+        try:
+            query = self.client.table('listings').select('*')
+            
+            # Apply filters
+            if min_price is not None:
+                query = query.gte('asking_price', min_price)
+            if max_price is not None:
+                query = query.lte('asking_price', max_price)
+            if industries:
+                industry_list = [ind.strip() for ind in industries.split(',')]
+                query = query.in_('industry', industry_list)
+            if last_sent:
+                query = query.gte('first_seen_at', last_sent.isoformat())
+                
+            # Execute query
+            result = query.execute()
+            return result.data if result.data else []
+            
+        except Exception as e:
+            print(f"Error getting filtered listings: {e}")
+            return []

@@ -52,29 +52,29 @@ Our backend system handles data scraping, storage, and newsletter distribution:
 
 2. Key Features:
    - Automated Listing Scraping:
-     * Scrapes 10+ business listing platforms
+     * Scrapes business listing platforms (BusinessExits, EmpireFlippers, QuietLight)
      * Extracts listing details, prices, and business metrics
      * Normalizes data across different platforms
      * Stores listings in Supabase database
    
    - Scheduled Tasks:
      * Uses APScheduler for job scheduling
-     * Regular scraping of all platforms
-     * Newsletter compilation and distribution
+     * Daily scraping at 1 AM UTC
+     * Hourly newsletter checks
      * Health checks and monitoring
    
    - Newsletter System:
+     * Uses Resend for email delivery
      * Compiles personalized newsletters based on user preferences
      * Matches listings against user criteria
-     * Scheduled distribution via email
-     * Tracks user engagement
+     * Tracks last notification sent
 
 3. Technology Stack:
    - Flask (Python web framework)
    - APScheduler for task scheduling
    - Supabase for database
    - BeautifulSoup4 for web scraping
-   - Python libraries for data processing
+   - Resend for email delivery
 
 ## Deployment Instructions:
 
@@ -101,10 +101,18 @@ Our backend system handles data scraping, storage, and newsletter distribution:
    Authentication (Clerk):
    - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: From Clerk Dashboard -> API Keys
    - CLERK_SECRET_KEY: From Clerk Dashboard -> API Keys
+   - CLERK_WEBHOOK_SECRET: From Clerk Dashboard -> Webhooks
+   - NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+   - NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+   - NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /dashboard/
+   - NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: /dashboard/preferences
    
    Database (Supabase):
    - NEXT_PUBLIC_SUPABASE_URL: From Supabase Project Settings -> API
    - NEXT_PUBLIC_SUPABASE_ANON_KEY: From Supabase Project Settings -> API
+   
+   Application:
+   - NEXT_PUBLIC_APP_URL: Your application URL
 
 4. Pre-Deployment Checklist:
    - Verify all environment variables are set
@@ -135,18 +143,30 @@ Our backend system handles data scraping, storage, and newsletter distribution:
 
 3. Configure Environment Variables:
    Database (Supabase):
-   - SUPABASE_URL: From Supabase Project Settings
+   - NEXT_PUBLIC_SUPABASE_URL: From Supabase Project Settings
+   - NEXT_PUBLIC_SUPABASE_ANON_KEY: From Supabase Project Settings
    - SUPABASE_SERVICE_ROLE_KEY: From Supabase Project Settings
    
-   Email Service:
-   - EMAIL_SERVICE_API_KEY: Your email service API key
-   - FROM_EMAIL: Sender email address
+   Email Service (Resend):
+   - RESEND_API_KEY: From Resend Dashboard
+   - RESEND_FROM_EMAIL: alerts@dealsight.co
+   
+   Scraper APIs:
+   - SERPAPI_KEY: From SerpAPI Dashboard
+   - OPENAI_API_KEY: From OpenAI Dashboard
+   - SCRAPER_API_KEY: From ScraperAPI Dashboard
+   - AGENTQL_API_KEY: From AgentQL Dashboard
+
+   Application Settings:
+   - PORT: 5000
+   - ENVIRONMENT: production
+   - PYTHONPATH: /app/backend
 
 4. Pre-Deployment Checklist:
    - Verify all environment variables are set
    - Ensure Supabase database is properly configured
    - Test scraper configurations
-   - Configure email service settings
+   - Configure Resend email settings
 
 5. Post-Deployment Verification:
    - Health check endpoint responds
