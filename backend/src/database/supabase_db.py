@@ -52,6 +52,12 @@ class SupabaseClient:
             result = self.client.table('listings').insert(storage_data).execute()
             listing_id = result.data[0]['id']
             print(f"Inserted new listing with ID: {listing_id}")
+            
+            # Trigger instant notifications for new listing
+            from ..services.scheduler_service import SchedulerService
+            scheduler = SchedulerService()
+            scheduler.process_instant_notifications(listing_id)
+            
             return listing_id
             
         except Exception as e:

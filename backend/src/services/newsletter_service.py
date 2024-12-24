@@ -1,7 +1,7 @@
 import requests
 from typing import List, Dict, Optional
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
 from backend.src.database.supabase_db import SupabaseClient
 import json
 import resend
@@ -174,12 +174,43 @@ class NewsletterService:
                 industries = preferences['industries'].split(',')
                 query = query.in_('industry', industries)
                 
-            # Get only active listings from last update
-            if preferences.get('last_notification_sent'):
-                query = query.gt('created_at', preferences['last_notification_sent'])
+            # Filter by time based on newsletter frequency
+            frequency = preferences.get('newsletter_frequency', 'daily')
+            last_sent = preferences.get('last_notification_sent')
+            
+            if last_sent:
+                last_sent = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
                 
+                if frequency == 'instantly':
+                    # For instant notifications, only get listings newer than last notification
+                    query = query.gt('created_at', last_sent.isoformat())
+                elif frequency == 'daily':
+                    # For daily, get listings from the past 24 hours
+                    cutoff = datetime.now(UTC) - timedelta(days=1)
+                    query = query.gt('created_at', cutoff.isoformat())
+                elif frequency == 'weekly':
+                    # For weekly, get listings from the past 7 days
+                    cutoff = datetime.now(UTC) - timedelta(days=7)
+                    query = query.gt('created_at', cutoff.isoformat())
+                else:  # monthly
+                    # For monthly, get listings from the past 30 days
+                    cutoff = datetime.now(UTC) - timedelta(days=30)
+                    query = query.gt('created_at', cutoff.isoformat())
+            else:
+                # If no last_sent, use frequency-based cutoff
+                if frequency == 'daily':
+                    cutoff = datetime.now(UTC) - timedelta(days=1)
+                elif frequency == 'weekly':
+                    cutoff = datetime.now(UTC) - timedelta(days=7)
+                else:  # monthly
+                    cutoff = datetime.now(UTC) - timedelta(days=30)
+                query = query.gt('created_at', cutoff.isoformat())
+                
+            # Order by newest first and limit to reasonable number
+            query = query.order('created_at', desc=True).limit(10)
+            
             result = query.execute()
-            return result.data
+            return result.data if result.data else []
             
         except Exception as e:
             print(f"Error fetching matching listings: {e}")

@@ -35,6 +35,33 @@ class SchedulerService:
         except Exception as e:
             print(f"Error running scraper: {str(e)}")
             
+    def should_send_newsletter(self, frequency: str, last_sent: str = None) -> bool:
+        """Determine if a newsletter should be sent based on frequency and last send time"""
+        if not last_sent:
+            return True
+        
+        try:
+            last_sent_dt = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
+            now = datetime.now(UTC)
+            
+            if frequency == 'instantly':
+                # For instant notifications, we'll handle this differently
+                # These are triggered by new listings rather than time
+                return False
+            elif frequency == 'daily':
+                # Send if last sent was more than 20 hours ago
+                return (now - last_sent_dt) > timedelta(hours=20)
+            elif frequency == 'weekly':
+                # Send if last sent was more than 6 days ago
+                return (now - last_sent_dt) > timedelta(days=6)
+            else:  # monthly
+                # Send if last sent was more than 27 days ago
+                return (now - last_sent_dt) > timedelta(days=27)
+            
+        except Exception as e:
+            print(f"Error checking newsletter schedule: {e}")
+            return False
+
     def process_newsletters(self):
         """Process newsletters for all users"""
         try:
@@ -52,17 +79,24 @@ class SchedulerService:
                 return
                 
             for user in users_result.data:
-                preferences = user.get('user_preferences')
-                if not preferences:
-                    continue
+                try:
+                    preferences = user.get('user_preferences')
+                    if not preferences:
+                        continue
+                        
+                    frequency = preferences.get('newsletter_frequency', 'daily')
+                    last_sent = preferences.get('last_notification_sent')
                     
-                frequency = preferences.get('newsletter_frequency', 'daily')
-                last_sent = preferences.get('last_notification_sent')
-                
-                if self.should_send_newsletter(frequency, last_sent):
-                    # Schedule the next newsletter based on frequency
-                    next_schedule = self.calculate_next_schedule(frequency)
-                    self.newsletter_service.schedule_newsletter(user['id'], next_schedule)
+                    if self.should_send_newsletter(frequency, last_sent):
+                        # For instant notifications, we don't schedule - they're triggered by new listings
+                        if frequency != 'instantly':
+                            # Schedule the next newsletter based on frequency
+                            next_schedule = self.calculate_next_schedule(frequency)
+                            self.newsletter_service.schedule_newsletter(user['id'], next_schedule)
+                    
+                except Exception as e:
+                    print(f"Error processing user {user.get('id')}: {str(e)}")
+                    continue
                 
         except Exception as e:
             print(f"Error processing newsletters: {str(e)}")
@@ -85,6 +119,67 @@ class SchedulerService:
                 next_time = now.replace(month=now.month + 1, day=1, hour=9, minute=0, second=0, microsecond=0)
                 
         return next_time
+
+    def process_instant_notifications(self, new_listing_id: str):
+        """Process instant notifications for a new listing"""
+        try:
+            # Get users with instant notification preference
+            users_result = self.db.client.table('users')\
+                .select('*, user_preferences(*)')\
+                .eq('subscription_status', 'active')\
+                .execute()
+                
+            if not users_result.data:
+                return
+                
+            # Get the new listing
+            listing_result = self.db.client.table('listings')\
+                .select('*')\
+                .eq('id', new_listing_id)\
+                .single()\
+                .execute()
+                
+            if not listing_result.data:
+                return
+                
+            new_listing = listing_result.data
+            
+            for user in users_result.data:
+                preferences = user.get('user_preferences')
+                if not preferences or preferences.get('newsletter_frequency') != 'instantly':
+                    continue
+                    
+                # Check if listing matches user preferences
+                if self.matches_user_preferences(new_listing, preferences):
+                    # Send instant notification
+                    self.newsletter_service.send_newsletter(
+                        user={'email': user['email'], 'preferences': preferences},
+                        listings=[new_listing]
+                    )
+                    
+        except Exception as e:
+            print(f"Error processing instant notifications: {str(e)}")
+
+    def matches_user_preferences(self, listing: Dict, preferences: Dict) -> bool:
+        """Check if a listing matches user preferences"""
+        try:
+            # Check price range
+            if preferences.get('min_price') and listing['asking_price'] < preferences['min_price']:
+                return False
+            if preferences.get('max_price') and listing['asking_price'] > preferences['max_price']:
+                return False
+                
+            # Check industries
+            if preferences.get('industries'):
+                user_industries = [ind.strip().lower() for ind in preferences['industries'].split(',')]
+                if listing.get('industry', '').lower() not in user_industries:
+                    return False
+                    
+            return True
+            
+        except Exception as e:
+            print(f"Error matching preferences: {str(e)}")
+            return False
 
     def start(self):
         self.setup_jobs()
