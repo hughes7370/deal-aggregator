@@ -6,21 +6,15 @@ from datetime import datetime
 import pytz
 import logging
 from dotenv import load_dotenv
-import sentry_sdk
 
-from src.database.supabase_db import SupabaseClient
-from src.services.scheduler_service import SchedulerService
+# Add the parent directory to Python path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from backend.src.database.supabase_db import SupabaseClient
+from backend.src.services.scheduler_service import SchedulerService
 
 # Load environment variables
 load_dotenv()
-
-# Initialize Sentry for error tracking
-if os.getenv('SENTRY_DSN'):
-    sentry_sdk.init(
-        dsn=os.getenv('SENTRY_DSN'),
-        traces_sample_rate=1.0,
-        profiles_sample_rate=1.0,
-    )
 
 # Configure logging
 logging.basicConfig(

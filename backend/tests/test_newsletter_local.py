@@ -7,8 +7,8 @@ project_root = str(Path(__file__).parent.parent.parent)
 sys.path.append(project_root)
 
 from datetime import datetime
-from src.database.supabase_db import SupabaseClient
-from src.services.newsletter_service import NewsletterService
+from backend.src.database.supabase_db import SupabaseClient
+from backend.src.services.newsletter_service import NewsletterService
 import asyncio
 
 def normalize_industry(industry: str) -> str:

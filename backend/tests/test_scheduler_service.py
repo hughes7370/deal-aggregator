@@ -17,9 +17,9 @@ if backend_dir not in sys.path:
 
 # Import the services
 try:
-    from src.services.scheduler_service import SchedulerService
-    from src.services.newsletter_service import NewsletterService
-    from src.database.supabase_db import SupabaseDB
+    from backend.src.services.scheduler_service import SchedulerService
+    from backend.src.services.newsletter_service import NewsletterService
+    from backend.src.database.supabase_db import SupabaseDB
 except ImportError as e:
     print(f"Import Error: {e}")
     print(f"sys.path: {sys.path}")

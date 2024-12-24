@@ -6,8 +6,8 @@ import traceback
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-from src.api.listings_api import fetch_latonas_listings
-from src.services.deal_analyzer import analyze_listings
+from backend.src.api.listings_api import fetch_latonas_listings
+from backend.src.services.deal_analyzer import analyze_listings
 
 def main():
     print("\nRunning Latonas scraper individually...")

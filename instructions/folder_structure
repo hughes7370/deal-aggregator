@@ -4,41 +4,52 @@
 - `.env` - Environment variables configuration
 - `.git/` - Git version control directory
 - `.gitignore` - Git ignore rules
-- `.next/` - Next.js build output directory
 - `backend/` - Backend service implementation
-  - `run.py` - Main backend server entry point
+  - `run.py` - Main Flask application entry point
   - `src/` - Backend source code
-  - `tests/` - Backend tests
+    - `api/` - API route handlers
+    - `database/` - Database models and operations
+    - `scrapers/` - Web scraping implementations
+    - `services/` - Business logic services
+    - `tests/` - Backend tests
+    - `utils/` - Utility functions
   - `logs/` - Server logs
   - `requirements.txt` - Python dependencies for backend
 
-- `config/` - Configuration files
+- `frontend/` - Frontend service implementation
+  - `src/` - Frontend source code
+    - `app/` - Next.js application pages and routes
+    - `components/` - Reusable React components
+    - `constants/` - Frontend constants and content
+    - `lib/` - Shared libraries (e.g., Supabase client)
+    - `tests/` - Frontend tests
+  - `public/` - Static assets
+  - `package.json` - Node.js project configuration
+  - `next.config.js` - Next.js configuration
+  - `tailwind.config.ts` - Tailwind CSS configuration
+  - `tsconfig.json` - TypeScript configuration
+  - `postcss.config.mjs` - PostCSS configuration
+  - `eslint.config.mjs` - ESLint configuration
+
+- `config/` - Shared configuration files
 - `instructions/` - Project documentation and instructions
-- `main.py` - Main Python entry point
-- `node_modules/` - Node.js dependencies
-- `package.json` - Node.js project configuration
-- `public/` - Static assets for frontend
 - `runners/` - Task runners and scripts
 - `supabase/` - Supabase database configuration
-- `venv/` - Python virtual environment
+- `node_modules/` - Node.js dependencies (gitignored)
+- `venv/` - Python virtual environment (gitignored)
+- `.next/` - Next.js build output (gitignored)
 
-## Source Directory (src/)
-- `api/` - API route handlers
-- `app/` - Next.js application pages and routes
-- `components/` - Reusable React components
-- `constants/` - Shared constant values
-- `database/` - Database models and operations
-- `lib/` - Shared libraries and utilities
-- `scrapers/` - Web scraping implementations
-- `services/` - Business logic services
-- `tests/` - Application tests
-- `utils/` - Utility functions
-- `middleware.ts` - Request/response middleware
+## Key Features
+- Frontend:
+  - Next.js 14 with TypeScript
+  - Clerk authentication
+  - Supabase database integration
+  - Tailwind CSS styling
+  - Protected routes and user dashboard
 
-## Configuration Files
-- `eslint.config.mjs` - ESLint configuration
-- `next.config.js` - Next.js configuration
-- `postcss.config.mjs` - PostCSS configuration
-- `tailwind.config.ts` - Tailwind CSS configuration
-- `tsconfig.json` - TypeScript configuration
-- `requirements.txt` - Python dependencies for the main application 
+- Backend:
+  - Flask web server
+  - Automated scrapers for multiple platforms
+  - Scheduled tasks with APScheduler
+  - Newsletter generation and distribution
+  - Health monitoring endpoints 

@@ -5,7 +5,7 @@ import sys
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-from src.scrapers.murphy.scraper import MurphyScraper
+from backend.src.scrapers.murphy.scraper import MurphyScraper
 
 def main():
     print("\nRunning Murphy Business scraper individually...")
