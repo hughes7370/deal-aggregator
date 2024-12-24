@@ -93,19 +93,35 @@ A full-stack web application that aggregates business listings and sends persona
 
 The application includes a comprehensive newsletter system that sends personalized deal updates to users based on their preferences. The system includes:
 
-### Newsletter Logging
-All newsletter activities are tracked in the `newsletter_logs` table with the following information:
+### Newsletter Frequencies
+Users can choose from four notification frequencies:
+- **Instantly**: Receive notifications as soon as new matching listings are added
+- **Daily**: Receive a digest of new listings from the past 24 hours
+- **Weekly**: Receive a weekly summary of new listings
+- **Monthly**: Receive a monthly digest of new listings
+
+### Content Filtering
+The system ensures relevant content by:
+- Filtering listings based on user's price range preferences
+- Matching industry preferences
+- Preventing duplicate listings
+- Only showing listings added since the last notification
+- Limiting to 10 most recent listings per email
+- Ordering listings by newest first
+
+### Scheduling Logic
+- **Instant**: Triggered immediately when new matching listings are added
+- **Daily**: Sent at 9 AM UTC if last sent > 20 hours ago
+- **Weekly**: Sent at 9 AM UTC if last sent > 6 days ago
+- **Monthly**: Sent at 9 AM UTC if last sent > 27 days ago
+
+### Logging and Monitoring
+All newsletter activities are tracked in the `newsletter_logs` table with:
 - Delivery status (pending, sent, failed, skipped)
 - Scheduled delivery time
 - Actual send time
 - Error messages (if any)
 - User and analysis references
-
-### Scheduling
-Newsletters can be:
-- Sent immediately
-- Scheduled for future delivery
-- Set up for recurring delivery (daily, weekly, monthly)
 
 ### Testing
 The newsletter system includes comprehensive tests covering:
@@ -120,6 +136,14 @@ pytest backend/tests/test_newsletter_logs.py -v
 ```
 
 ### Environment Variables
-The newsletter system requires the following environment variables:
-- `RESEND_API_KEY`: API key for the Resend email service
-- `RESEND_FROM_EMAIL`: Email address to send newsletters from
+The newsletter system requires:
+```bash
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=your_from_email
+```
+
+### Monitoring
+Monitor the newsletter system through:
+- `newsletter_logs` table in Supabase
+- Application logs in `backend/logs`
+- Dashboard status at `/dashboard/status`
