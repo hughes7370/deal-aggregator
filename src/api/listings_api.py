@@ -15,6 +15,7 @@ from src.scrapers.latonas.scraper import LatonasScraper
 from src.scrapers.flippa.scraper import FlippaScraper
 from src.scrapers.transworld.scraper import TransWorldScraper
 from src.scrapers.sunbelt.scraper import SunbeltScraper
+from src.scrapers.murphy.scraper import MurphyScraper
 
 def get_all_listings(limit: int, queries: Dict[str, Dict[str, str]]) -> Dict[str, List[Dict]]:
     """
@@ -76,6 +77,12 @@ def get_all_listings(limit: int, queries: Dict[str, Dict[str, str]]) -> Dict[str
         if sunbelt_results:
             all_results['Sunbelt'] = sunbelt_results
             print(f"Found {len(sunbelt_results)} listings from Sunbelt")
+            
+        print("\nFetching listings from Murphy Business...")
+        murphy_results = fetch_murphy_listings(max_pages=1)
+        if murphy_results:
+            all_results['MurphyBusiness'] = murphy_results
+            print(f"Found {len(murphy_results)} listings from Murphy Business")
         
     except Exception as e:
         print(f"Error fetching listings: {e}")
@@ -143,6 +150,13 @@ def fetch_sunbelt_listings(max_pages: int) -> List[Dict]:
     Fetch listings from sunbeltnetwork.com
     """
     scraper = SunbeltScraper()
+    return scraper.get_listings(max_pages=max_pages)
+
+def fetch_murphy_listings(max_pages: int) -> List[Dict]:
+    """
+    Fetch listings from murphybusiness.com
+    """
+    scraper = MurphyScraper()
     return scraper.get_listings(max_pages=max_pages)
 
 def parse_websiteclosers_listing(container) -> Dict:
