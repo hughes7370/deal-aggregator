@@ -38,12 +38,54 @@ class SchedulerService:
     def process_newsletters(self):
         """Process newsletters for all users"""
         try:
-            # Run the newsletter sending
-            self.newsletter_service.send_personalized_newsletters()
+            # First process any scheduled newsletters that are due
+            self.newsletter_service.process_scheduled_newsletters()
+            
+            # Then process regular newsletters
+            users_result = self.db.client.table('users')\
+                .select('*, user_preferences(*)')\
+                .eq('subscription_status', 'active')\
+                .execute()
+                
+            if not users_result.data:
+                print("No active users found")
+                return
+                
+            for user in users_result.data:
+                preferences = user.get('user_preferences')
+                if not preferences:
+                    continue
+                    
+                frequency = preferences.get('newsletter_frequency', 'daily')
+                last_sent = preferences.get('last_notification_sent')
+                
+                if self.should_send_newsletter(frequency, last_sent):
+                    # Schedule the next newsletter based on frequency
+                    next_schedule = self.calculate_next_schedule(frequency)
+                    self.newsletter_service.schedule_newsletter(user['id'], next_schedule)
                 
         except Exception as e:
             print(f"Error processing newsletters: {str(e)}")
             
+    def calculate_next_schedule(self, frequency: str) -> datetime:
+        """Calculate the next schedule time based on frequency"""
+        now = datetime.now(UTC)
+        
+        if frequency == 'daily':
+            # Schedule for tomorrow at 9 AM UTC
+            next_time = (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+        elif frequency == 'weekly':
+            # Schedule for next week at 9 AM UTC
+            next_time = (now + timedelta(days=7)).replace(hour=9, minute=0, second=0, microsecond=0)
+        else:  # monthly
+            # Schedule for next month at 9 AM UTC
+            if now.month == 12:
+                next_time = now.replace(year=now.year + 1, month=1, day=1, hour=9, minute=0, second=0, microsecond=0)
+            else:
+                next_time = now.replace(month=now.month + 1, day=1, hour=9, minute=0, second=0, microsecond=0)
+                
+        return next_time
+
     def start(self):
         self.setup_jobs()
         self.scheduler.start()

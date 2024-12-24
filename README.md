@@ -88,3 +88,38 @@ A full-stack web application that aggregates business listings and sends persona
 - Check newsletter_logs table in database
 - Monitor scheduler status in /dashboard/status
 - View application logs in backend/logs directory
+
+## Newsletter System
+
+The application includes a comprehensive newsletter system that sends personalized deal updates to users based on their preferences. The system includes:
+
+### Newsletter Logging
+All newsletter activities are tracked in the `newsletter_logs` table with the following information:
+- Delivery status (pending, sent, failed, skipped)
+- Scheduled delivery time
+- Actual send time
+- Error messages (if any)
+- User and analysis references
+
+### Scheduling
+Newsletters can be:
+- Sent immediately
+- Scheduled for future delivery
+- Set up for recurring delivery (daily, weekly, monthly)
+
+### Testing
+The newsletter system includes comprehensive tests covering:
+- Log creation
+- Scheduled delivery
+- Error handling
+- Scheduler integration
+
+To run the newsletter tests:
+```bash
+pytest backend/tests/test_newsletter_logs.py -v
+```
+
+### Environment Variables
+The newsletter system requires the following environment variables:
+- `RESEND_API_KEY`: API key for the Resend email service
+- `RESEND_FROM_EMAIL`: Email address to send newsletters from

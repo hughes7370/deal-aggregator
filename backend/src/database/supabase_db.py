@@ -205,3 +205,23 @@ class SupabaseClient:
         except Exception as e:
             print(f"Error getting filtered listings: {e}")
             return []
+
+    def create_newsletter_log(self, user_id: str, scheduled_for: datetime = None) -> str:
+        """Create a new newsletter log entry"""
+        try:
+            data = {
+                'user_id': user_id,
+                'status': 'pending',
+                'created_at': datetime.now().isoformat(),
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            if scheduled_for:
+                data['scheduled_for'] = scheduled_for.isoformat()
+            
+            result = self.client.table('newsletter_logs').insert(data).execute()
+            return result.data[0]['id']
+            
+        except Exception as e:
+            print(f"Error creating newsletter log: {e}")
+            raise

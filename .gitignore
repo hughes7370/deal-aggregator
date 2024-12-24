@@ -58,3 +58,11 @@ debug_html.txt
 # Backup files
 *.bak
 package-lock.json.bak
+
+# Python test cache
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Test logs
+backend/tests/logs/

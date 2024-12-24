@@ -120,6 +120,9 @@ class NewsletterService:
     def send_newsletter(self, user: dict, listings: list) -> str:
         """Send a newsletter to a single user"""
         try:
+            # Create a newsletter log entry
+            log_id = self.db.create_newsletter_log(user['preferences']['user_id'])
+            
             # Create email content
             email_content = self.generate_html_content(user, listings)
             
@@ -131,14 +134,28 @@ class NewsletterService:
                 "html": email_content
             }
             
-            # Send email using Resend
-            response = resend.Emails.send(params)
-            
-            # Response is a dictionary with 'id' key
-            return response.get('id') if response else None
+            try:
+                # Send email using Resend
+                response = resend.Emails.send(params)
+                
+                if response and response.get('id'):
+                    # Update newsletter log as sent
+                    self.db.update_newsletter_status(log_id, 'sent')
+                    return response['id']
+                else:
+                    # Update newsletter log as failed
+                    self.db.update_newsletter_status(log_id, 'failed', 'No response ID from email service')
+                    return None
+                    
+            except Exception as e:
+                # Update newsletter log with error
+                error_message = str(e)
+                self.db.update_newsletter_status(log_id, 'failed', error_message)
+                print(f"❌ Error sending newsletter to {user['email']}: {error_message}")
+                return None
             
         except Exception as e:
-            print(f"❌ Error sending newsletter to {user['email']}: {str(e)}")
+            print(f"❌ Error in send_newsletter: {str(e)}")
             return None
 
     def get_matching_listings(self, preferences: Dict) -> List[Dict]:
@@ -227,3 +244,75 @@ class NewsletterService:
                 </div>
             </div>
         """
+
+    def schedule_newsletter(self, user_id: str, scheduled_for: datetime) -> str:
+        """Schedule a newsletter for future delivery"""
+        try:
+            # Create a newsletter log entry with scheduled time
+            log_id = self.db.create_newsletter_log(user_id, scheduled_for)
+            print(f"📅 Scheduled newsletter for user {user_id} at {scheduled_for}")
+            return log_id
+        except Exception as e:
+            print(f"❌ Error scheduling newsletter: {str(e)}")
+            return None
+
+    def process_scheduled_newsletters(self):
+        """Process all pending scheduled newsletters"""
+        try:
+            # Get pending newsletters that are due
+            pending_newsletters = self.db.get_pending_newsletters()
+            
+            if not pending_newsletters:
+                print("No pending newsletters to process")
+                return
+                
+            print(f"Processing {len(pending_newsletters)} pending newsletters")
+            
+            for newsletter in pending_newsletters:
+                try:
+                    # Get user data
+                    user_result = self.db.client.table('users')\
+                        .select('*, user_preferences(*)')\
+                        .eq('id', newsletter['user_id'])\
+                        .single()\
+                        .execute()
+                        
+                    if not user_result.data:
+                        print(f"⚠️ User not found for newsletter {newsletter['id']}")
+                        self.db.update_newsletter_status(newsletter['id'], 'failed', 'User not found')
+                        continue
+                        
+                    user = user_result.data
+                    preferences = user.get('user_preferences')
+                    
+                    if not preferences:
+                        print(f"⚠️ No preferences found for user {user['email']}")
+                        self.db.update_newsletter_status(newsletter['id'], 'failed', 'No user preferences found')
+                        continue
+                    
+                    # Get matching listings
+                    matching_listings = self.get_matching_listings(preferences)
+                    
+                    if not matching_listings:
+                        print(f"ℹ️ No matching listings for user {user['email']}")
+                        self.db.update_newsletter_status(newsletter['id'], 'skipped', 'No matching listings')
+                        continue
+                    
+                    # Send the newsletter
+                    email_id = self.send_newsletter(
+                        user={'email': user['email'], 'preferences': preferences},
+                        listings=matching_listings
+                    )
+                    
+                    if email_id:
+                        print(f"✅ Scheduled newsletter sent successfully to {user['email']}")
+                    else:
+                        print(f"❌ Failed to send scheduled newsletter to {user['email']}")
+                    
+                except Exception as e:
+                    print(f"❌ Error processing scheduled newsletter {newsletter['id']}: {str(e)}")
+                    self.db.update_newsletter_status(newsletter['id'], 'failed', str(e))
+                    continue
+                    
+        except Exception as e:
+            print(f"❌ Error processing scheduled newsletters: {str(e)}")
