@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify
 
-main_bp = Blueprint('main', __name__)
+main_bp = Blueprint('main', __name__, url_prefix='/api/v1')
 
 @main_bp.route('/')
 def index():
@@ -9,6 +9,7 @@ def index():
         'version': '1.0.0',
         'endpoints': {
             'health': '/health',
-            'status': '/dashboard/status'
+            'scraper': '/test/scraper',
+            'newsletter': '/test/newsletter'
         }
     }) 
