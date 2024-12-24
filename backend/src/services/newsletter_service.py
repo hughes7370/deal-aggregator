@@ -271,7 +271,7 @@ class NewsletterService:
                 {listings_html}
                 
                 <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
-                    <p>To update your preferences or unsubscribe, please visit your dashboard.</p>
+                    <p>To update your preferences or unsubscribe, please visit your <a href="https://dealsight.co/dashboard/preferences" style="color: #007bff; text-decoration: none;">dashboard</a>.</p>
                 </div>
             </div>
         """
