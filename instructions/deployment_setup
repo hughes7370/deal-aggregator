@@ -1,0 +1,208 @@
+#Instructions for Deployment Setup
+
+We will be using Render for both the frontend and backend applications and they will need to be linked. Both services can be deployed from the same repository by configuring different root directories in Render.
+
+Frontend Application Overview:
+
+Our frontend is a Next.js application that handles user authentication and preference management:
+
+1. Application Structure:
+   - `/src/app`: Main application routes and pages
+   - `/src/components`: Reusable UI components
+   - `/src/app/(auth)`: Authentication routes (sign-in/sign-up)
+   - `/src/app/dashboard`: User dashboard and preferences
+
+2. Key Features:
+   - User Authentication:
+     * Implemented using Clerk
+     * Sign up and sign in pages at /sign-up and /sign-in
+     * Protected routes using Clerk middleware
+   
+   - User Dashboard:
+     * Main dashboard at /dashboard
+     * Displays user's investment preferences
+     * Shows investment range, target industries, and alert frequency
+     * Interface to update preferences
+   
+   - User Preferences:
+     * Stored in Supabase database
+     * Managed through dashboard interface
+     * Includes investment ranges, industries, and alert settings
+     * Real-time updates using Supabase client
+
+3. Technology Stack:
+   - Next.js 14 (React framework)
+   - TypeScript for type safety
+   - Tailwind CSS for styling
+   - Clerk for authentication
+   - Supabase for database
+
+4. Data Flow:
+   - User authentication state managed by Clerk
+   - User preferences fetched from Supabase on dashboard load
+   - Updates to preferences saved directly to Supabase
+   - Protected API routes ensure secure data access
+
+Backend Application Overview:
+
+Our backend system is split between `/src` and `/backend` directories, handling data scraping, storage, and newsletter distribution:
+
+1. Core Components:
+   - `/backend`: Flask application with scheduled jobs
+   - `/src`: Shared code for scrapers, database operations, and services
+   - `/src/scrapers`: Individual scrapers for different platforms
+   - `/src/api`: API endpoints and listing management
+   - `/src/database`: Database operations and Supabase client
+
+2. Key Features:
+   - Automated Listing Scraping:
+     * Scrapes 10+ business listing platforms (WebsiteClosers, BusinessExits, etc.)
+     * Extracts listing details, prices, and business metrics
+     * Normalizes data across different platforms
+     * Stores listings in Supabase database
+   
+   - Scheduled Tasks:
+     * Uses APScheduler for job scheduling
+     * Regular scraping of all platforms
+     * Newsletter compilation and distribution
+     * Health checks and monitoring
+   
+   - Newsletter System:
+     * Compiles personalized newsletters based on user preferences
+     * Matches listings against user criteria
+     * Scheduled distribution via email
+     * Tracks user engagement
+
+3. Technology Stack:
+   - Flask (Python web framework)
+   - APScheduler for task scheduling
+   - Supabase for database
+   - BeautifulSoup4 for web scraping
+   - Sentry for error tracking
+   - Python libraries for data processing
+
+4. Data Flow:
+   - Scrapers collect listings from multiple sources
+   - Data is normalized and enriched
+   - Listings stored in Supabase
+   - Newsletter service matches listings with user preferences
+   - Emails sent to users based on preferences
+
+5. API Endpoints:
+   - `/health`: System health check
+   - `/test/scraper`: Manual scraper trigger
+   - `/test/newsletter`: Manual newsletter trigger
+
+Deployment Instructions:
+
+1. Create a new Web Service in Render
+   - Go to render.com and sign in
+   - Click "New +" and select "Web Service"
+   - Choose the GitHub repository
+
+2. Configure Build and Start Settings:
+   - Name: deal-aggregator-frontend
+   - Environment: Node
+   - Region: Choose closest to target users
+   - Branch: main
+   - Root Directory: `/` (root of repository)
+   - Runtime Environment: Node
+   - Build Command: `npm install && npm run build`
+   - Start Command: `npm start`
+   - Instance Type: Starter (or higher based on needs)
+   - Auto-Deploy: Yes
+
+3. Configure Environment Variables:
+   Authentication (Clerk):
+   - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: From Clerk Dashboard -> API Keys
+   - CLERK_SECRET_KEY: From Clerk Dashboard -> API Keys
+   
+   Database (Supabase):
+   - NEXT_PUBLIC_SUPABASE_URL: From Supabase Project Settings -> API
+   - SUPABASE_SERVICE_ROLE_KEY: From Supabase Project Settings -> API
+   - NEXT_PUBLIC_SUPABASE_ANON_KEY: From Supabase Project Settings -> API
+
+4. Additional Configuration:
+   - Health Check Path: `/` (default)
+   - Build Filter: Add if you want to prevent builds on certain file changes
+   - Preview Deployments: Enable if you want staging environments
+
+5. Pre-Deployment Checklist:
+   - Verify all environment variables are set
+   - Ensure Clerk authentication is configured:
+     * Add deployment URL to Clerk allowed origins
+     * Update Clerk redirect URLs
+   - Confirm Supabase is properly configured:
+     * Database policies are set
+     * Row Level Security (RLS) is enabled
+     * API keys have correct permissions
+
+6. Deploy and Verify:
+   - Click "Create Web Service"
+   - Monitor the build logs for any errors
+   - Once deployed, verify:
+     * Authentication flow works
+     * User preferences can be saved
+     * All pages load correctly
+     * Environment variables are working
+
+Note: Make sure all environment variables match your local .env file and that you have properly configured Clerk and Supabase settings in their respective dashboards. Keep your API keys secure and never commit them to the repository.
+
+Backend Deployment Instructions:
+
+1. Create a new Web Service in Render
+   - Go to render.com and sign in
+   - Click "New +" and select "Web Service"
+   - Choose the same GitHub repository
+
+2. Configure Build and Start Settings:
+   - Name: deal-aggregator-backend
+   - Environment: Python
+   - Region: Choose same region as frontend
+   - Branch: main
+   - Root Directory: `/backend`
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `python run.py`
+   - Instance Type: Standard (recommended for background jobs)
+   - Auto-Deploy: Yes
+
+3. Configure Environment Variables:
+   Database (Supabase):
+   - SUPABASE_URL: From Supabase Project Settings
+   - SUPABASE_SERVICE_ROLE_KEY: From Supabase Project Settings
+   - SUPABASE_ANON_KEY: From Supabase Project Settings
+   
+   Scraping:
+   - SCRAPER_API_KEY: Your ScraperAPI key
+   
+   Error Tracking:
+   - SENTRY_DSN: Your Sentry DSN
+   
+   Email Service:
+   - EMAIL_SERVICE_API_KEY: Your email service API key
+   - FROM_EMAIL: Sender email address
+
+4. Additional Configuration:
+   - Health Check Path: `/health`
+   - Build Filter: Ignore frontend-only changes
+   - Set appropriate resource limits for background jobs
+
+5. Pre-Deployment Checklist:
+   - Verify all environment variables are set
+   - Ensure Supabase database is properly configured
+   - Test scraper API keys
+   - Configure email service settings
+   - Set up Sentry project
+
+6. Deploy and Verify:
+   - Click "Create Web Service"
+   - Monitor build logs
+   - Verify:
+     * Health check endpoint responds
+     * Scraper test endpoint works
+     * Newsletter test endpoint works
+     * Background jobs are running
+     * Logs are being captured
+
+Note: The backend service needs to run continuously to handle scheduled tasks. Monitor the service's resource usage and adjust the instance type if needed.
+
