@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.src.database.supabase_db import SupabaseClient
 from backend.src.services.scheduler_service import SchedulerService
+from backend.src.api.routes import main_bp  # Import the main blueprint
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +35,9 @@ def create_app():
     # Initialize services
     app.scheduler_service = SchedulerService()
     app.db = SupabaseClient()
+    
+    # Register blueprints
+    app.register_blueprint(main_bp)  # Register the main blueprint
     
     def initialize_services():
         """Initialize all background services"""
