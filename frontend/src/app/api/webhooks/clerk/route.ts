@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 export async function POST(req: Request) {
   try {
     // Get the headers
-    const headersList = await headers();
+    const headersList = headers();
     const svix_id = headersList.get("svix-id");
     const svix_timestamp = headersList.get("svix-timestamp");
     const svix_signature = headersList.get("svix-signature");
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const eventType = evt.type;
     
     if (eventType === 'user.created' || eventType === 'user.updated') {
-      const { id, email_addresses, ...attributes } = evt.data;
+      const { id, email_addresses, first_name, last_name, ...attributes } = evt.data;
       
       const email = email_addresses[0]?.email_address;
       
@@ -59,13 +59,34 @@ export async function POST(req: Request) {
       }
 
       try {
-        await supabase
+        // First, create/update the user in the users table
+        const { error: userError } = await supabase
+          .from('users')
+          .upsert({
+            id: id,
+            email: email,
+            first_name: first_name || null,
+            last_name: last_name || null,
+            subscription_tier: 'free',
+            subscription_status: 'active',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id'
+          });
+
+        if (userError) {
+          console.error('Error upserting user:', userError);
+          return new Response('Error updating user', { status: 500 });
+        }
+
+        // Then, create/update user preferences
+        const { error: prefError } = await supabase
           .from('user_preferences')
           .upsert({
             user_id: id,
             email: email,
             created_at: new Date().toISOString(),
-            // Add default preferences here
             min_price: 0,
             max_price: 1000000,
             industries: [],
@@ -74,10 +95,15 @@ export async function POST(req: Request) {
             onConflict: 'user_id'
           });
 
-        return new Response('User preferences updated', { status: 200 });
+        if (prefError) {
+          console.error('Error upserting preferences:', prefError);
+          return new Response('Error updating preferences', { status: 500 });
+        }
+
+        return new Response('User and preferences updated', { status: 200 });
       } catch (error) {
-        console.error('Error updating user preferences:', error);
-        return new Response('Error updating user preferences', { status: 500 });
+        console.error('Error in database operations:', error);
+        return new Response('Database error', { status: 500 });
       }
     }
 
