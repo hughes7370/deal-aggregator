@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     console.log('Processing webhook event type:', eventType);
     
     if (eventType === 'user.created' || eventType === 'user.updated') {
-      const { id, email_addresses, first_name, last_name, created_at } = evt.data;
+      const { id, email_addresses, created_at } = evt.data;
       
       const email = email_addresses[0]?.email_address;
       
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         return new Response('No email found', { status: 400 });
       }
 
-      console.log('Processing user data:', { id, email, first_name, last_name });
+      console.log('Processing user data:', { id, email });
 
       try {
         // First, create/update the user in the users table
@@ -72,8 +72,6 @@ export async function POST(req: Request) {
           .upsert({
             id,
             email,
-            first_name: first_name || null,
-            last_name: last_name || null,
             subscription_tier: 'free',
             subscription_status: 'active',
             created_at: new Date(created_at).toISOString(),
