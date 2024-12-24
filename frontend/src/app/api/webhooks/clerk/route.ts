@@ -13,6 +13,7 @@ export async function POST(req: Request) {
 
     // If there are no headers, error out
     if (!svix_id || !svix_timestamp || !svix_signature) {
+      console.error('Missing webhook headers:', { svix_id, svix_timestamp, svix_signature });
       return new Response('Error occurred -- no svix headers', {
         status: 400
       });
@@ -21,6 +22,8 @@ export async function POST(req: Request) {
     // Get the body
     const payload = await req.json();
     const body = JSON.stringify(payload);
+
+    console.log('Received webhook payload:', JSON.stringify(payload, null, 2));
 
     // Create a new Supabase client
     const supabase = createClient(
@@ -48,68 +51,87 @@ export async function POST(req: Request) {
 
     // Handle the webhook
     const eventType = evt.type;
+    console.log('Processing webhook event type:', eventType);
     
     if (eventType === 'user.created' || eventType === 'user.updated') {
-      const { id, email_addresses, first_name, last_name, ...attributes } = evt.data;
+      const { id, email_addresses, first_name, last_name, created_at } = evt.data;
       
       const email = email_addresses[0]?.email_address;
       
       if (!email) {
+        console.error('No email found in webhook data');
         return new Response('No email found', { status: 400 });
       }
 
+      console.log('Processing user data:', { id, email, first_name, last_name });
+
       try {
         // First, create/update the user in the users table
-        const { error: userError } = await supabase
+        const { data: userData, error: userError } = await supabase
           .from('users')
           .upsert({
-            id: id,
-            email: email,
+            id,
+            email,
             first_name: first_name || null,
             last_name: last_name || null,
             subscription_tier: 'free',
             subscription_status: 'active',
-            created_at: new Date().toISOString(),
+            created_at: new Date(created_at).toISOString(),
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'id'
-          });
+          })
+          .select();
 
         if (userError) {
           console.error('Error upserting user:', userError);
-          return new Response('Error updating user', { status: 500 });
+          return new Response(`Error updating user: ${userError.message}`, { status: 500 });
         }
 
+        console.log('Successfully created/updated user:', userData);
+
         // Then, create/update user preferences
-        const { error: prefError } = await supabase
+        const { data: prefData, error: prefError } = await supabase
           .from('user_preferences')
           .upsert({
             user_id: id,
-            email: email,
-            created_at: new Date().toISOString(),
+            email,
+            created_at: new Date(created_at).toISOString(),
             min_price: 0,
             max_price: 1000000,
             industries: [],
             alert_frequency: 'daily'
           }, {
             onConflict: 'user_id'
-          });
+          })
+          .select();
 
         if (prefError) {
           console.error('Error upserting preferences:', prefError);
-          return new Response('Error updating preferences', { status: 500 });
+          return new Response(`Error updating preferences: ${prefError.message}`, { status: 500 });
         }
 
-        return new Response('User and preferences updated', { status: 200 });
+        console.log('Successfully created/updated preferences:', prefData);
+
+        return new Response(JSON.stringify({ 
+          message: 'User and preferences updated',
+          user: userData,
+          preferences: prefData
+        }), { 
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
       } catch (error) {
         console.error('Error in database operations:', error);
-        return new Response('Database error', { status: 500 });
+        return new Response(`Database error: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });
       }
     }
 
-    return new Response('', { status: 200 });
+    return new Response('Webhook processed', { status: 200 });
   } catch (error) {
     console.error('Unexpected error in webhook handler:', error);
-    return new Response('Internal server error', { status: 500 });
+    return new Response(`Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });
   }
 } 
