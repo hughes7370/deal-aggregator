@@ -8,12 +8,6 @@ import logging
 from dotenv import load_dotenv
 import sentry_sdk
 
-# Debug: Print current directory and Python path
-print("Current working directory:", os.getcwd())
-print("Python path:", sys.path)
-print("Directory contents:", os.listdir())
-print("Parent directory contents:", os.listdir(".."))
-
 from src.database.supabase_db import SupabaseClient
 from src.services.scheduler_service import SchedulerService
 
@@ -63,20 +57,19 @@ def create_app():
     
     @app.route('/health')
     def health_check():
-        """Health check endpoint for Render"""
+        """Basic health check endpoint"""
         try:
             # Check database connection
             app.db.client.table('listings').select('id').limit(1).execute()
             
             return jsonify({
-                'status': 'healthy',
-                'timestamp': datetime.now(pytz.UTC).isoformat(),
-                'scheduler_running': app.scheduler_service.scheduler.running
+                'status': 'ok',
+                'timestamp': datetime.now().isoformat()
             }), 200
         except Exception as e:
             logger.error(f"Health check failed: {str(e)}")
             return jsonify({
-                'status': 'unhealthy',
+                'status': 'error',
                 'error': str(e)
             }), 500
 

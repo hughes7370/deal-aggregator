@@ -8,6 +8,22 @@ A full-stack web application that aggregates business listings and sends persona
 - **Deep Analysis**: Comprehensive evaluation of revenue stability, market position, and risk factors with comparable deal data
 - **Priority Alerts**: Customizable notification timing with mobile & email delivery, including detailed PDF reports
 
+## Project Structure
+
+```
+.
+├── backend/           # Backend service implementation
+│   ├── run.py        # Main backend server
+│   └── src/          # Backend source code
+├── src/              # Main application source
+│   ├── app/          # Next.js pages and routes
+│   ├── components/   # Reusable React components
+│   ├── scrapers/     # Web scraping implementations
+│   ├── services/     # Business logic
+│   └── api/          # API route handlers
+└── config/           # Configuration files
+```
+
 ## Tech Stack
 
 ### Backend
@@ -29,8 +45,6 @@ A full-stack web application that aggregates business listings and sends persona
 - Structured migrations system
 
 ## Prerequisites
-- Railway account
-- GitHub repository
 - Node.js and npm
 - Python 3.x
 - Required environment variables:
@@ -45,43 +59,32 @@ A full-stack web application that aggregates business listings and sends persona
 
 ## Development Setup
 
-1. Clone the repository:
-
-## Deployment on Railway
-
-### Prerequisites
-- Railway account
-- GitHub repository
-- Required environment variables:
-  - SUPABASE_URL
-  - SUPABASE_KEY
-  - RESEND_API_KEY
-  - DATABASE_URL
-  - SCRAPER_API_KEY
-
-### Automatic Deployment Steps
-1. Fork/push this repository to GitHub
-2. Go to [Railway.app](https://railway.app)
-3. Click "New Project"
-4. Select "Deploy from GitHub repo"
-5. Choose this repository
-6. Railway will automatically detect the Dockerfile and deploy
-
-### Environment Setup
-1. Go to project settings in Railway
-2. Add the following environment variables:
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   # Install Node.js dependencies
+   npm install
+   
+   # Set up Python virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   
+   # Install Python dependencies
+   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
    ```
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_KEY=your_supabase_key
-   RESEND_API_KEY=your_resend_api_key
-   DATABASE_URL=your_database_url
-   SCRAPER_API_KEY=your_scraper_api_key
+3. Set up environment variables in `.env` and `backend/.env`
+4. Run the development servers:
+   ```bash
+   # Start the frontend
+   npm run dev
+   
+   # In a separate terminal, start the backend
+   cd backend
+   python run.py
    ```
 
-### Monitoring
-- View logs in Railway dashboard
+## Monitoring
 - Check newsletter_logs table in database
 - Monitor scheduler status in /dashboard/status
-
-### Manual Deployment
-If needed, you can deploy manually using Railway CLI: 
+- View application logs in backend/logs directory
