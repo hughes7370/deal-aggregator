@@ -8,7 +8,8 @@ BASE_URLS = {
     "empireflippers": "https://empireflippers.com/marketplace/",
     "latonas": "https://latonas.com/listings/?result_sorting_order=age_dsc&result_sorting_quantity=20&broker=any&price_range=any&revenue_range=any&unique_range=any&profit_range=any&searchTags=&location=any",
     "flippa": "https://flippa.com/search?search_template=most_relevant&sort_alias=most_recent&filter%5Bprofit_per_month%5D%5Bmin%5D=6000&filter%5Bprice%5D%5Bmin%5D=50000&filter%5Bage%5D%5Bmin%5D=12&filter%5Bsale_method%5D=classified&filter%5Bstatus%5D=open&filter%5Bproperty_type%5D=website,fba,saas,ecommerce_store,plugin_and_extension,ai_apps_and_tools,youtube,ios_app,android_app,game,crypto_app,social_media,newsletter,service_and_agency,service,other&filter%5Bsitetype%5D=all,content,blog,directory,forum-community,review,ecommerce,digital%20products,dropship,inventory-holding,shopify,saas,services,digital,physical,transact-market&filter%5Brevenue_generating%5D=T",
-    "transworld": "https://tworld.com/buy-a-business/business-listing-search/?country=United+States&state=&county=&category=Internet+Related&subcategory=&listing_price_min=&listing_price_max=&down_payment_price_min=&down_payment_price_max=&seller_price_min=&seller_price_max=&formsubmit=1&s=Search&sort=-c_listing_price__c&items_per_page=10&cn-reloaded=1"
+    "transworld": "https://tworld.com/buy-a-business/business-listing-search/?country=United+States&state=&county=&category=Internet+Related&subcategory=&listing_price_min=&listing_price_max=&down_payment_price_min=&down_payment_price_max=&seller_price_min=&seller_price_max=&formsubmit=1&s=Search&sort=-c_listing_price__c&items_per_page=10&cn-reloaded=1",
+    "vikingmergers": "https://vikingmergers.com/businesses-for-sale/"
 }
 
 # Search URLs configuration
@@ -40,6 +41,10 @@ SEARCH_URLS = {
     "transworld": {
         "url": BASE_URLS["transworld"],
         "description": "TransWorld Internet & Technology listings"
+    },
+    "vikingmergers": {
+        "url": BASE_URLS["vikingmergers"],
+        "description": "Viking Mergers main listing page"
     }
 }
 

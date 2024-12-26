@@ -15,6 +15,7 @@ from backend.src.scrapers.latonas.scraper import LatonasScraper
 from backend.src.scrapers.flippa.scraper import FlippaScraper
 from backend.src.scrapers.transworld.scraper import TransWorldScraper
 from backend.src.scrapers.sunbelt.scraper import SunbeltScraper
+from backend.src.scrapers.viking_mergers.scraper import VikingMergersScraper
 
 def get_all_listings(limit: int = None, queries: Dict[str, Dict[str, str]] = None) -> Dict[str, List[Dict]]:
     """
@@ -69,6 +70,12 @@ def get_all_listings(limit: int = None, queries: Dict[str, Dict[str, str]] = Non
     if transworld_results:
         all_results['Transworld'] = transworld_results
         print(f"Found {len(transworld_results)} listings from Transworld")
+        
+    print("\nFetching listings from Viking Mergers...")
+    viking_mergers_results = fetch_vikingmergers_listings(max_pages=1)
+    if viking_mergers_results:
+        all_results['VikingMergers'] = viking_mergers_results
+        print(f"Found {len(viking_mergers_results)} listings from Viking Mergers")
     
     return all_results
 
@@ -126,6 +133,13 @@ def fetch_transworld_listings(max_pages: int) -> List[Dict]:
     Fetch listings from tworld.com
     """
     scraper = TransWorldScraper()
+    return scraper.get_listings(max_pages=max_pages)
+
+def fetch_vikingmergers_listings(max_pages: int) -> List[Dict]:
+    """
+    Fetch listings from vikingmergers.com
+    """
+    scraper = VikingMergersScraper()
     return scraper.get_listings(max_pages=max_pages)
 
 def parse_websiteclosers_listing(container) -> Dict:

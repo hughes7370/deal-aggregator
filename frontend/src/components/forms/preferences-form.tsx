@@ -12,7 +12,7 @@ const preferencesSchema = z.object({
   min_price: z.number().min(0),
   max_price: z.number().min(0),
   industries: z.array(z.enum(["SaaS", "eCommerce", "Service", "Content", "Other"])).min(1),
-  newsletter_frequency: z.enum(["instant", "daily", "weekly", "monthly"]),
+  newsletter_frequency: z.enum(["daily", "weekly", "monthly"]),
 }).refine((data) => data.max_price > data.min_price, {
   message: "Max price must be greater than min price",
   path: ["max_price"],
@@ -21,7 +21,6 @@ const preferencesSchema = z.object({
 type PreferencesFormData = z.infer<typeof preferencesSchema>;
 
 const NEWSLETTER_OPTIONS = [
-  { value: "instant", label: "Instant" },
   { value: "daily", label: "Daily" },
   { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },
