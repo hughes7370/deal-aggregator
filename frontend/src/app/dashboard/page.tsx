@@ -100,7 +100,7 @@ export default async function DashboardPage() {
                     <div>
                       <h3 className="text-sm font-medium text-gray-900">Investment Range</h3>
                       <p className="mt-1 text-sm text-gray-500">
-                        ${preferences.min_price.toLocaleString()} - ${preferences.max_price.toLocaleString()} USD
+                        {formatCurrency(preferences.min_price)} - {formatCurrency(preferences.max_price)} USD
                       </p>
                     </div>
                   </div>
