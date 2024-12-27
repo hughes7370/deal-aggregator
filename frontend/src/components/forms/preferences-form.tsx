@@ -37,8 +37,8 @@ const preferencesSchema = z.object({
   max_profit_margin: z.number().min(0).max(100).nullable().default(null),
   min_selling_multiple: z.number().min(0).nullable().default(null),
   max_selling_multiple: z.number().min(0).nullable().default(null),
-  min_annual_profit: z.number().min(0).nullable().default(null),
-  max_annual_profit: z.number().min(0).nullable().default(null),
+  min_ebitda: z.number().min(0).nullable().default(null),
+  max_ebitda: z.number().min(0).nullable().default(null),
   min_annual_revenue: z.number().min(0).nullable().default(null),
   max_annual_revenue: z.number().min(0).nullable().default(null),
   created_at: z.date().optional(),
@@ -184,8 +184,8 @@ export function PreferencesForm() {
       max_profit_margin: null,
       min_selling_multiple: null,
       max_selling_multiple: null,
-      min_annual_profit: null,
-      max_annual_profit: null,
+      min_ebitda: null,
+      max_ebitda: null,
       min_annual_revenue: null,
       max_annual_revenue: null,
     }
@@ -232,8 +232,8 @@ export function PreferencesForm() {
             max_profit_margin: data.max_profit_margin,
             min_selling_multiple: data.min_selling_multiple,
             max_selling_multiple: data.max_selling_multiple,
-            min_annual_profit: data.min_annual_profit,
-            max_annual_profit: data.max_annual_profit,
+            min_ebitda: data.min_ebitda,
+            max_ebitda: data.max_ebitda,
             min_annual_revenue: data.min_annual_revenue,
             max_annual_revenue: data.max_annual_revenue,
           });
@@ -456,9 +456,9 @@ export function PreferencesForm() {
               />
 
               <RangeSlider 
-                label="Annual Profit"
-                minName="min_annual_profit"
-                maxName="max_annual_profit"
+                label="Annual EBITDA"
+                minName="min_ebitda"
+                maxName="max_ebitda"
                 minValue={0}
                 maxValue={5000000}
                 step={50000}
@@ -475,7 +475,7 @@ export function PreferencesForm() {
                 minValue={0}
                 maxValue={100}
                 step={1}
-                formatValue={(value) => `${value}%`}
+                formatValue={(value) => value.toString()}
                 suffix="%"
                 register={register}
                 setValue={setValue}
@@ -489,7 +489,7 @@ export function PreferencesForm() {
                 minValue={0}
                 maxValue={10}
                 step={0.1}
-                formatValue={(value) => `${value}x`}
+                formatValue={(value) => value.toString()}
                 suffix="x"
                 register={register}
                 setValue={setValue}
