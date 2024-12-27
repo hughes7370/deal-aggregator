@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { RangeSlider } from './range-slider';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 // Define the schema for the form
 const preferencesSchema = z.object({
@@ -61,6 +62,7 @@ export default function PreferencesForm() {
   const isCreating = searchParams.get('action') === 'create';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const {
     register,
@@ -117,6 +119,24 @@ export default function PreferencesForm() {
 
       if (data) {
         reset(data);
+        // Show advanced section if any advanced fields are set
+        if (
+          data.min_business_age !== null ||
+          data.max_business_age !== null ||
+          data.min_employees !== null ||
+          data.max_employees !== null ||
+          data.min_profit_margin !== null ||
+          data.max_profit_margin !== null ||
+          data.min_selling_multiple !== null ||
+          data.max_selling_multiple !== null ||
+          data.min_ebitda !== null ||
+          data.max_ebitda !== null ||
+          data.min_annual_revenue !== null ||
+          data.max_annual_revenue !== null ||
+          (data.preferred_business_models && data.preferred_business_models.length > 0)
+        ) {
+          setShowAdvanced(true);
+        }
       }
     };
 
@@ -222,24 +242,17 @@ export default function PreferencesForm() {
         <label className="block text-sm font-medium text-gray-700">
           Price Range (USD)
         </label>
-        <div className="mt-2 grid grid-cols-2 gap-4">
-          <div>
-            <input
-              type="number"
-              {...register('min_price', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Min Price"
-            />
-          </div>
-          <div>
-            <input
-              type="number"
-              {...register('max_price', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Max Price"
-            />
-          </div>
-        </div>
+        <RangeSlider
+          min={0}
+          max={10000000}
+          step={10000}
+          value={[watch('min_price') || 0, watch('max_price') || 10000000]}
+          onValueChange={([min, max]) => {
+            setValue('min_price', min);
+            setValue('max_price', max);
+          }}
+          formatValue={(value) => `$${value.toLocaleString()}`}
+        />
       </div>
 
       {/* Industries */}
@@ -262,175 +275,152 @@ export default function PreferencesForm() {
         </div>
       </div>
 
-      {/* Business Models */}
+      {/* Advanced Filters Toggle */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Business Models
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {BUSINESS_MODELS.map((model) => (
-            <label key={model} className="inline-flex items-center">
-              <input
-                type="checkbox"
-                value={model}
-                {...register('preferred_business_models')}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">{model}</span>
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="inline-flex items-center text-sm font-medium text-gray-700"
+        >
+          <ChevronDownIcon
+            className={`h-5 w-5 mr-1 transform transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+          />
+          Advanced Filters
+        </button>
+      </div>
+
+      {/* Advanced Filters Section */}
+      {showAdvanced && (
+        <div className="space-y-8 border-t border-gray-200 pt-8">
+          {/* Business Models */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Business Models
             </label>
-          ))}
-        </div>
-      </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {BUSINESS_MODELS.map((model) => (
+                <label key={model} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    value={model}
+                    {...register('preferred_business_models')}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{model}</span>
+                </label>
+              ))}
+            </div>
+          </div>
 
-      {/* Business Age */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Business Age (Years)
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-4">
+          {/* Business Age */}
           <div>
-            <input
-              type="number"
-              {...register('min_business_age', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Min Age"
+            <label className="block text-sm font-medium text-gray-700">
+              Business Age (Years)
+            </label>
+            <RangeSlider
+              min={0}
+              max={50}
+              step={1}
+              value={[watch('min_business_age') || 0, watch('max_business_age') || 50]}
+              onValueChange={([min, max]) => {
+                setValue('min_business_age', min);
+                setValue('max_business_age', max);
+              }}
+              formatValue={(value) => `${value} years`}
             />
           </div>
-          <div>
-            <input
-              type="number"
-              {...register('max_business_age', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Max Age"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Number of Employees */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Number of Employees
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-4">
+          {/* Number of Employees */}
           <div>
-            <input
-              type="number"
-              {...register('min_employees', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Min Employees"
+            <label className="block text-sm font-medium text-gray-700">
+              Number of Employees
+            </label>
+            <RangeSlider
+              min={0}
+              max={1000}
+              step={5}
+              value={[watch('min_employees') || 0, watch('max_employees') || 1000]}
+              onValueChange={([min, max]) => {
+                setValue('min_employees', min);
+                setValue('max_employees', max);
+              }}
+              formatValue={(value) => `${value} employees`}
             />
           </div>
-          <div>
-            <input
-              type="number"
-              {...register('max_employees', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Max Employees"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Annual Revenue */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Annual Revenue (USD)
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-4">
+          {/* Annual Revenue */}
           <div>
-            <input
-              type="number"
-              {...register('min_annual_revenue', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Min Revenue"
+            <label className="block text-sm font-medium text-gray-700">
+              Annual Revenue (USD)
+            </label>
+            <RangeSlider
+              min={0}
+              max={10000000}
+              step={100000}
+              value={[watch('min_annual_revenue') || 0, watch('max_annual_revenue') || 10000000]}
+              onValueChange={([min, max]) => {
+                setValue('min_annual_revenue', min);
+                setValue('max_annual_revenue', max);
+              }}
+              formatValue={(value) => `$${value.toLocaleString()}`}
             />
           </div>
-          <div>
-            <input
-              type="number"
-              {...register('max_annual_revenue', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Max Revenue"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Annual EBITDA */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Annual EBITDA (USD)
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-4">
+          {/* Annual EBITDA */}
           <div>
-            <input
-              type="number"
-              {...register('min_ebitda', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Min EBITDA"
+            <label className="block text-sm font-medium text-gray-700">
+              Annual EBITDA (USD)
+            </label>
+            <RangeSlider
+              min={0}
+              max={5000000}
+              step={50000}
+              value={[watch('min_ebitda') || 0, watch('max_ebitda') || 5000000]}
+              onValueChange={([min, max]) => {
+                setValue('min_ebitda', min);
+                setValue('max_ebitda', max);
+              }}
+              formatValue={(value) => `$${value.toLocaleString()}`}
             />
           </div>
-          <div>
-            <input
-              type="number"
-              {...register('max_ebitda', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Max EBITDA"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Profit Margin */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Profit Margin (%)
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-4">
+          {/* Profit Margin */}
           <div>
-            <input
-              type="number"
-              {...register('min_profit_margin', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Min Margin"
+            <label className="block text-sm font-medium text-gray-700">
+              Profit Margin (%)
+            </label>
+            <RangeSlider
+              min={0}
+              max={100}
+              step={1}
+              value={[watch('min_profit_margin') || 0, watch('max_profit_margin') || 100]}
+              onValueChange={([min, max]) => {
+                setValue('min_profit_margin', min);
+                setValue('max_profit_margin', max);
+              }}
+              formatValue={(value) => `${value}%`}
             />
           </div>
-          <div>
-            <input
-              type="number"
-              {...register('max_profit_margin', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Max Margin"
-            />
-          </div>
-        </div>
-      </div>
 
-      {/* Selling Multiple */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Selling Multiple
-        </label>
-        <div className="mt-2 grid grid-cols-2 gap-4">
+          {/* Selling Multiple */}
           <div>
-            <input
-              type="number"
-              {...register('min_selling_multiple', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Min Multiple"
-            />
-          </div>
-          <div>
-            <input
-              type="number"
-              {...register('max_selling_multiple', { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Max Multiple"
+            <label className="block text-sm font-medium text-gray-700">
+              Selling Multiple
+            </label>
+            <RangeSlider
+              min={0}
+              max={20}
+              step={0.1}
+              value={[watch('min_selling_multiple') || 0, watch('max_selling_multiple') || 20]}
+              onValueChange={([min, max]) => {
+                setValue('min_selling_multiple', min);
+                setValue('max_selling_multiple', max);
+              }}
+              formatValue={(value) => `${value}x`}
             />
           </div>
         </div>
-      </div>
+      )}
 
       <div className="flex justify-between pt-8">
         <div>

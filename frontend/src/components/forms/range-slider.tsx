@@ -1,56 +1,35 @@
 import * as Slider from '@radix-ui/react-slider';
 
 interface RangeSliderProps {
-  label: string;
-  minName: string;
-  maxName: string;
-  minValue: number;
-  maxValue: number;
+  min: number;
+  max: number;
   step?: number;
+  value: [number, number];
+  onValueChange: (value: [number, number]) => void;
   formatValue?: (value: number) => string;
-  suffix?: string;
-  register: any;
-  setValue: any;
-  watch: any;
 }
 
 export function RangeSlider({ 
-  label, 
-  minName, 
-  maxName, 
-  minValue,
-  maxValue,
+  min,
+  max,
   step = 1,
-  formatValue = (value: number) => value.toString(),
-  suffix = "",
-  register,
-  setValue,
-  watch
+  value,
+  onValueChange,
+  formatValue = (value: number) => value.toString()
 }: RangeSliderProps) {
-  const minWatch = watch(minName) ?? minValue;
-  const maxWatch = watch(maxName) ?? maxValue;
-
   return (
     <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <label className="text-base font-medium text-gray-900">
-          {label}
-          <span className="text-sm font-normal text-gray-500 ml-2">(Drag to adjust)</span>
-        </label>
-        <div className="text-sm text-gray-600">
-          {formatValue(minWatch)}{suffix} - {formatValue(maxWatch)}{suffix}
-        </div>
+      <div className="flex justify-between items-center text-sm text-gray-600">
+        <span>{formatValue(value[0])}</span>
+        <span>{formatValue(value[1])}</span>
       </div>
       <Slider.Root
         className="relative flex items-center select-none touch-none w-full h-5"
-        value={[minWatch, maxWatch]}
-        min={minValue}
-        max={maxValue}
+        value={value}
+        min={min}
+        max={max}
         step={step}
-        onValueChange={([min, max]) => {
-          setValue(minName, min);
-          setValue(maxName, max);
-        }}
+        onValueChange={onValueChange}
       >
         <Slider.Track className="bg-gray-200 relative grow rounded-full h-[3px]">
           <Slider.Range className="absolute bg-blue-600 rounded-full h-full" />
