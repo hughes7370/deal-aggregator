@@ -75,6 +75,45 @@ export default async function DashboardPage() {
     .eq('user_id', userId)
     .single();
 
+  // If no preferences exist yet, show the empty state
+  if (error?.code === 'PGRST116') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+            <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No preferences set</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Get started by setting up your deal alert preferences
+            </p>
+            <div className="mt-6">
+              <Link
+                href="/dashboard/preferences"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Set Preferences
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If there's any other error, show the error state
+  if (error) {
+    console.error('Error fetching preferences:', error);
+    return (
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-700">Error loading preferences. Please try again later.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Set default values if preferences don't exist
   const defaultPreferences = {
     min_price: 0,
