@@ -41,11 +41,11 @@ const hasAdvancedFilters = (preferences: any) => {
     preferences.max_profit_margin !== null ||
     preferences.min_selling_multiple !== null ||
     preferences.max_selling_multiple !== null ||
-    preferences.min_annual_profit !== null ||
-    preferences.max_annual_profit !== null ||
+    preferences.min_ebitda !== null ||
+    preferences.max_ebitda !== null ||
     preferences.min_annual_revenue !== null ||
     preferences.max_annual_revenue !== null ||
-    (preferences.business_models && preferences.business_models.length > 0);
+    (preferences.preferred_business_models && preferences.preferred_business_models.length > 0);
 };
 
 export default async function DashboardPage() {
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
     max_price: 0,
     industries: [],
     newsletter_frequency: 'weekly',
-    business_models: [],
+    preferred_business_models: [],
     min_business_age: null,
     max_business_age: null,
     min_employees: null,
@@ -129,8 +129,8 @@ export default async function DashboardPage() {
     max_profit_margin: null,
     min_selling_multiple: null,
     max_selling_multiple: null,
-    min_annual_profit: null,
-    max_annual_profit: null,
+    min_ebitda: null,
+    max_ebitda: null,
     min_annual_revenue: null,
     max_annual_revenue: null,
   };
@@ -263,14 +263,14 @@ export default async function DashboardPage() {
                   )}
 
                   {/* Business Models */}
-                  {userPreferences.business_models && userPreferences.business_models.length > 0 && (
+                  {userPreferences.preferred_business_models && userPreferences.preferred_business_models.length > 0 && (
                     <div className="py-4">
                       <div className="flex items-center">
                         <CubeIcon className="h-5 w-5 text-gray-400 mr-3" />
                         <div>
                           <h3 className="text-sm font-medium text-gray-900">Business Models</h3>
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {userPreferences.business_models.map((model: string) => (
+                            {userPreferences.preferred_business_models.map((model: string) => (
                               <span
                                 key={model}
                                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
@@ -286,7 +286,7 @@ export default async function DashboardPage() {
 
                   {/* Financial Metrics */}
                   {(userPreferences.min_annual_revenue !== null || userPreferences.max_annual_revenue !== null ||
-                    userPreferences.min_annual_profit !== null || userPreferences.max_annual_profit !== null) && (
+                    userPreferences.min_ebitda !== null || userPreferences.max_ebitda !== null) && (
                     <div className="py-4">
                       <div className="flex items-center">
                         <ChartBarIcon className="h-5 w-5 text-gray-400 mr-3" />
@@ -298,9 +298,9 @@ export default async function DashboardPage() {
                                 Revenue: {formatCurrency(userPreferences.min_annual_revenue)} - {formatCurrency(userPreferences.max_annual_revenue)}
                               </p>
                             )}
-                            {(userPreferences.min_annual_profit !== null || userPreferences.max_annual_profit !== null) && (
+                            {(userPreferences.min_ebitda !== null || userPreferences.max_ebitda !== null) && (
                               <p className="text-sm text-gray-500">
-                                Profit: {formatCurrency(userPreferences.min_annual_profit)} - {formatCurrency(userPreferences.max_annual_profit)}
+                                EBITDA: {formatCurrency(userPreferences.min_ebitda)} - {formatCurrency(userPreferences.max_ebitda)}
                               </p>
                             )}
                           </div>
