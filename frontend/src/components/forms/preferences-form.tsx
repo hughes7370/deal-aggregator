@@ -7,6 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabase';
+import * as Slider from '@radix-ui/react-slider';
 
 const BUSINESS_MODELS = [
   "SaaS",
@@ -83,6 +84,72 @@ const NEWSLETTER_OPTIONS = [
   { value: "monthly", label: "Monthly" },
 ] as const;
 
+const RangeSlider = ({ 
+  label, 
+  minName, 
+  maxName, 
+  minValue,
+  maxValue,
+  step = 1,
+  formatValue = (value: number) => value.toString(),
+  suffix = "",
+  register,
+  setValue,
+  watch
+}: { 
+  label: string;
+  minName: keyof PreferencesFormData;
+  maxName: keyof PreferencesFormData;
+  minValue: number;
+  maxValue: number;
+  step?: number;
+  formatValue?: (value: number) => string;
+  suffix?: string;
+  register: any;
+  setValue: any;
+  watch: any;
+}) => {
+  const minWatch = watch(minName) ?? minValue;
+  const maxWatch = watch(maxName) ?? maxValue;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <label className="text-base font-medium text-gray-900">
+          {label}
+          <span className="text-sm font-normal text-gray-500 ml-2">(Drag to adjust)</span>
+        </label>
+        <div className="text-sm text-gray-600">
+          {formatValue(minWatch)}{suffix} - {formatValue(maxWatch)}{suffix}
+        </div>
+      </div>
+      <Slider.Root
+        className="relative flex items-center select-none touch-none w-full h-5"
+        value={[minWatch, maxWatch]}
+        min={minValue}
+        max={maxValue}
+        step={step}
+        onValueChange={([min, max]) => {
+          setValue(minName, min);
+          setValue(maxName, max);
+        }}
+      >
+        <Slider.Track className="bg-gray-200 relative grow rounded-full h-[3px]">
+          <Slider.Range className="absolute bg-blue-600 rounded-full h-full" />
+        </Slider.Track>
+        <Slider.Thumb
+          className="block w-5 h-5 bg-white border-2 border-blue-600 rounded-full hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          aria-label="Min value"
+        />
+        <Slider.Thumb
+          className="block w-5 h-5 bg-white border-2 border-blue-600 rounded-full hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          aria-label="Max value"
+        />
+      </Slider.Root>
+    </div>
+  );
+};
+
 export function PreferencesForm() {
   const { userId } = useAuth();
   const router = useRouter();
@@ -96,6 +163,8 @@ export function PreferencesForm() {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<PreferencesFormData>({
     resolver: zodResolver(preferencesSchema),
@@ -225,73 +294,6 @@ export function PreferencesForm() {
     );
   }
 
-  const RangeInput = ({ 
-    label, 
-    minName, 
-    maxName, 
-    placeholder = "Any",
-    prefix = "$",
-    suffix = "USD",
-    step = "1"
-  }: { 
-    label: string;
-    minName: keyof PreferencesFormData;
-    maxName: keyof PreferencesFormData;
-    placeholder?: string;
-    prefix?: string;
-    suffix?: string;
-    step?: string;
-  }) => (
-    <div>
-      <label className="text-base font-medium text-gray-900 mb-3 block">
-        {label}
-        <span className="text-sm font-normal text-gray-500 ml-2">(Leave empty for any)</span>
-      </label>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <div className="relative mt-1 rounded-md shadow-sm">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <span className="text-gray-500 sm:text-sm">{prefix}</span>
-            </div>
-            <input
-              type="number"
-              step={step}
-              {...register(minName, { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder={placeholder}
-            />
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <span className="text-gray-500 sm:text-sm">{suffix}</span>
-            </div>
-          </div>
-          {errors[minName] && (
-            <p className="mt-2 text-sm text-red-600">{errors[minName]?.message}</p>
-          )}
-        </div>
-        <div>
-          <div className="relative mt-1 rounded-md shadow-sm">
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <span className="text-gray-500 sm:text-sm">{prefix}</span>
-            </div>
-            <input
-              type="number"
-              step={step}
-              {...register(maxName, { valueAsNumber: true })}
-              className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              placeholder={placeholder}
-            />
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <span className="text-gray-500 sm:text-sm">{suffix}</span>
-            </div>
-          </div>
-          {errors[maxName] && (
-            <p className="mt-2 text-sm text-red-600">{errors[maxName]?.message}</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {error && (
@@ -320,11 +322,17 @@ export function PreferencesForm() {
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Basic Preferences</h2>
           
           <div className="space-y-6">
-            <RangeInput 
+            <RangeSlider 
               label="Investment Range" 
               minName="min_price" 
               maxName="max_price"
-              placeholder="1000000"
+              minValue={0}
+              maxValue={1000000}
+              step={1}
+              formatValue={(value) => `$${value.toFixed(0)}`}
+              register={register}
+              setValue={setValue}
+              watch={watch}
             />
 
             <div>
@@ -399,55 +407,89 @@ export function PreferencesForm() {
           </button>
 
           {showAdvanced && (
-            <div className="p-6 border-t border-gray-200 space-y-6">
+            <div className="p-6 border-t border-gray-200 space-y-8">
               <div className="text-sm text-gray-500 mb-4">
-                Note: Empty fields will match all values. Adjust only the filters you want to specifically target.
+                Note: Drag the sliders to set your preferred ranges. Leave at default values to match all listings.
               </div>
               
-              <RangeInput 
-                label="Business Age (Years)" 
-                minName="min_business_age" 
+              <RangeSlider 
+                label="Business Age"
+                minName="min_business_age"
                 maxName="max_business_age"
-                prefix=""
-                suffix="Years"
+                minValue={0}
+                maxValue={20}
+                step={1}
+                formatValue={(value) => `${value} years`}
+                register={register}
+                setValue={setValue}
+                watch={watch}
               />
 
-              <RangeInput 
-                label="Number of Employees" 
-                minName="min_employees" 
+              <RangeSlider 
+                label="Number of Employees"
+                minName="min_employees"
                 maxName="max_employees"
-                prefix=""
-                suffix="People"
+                minValue={0}
+                maxValue={100}
+                step={1}
+                formatValue={(value) => `${value}`}
+                register={register}
+                setValue={setValue}
+                watch={watch}
               />
 
-              <RangeInput 
-                label="Annual Revenue" 
-                minName="min_annual_revenue" 
+              <RangeSlider 
+                label="Annual Revenue"
+                minName="min_annual_revenue"
                 maxName="max_annual_revenue"
+                minValue={0}
+                maxValue={10000000}
+                step={100000}
+                formatValue={(value) => `$${(value / 1000000).toFixed(1)}M`}
+                register={register}
+                setValue={setValue}
+                watch={watch}
               />
 
-              <RangeInput 
-                label="Annual Profit" 
-                minName="min_annual_profit" 
+              <RangeSlider 
+                label="Annual Profit"
+                minName="min_annual_profit"
                 maxName="max_annual_profit"
+                minValue={0}
+                maxValue={5000000}
+                step={50000}
+                formatValue={(value) => `$${(value / 1000000).toFixed(1)}M`}
+                register={register}
+                setValue={setValue}
+                watch={watch}
               />
 
-              <RangeInput 
-                label="Profit Margin (%)" 
-                minName="min_profit_margin" 
+              <RangeSlider 
+                label="Profit Margin"
+                minName="min_profit_margin"
                 maxName="max_profit_margin"
-                prefix=""
+                minValue={0}
+                maxValue={100}
+                step={1}
+                formatValue={(value) => `${value}%`}
                 suffix="%"
-                step="0.1"
+                register={register}
+                setValue={setValue}
+                watch={watch}
               />
 
-              <RangeInput 
-                label="Selling Multiple" 
-                minName="min_selling_multiple" 
+              <RangeSlider 
+                label="Selling Multiple"
+                minName="min_selling_multiple"
                 maxName="max_selling_multiple"
-                prefix=""
+                minValue={0}
+                maxValue={10}
+                step={0.1}
+                formatValue={(value) => `${value}x`}
                 suffix="x"
-                step="0.1"
+                register={register}
+                setValue={setValue}
+                watch={watch}
               />
 
               <div>
