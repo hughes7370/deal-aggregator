@@ -17,12 +17,38 @@ export default function Header() {
     <>
       <Link 
         href="/dashboard"
+        className={`block w-full px-4 py-2 text-base font-medium rounded-md ${
+          isActive('/dashboard')
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        Dashboard
+      </Link>
+      <Link 
+        href="/dashboard/preferences"
+        className={`block w-full px-4 py-2 text-base font-medium rounded-md ${
+          isActive('/dashboard/preferences')
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        Alert Preferences
+      </Link>
+    </>
+  );
+
+  const DesktopNavLinks = () => (
+    <>
+      <Link 
+        href="/dashboard"
         className={`px-3 py-2 rounded-md text-sm font-medium ${
           isActive('/dashboard')
             ? 'bg-gray-100 text-gray-900'
             : 'text-gray-500 hover:text-gray-900'
         }`}
-        onClick={() => setIsMobileMenuOpen(false)}
       >
         Dashboard
       </Link>
@@ -33,7 +59,6 @@ export default function Header() {
             ? 'bg-gray-100 text-gray-900'
             : 'text-gray-500 hover:text-gray-900'
         }`}
-        onClick={() => setIsMobileMenuOpen(false)}
       >
         Alert Preferences
       </Link>
@@ -41,7 +66,7 @@ export default function Header() {
   );
 
   return (
-    <header className="border-b border-gray-200 bg-white">
+    <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
@@ -50,7 +75,7 @@ export default function Header() {
             </Link>
             {userId && (
               <nav className="hidden md:flex ml-10 space-x-4">
-                <NavLinks />
+                <DesktopNavLinks />
               </nav>
             )}
           </div>
@@ -60,7 +85,7 @@ export default function Header() {
                 <UserButton afterSignOutUrl="/" />
                 <button
                   type="button"
-                  className="md:hidden ml-2 p-2 rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                  className="md:hidden ml-2 p-2 rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 >
                   <span className="sr-only">Open menu</span>
@@ -84,8 +109,8 @@ export default function Header() {
 
         {/* Mobile menu */}
         {userId && isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 py-2">
-            <nav className="flex flex-col space-y-1 px-2 pb-3 pt-2">
+          <div className="md:hidden border-t border-gray-200">
+            <nav className="flex flex-col py-3">
               <NavLinks />
             </nav>
           </div>
