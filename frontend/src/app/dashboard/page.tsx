@@ -13,25 +13,26 @@ import {
 } from "@heroicons/react/24/outline";
 
 // Helper function to format currency
-const formatCurrency = (amount: number | null) => {
-  if (amount === null) return 'Any';
+const formatCurrency = (amount: number | null | undefined) => {
+  if (amount === null || amount === undefined) return 'Any';
   return `$${amount.toLocaleString()}`;
 };
 
 // Helper function to format percentage
-const formatPercentage = (value: number | null) => {
-  if (value === null) return 'Any';
+const formatPercentage = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return 'Any';
   return `${value}%`;
 };
 
 // Helper function to format multiple
-const formatMultiple = (value: number | null) => {
-  if (value === null) return 'Any';
+const formatMultiple = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return 'Any';
   return `${value}x`;
 };
 
 // Helper function to check if any advanced filters are set
 const hasAdvancedFilters = (preferences: any) => {
+  if (!preferences) return false;
   return preferences.min_business_age !== null ||
     preferences.max_business_age !== null ||
     preferences.min_employees !== null ||
