@@ -41,6 +41,8 @@ const preferencesSchema = z.object({
   max_annual_profit: z.number().min(0).nullable().default(null),
   min_annual_revenue: z.number().min(0).nullable().default(null),
   max_annual_revenue: z.number().min(0).nullable().default(null),
+  created_at: z.date().optional(),
+  updated_at: z.date().optional(),
 }).refine(
   (data) => {
     if (data.max_price && data.min_price) {
@@ -158,6 +160,33 @@ export function PreferencesForm() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // First ensure the user exists in our users table
+  useEffect(() => {
+    async function ensureUserExists() {
+      if (!userId) return;
+
+      try {
+        // Check if user exists in our users table
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('id', userId)
+          .single();
+
+        if (!existingUser) {
+          console.error('User not found in users table:', userId);
+          setError('Error loading user data. Please try refreshing the page.');
+          return;
+        }
+      } catch (err) {
+        console.error('Error checking user:', err);
+        setError('Error loading user data. Please try refreshing the page.');
+      }
+    }
+
+    ensureUserExists();
+  }, [userId]);
 
   const {
     register,
