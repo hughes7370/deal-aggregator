@@ -16,6 +16,7 @@ from backend.src.scrapers.flippa.scraper import FlippaScraper
 from backend.src.scrapers.transworld.scraper import TransWorldScraper
 from backend.src.scrapers.sunbelt.scraper import SunbeltScraper
 from backend.src.scrapers.viking_mergers.scraper import VikingMergersScraper
+from backend.src.scrapers.acquire.scraper import AcquireScraper
 
 def get_all_listings(limit: int = None, queries: Dict[str, Dict[str, str]] = None) -> Dict[str, List[Dict]]:
     """
@@ -396,3 +397,13 @@ class ListingDetailsScraper:
                 continue
                 
         return enriched_listings
+
+def fetch_acquire_listings() -> List[Dict]:
+    """Fetch listings from Acquire"""
+    try:
+        scraper = AcquireScraper()
+        listings = scraper.get_listings()
+        return listings
+    except Exception as e:
+        print(f"Error fetching Acquire listings: {e}")
+        return []
