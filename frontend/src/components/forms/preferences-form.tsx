@@ -161,33 +161,6 @@ export function PreferencesForm() {
   const [isNewUser, setIsNewUser] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // First ensure the user exists in our users table
-  useEffect(() => {
-    async function ensureUserExists() {
-      if (!userId) return;
-
-      try {
-        // Check if user exists in our users table
-        const { data: existingUser } = await supabase
-          .from('users')
-          .select('id')
-          .eq('id', userId)
-          .single();
-
-        if (!existingUser) {
-          console.error('User not found in users table:', userId);
-          setError('Error loading user data. Please try refreshing the page.');
-          return;
-        }
-      } catch (err) {
-        console.error('Error checking user:', err);
-        setError('Error loading user data. Please try refreshing the page.');
-      }
-    }
-
-    ensureUserExists();
-  }, [userId]);
-
   const {
     register,
     handleSubmit,
@@ -234,11 +207,13 @@ export function PreferencesForm() {
 
         if (fetchError) {
           if (fetchError.code === 'PGRST116') {
+            // No preferences found for this user, they are new
             setIsNewUser(true);
           } else {
             console.error('Fetch error:', fetchError);
             setError('An error occurred while loading your preferences');
           }
+          setLoading(false);
           return;
         }
 
