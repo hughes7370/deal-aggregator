@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { PreferencesForm } from "../../../components/forms/preferences-form";
+import PreferencesForm from "../../../components/forms/preferences-form";
 
 export default async function PreferencesPage() {
   const { userId } = await auth();

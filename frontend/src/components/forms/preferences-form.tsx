@@ -1,307 +1,456 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAuth } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { createClient } from '@supabase/supabase-js';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { RangeSlider } from './range-slider';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
+// Define the schema for the form
 const preferencesSchema = z.object({
-  min_price: z.number().min(0),
-  max_price: z.number().min(0),
-  industries: z.array(z.enum(["SaaS", "eCommerce", "Service", "Content", "Other"])).min(1),
-  newsletter_frequency: z.enum(["daily", "weekly", "monthly"]),
-}).refine((data) => data.max_price > data.min_price, {
-  message: "Max price must be greater than min price",
-  path: ["max_price"],
+  name: z.string().min(1, 'Alert name is required'),
+  min_price: z.number().min(0).nullable(),
+  max_price: z.number().min(0).nullable(),
+  industries: z.array(z.string()),
+  newsletter_frequency: z.enum(['instantly', 'daily', 'weekly', 'monthly']),
+  preferred_business_models: z.array(z.string()),
+  min_business_age: z.number().min(0).nullable(),
+  max_business_age: z.number().nullable(),
+  min_employees: z.number().min(0).nullable(),
+  max_employees: z.number().nullable(),
+  min_profit_margin: z.number().min(0).nullable(),
+  max_profit_margin: z.number().nullable(),
+  min_selling_multiple: z.number().min(0).nullable(),
+  max_selling_multiple: z.number().nullable(),
+  min_ebitda: z.number().min(0).nullable(),
+  max_ebitda: z.number().nullable(),
+  min_annual_revenue: z.number().min(0).nullable(),
+  max_annual_revenue: z.number().nullable(),
 });
 
 type PreferencesFormData = z.infer<typeof preferencesSchema>;
 
-const NEWSLETTER_OPTIONS = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
-] as const;
+const INDUSTRIES = [
+  'SaaS',
+  'E-commerce',
+  'Digital Products',
+  'Services',
+  'Content',
+  'Advertising',
+  'Mobile Apps'
+];
 
-export function PreferencesForm() {
-  const { userId } = useAuth();
+const BUSINESS_MODELS = [
+  'Subscription',
+  'Marketplace',
+  'Agency',
+  'E-commerce',
+  'Advertising',
+  'Consulting',
+  'Software Licensing'
+];
+
+export default function PreferencesForm() {
+  const { user } = useUser();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const alertId = searchParams.get('id');
+  const isCreating = searchParams.get('action') === 'create';
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const {
     register,
     handleSubmit,
+    formState: { errors },
     reset,
-    formState: { errors, isSubmitting }
+    setValue,
+    watch
   } = useForm<PreferencesFormData>({
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
-      min_price: 0,
-      max_price: 0,
+      name: '',
+      min_price: null,
+      max_price: null,
       industries: [],
-      newsletter_frequency: "weekly"
+      newsletter_frequency: 'weekly',
+      preferred_business_models: [],
+      min_business_age: null,
+      max_business_age: null,
+      min_employees: null,
+      max_employees: null,
+      min_profit_margin: null,
+      max_profit_margin: null,
+      min_selling_multiple: null,
+      max_selling_multiple: null,
+      min_ebitda: null,
+      max_ebitda: null,
+      min_annual_revenue: null,
+      max_annual_revenue: null,
     }
   });
 
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  // Fetch alert data if editing
   useEffect(() => {
-    async function fetchPreferences() {
-      if (!userId) {
-        setLoading(false);
+    const fetchAlert = async () => {
+      if (!user || !alertId) return;
+
+      const { data, error } = await supabase
+        .from('alerts')
+        .select('*')
+        .eq('id', alertId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching alert:', error);
         return;
       }
 
-      try {
-        const { data, error: fetchError } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
-
-        if (fetchError) {
-          if (fetchError.code === 'PGRST116') {
-            setIsNewUser(true);
-          } else {
-            console.error('Fetch error:', fetchError);
-            setError('An error occurred while loading your preferences');
-          }
-          return;
+      if (data) {
+        reset(data);
+        // Show advanced section if any advanced fields are set
+        if (
+          data.min_business_age !== null ||
+          data.max_business_age !== null ||
+          data.min_employees !== null ||
+          data.max_employees !== null ||
+          data.min_profit_margin !== null ||
+          data.max_profit_margin !== null ||
+          data.min_selling_multiple !== null ||
+          data.max_selling_multiple !== null ||
+          data.min_ebitda !== null ||
+          data.max_ebitda !== null ||
+          data.min_annual_revenue !== null ||
+          data.max_annual_revenue !== null ||
+          (data.preferred_business_models && data.preferred_business_models.length > 0)
+        ) {
+          setShowAdvanced(true);
         }
-
-        if (data) {
-          reset({
-            min_price: data.min_price,
-            max_price: data.max_price,
-            industries: data.industries,
-            newsletter_frequency: data.newsletter_frequency || "weekly"
-          });
-        }
-      } catch (err) {
-        console.error('Error fetching preferences:', err);
-        setError('An error occurred while loading your preferences');
-      } finally {
-        setLoading(false);
       }
-    }
+    };
 
-    fetchPreferences();
-  }, [userId, reset]);
+    fetchAlert();
+  }, [user, alertId, reset]);
 
-  const onSubmit = async (formData: PreferencesFormData) => {
-    if (!userId) {
-      setError('You must be logged in to save preferences');
-      return;
-    }
+  const onSubmit = async (data: PreferencesFormData) => {
+    if (!user) return;
+
+    setIsLoading(true);
+    setError(null);
 
     try {
-      setError(null);
-      setSuccessMessage(null);
-      console.log('Submitting preferences:', { userId, ...formData });
-
-      const { error: upsertError } = await supabase
-        .from('user_preferences')
-        .upsert(
-          {
-            user_id: userId,
-            min_price: formData.min_price,
-            max_price: formData.max_price,
-            industries: formData.industries,
-            newsletter_frequency: formData.newsletter_frequency
-          },
-          {
-            onConflict: 'user_id',
-            ignoreDuplicates: false
-          }
-        );
-
-      if (upsertError) {
-        console.error('Upsert error:', upsertError);
-        setError(upsertError.message);
-        return;
+      let result;
+      
+      if (alertId) {
+        // Update existing alert
+        result = await supabase
+          .from('alerts')
+          .update(data)
+          .eq('id', alertId)
+          .eq('user_id', user.id);
+      } else {
+        // Create new alert
+        result = await supabase
+          .from('alerts')
+          .insert([{ ...data, user_id: user.id }]);
       }
 
-      setSuccessMessage('Preferences saved successfully!');
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 3000);
+      if (result.error) throw result.error;
       
-      console.log('Preferences saved successfully');
-      router.refresh();
-    } catch (err) {
-      console.error('Error saving preferences:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save preferences');
+      // Only redirect after successful operation
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message);
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const handleDelete = async () => {
+    if (!alertId || !confirm('Are you sure you want to delete this alert?')) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase
+        .from('alerts')
+        .delete()
+        .eq('id', alertId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message);
+      setIsLoading(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center">
-          <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-          </svg>
-          {error}
-        </div>
-      )}
-      
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg flex items-center">
-          <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          {successMessage}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700">{error}</p>
         </div>
       )}
 
-      {isNewUser && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-6 py-4 rounded-lg">
-          <div className="flex items-start">
-            <svg className="h-6 w-6 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <div>
-              <h3 className="font-semibold">Welcome to DealSight!</h3>
-              <p className="mt-1 text-sm">
-                Set your preferences below to start receiving personalized deal alerts. We'll notify you when we find matches that meet your criteria.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Alert Name */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Alert Name
+        </label>
+        <input
+          type="text"
+          {...register('name')}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          placeholder="e.g., High Margin SaaS"
+        />
+        {errors.name && (
+          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+        )}
+      </div>
 
-      <div className="space-y-6">
-        <div>
-          <label className="text-base font-medium text-gray-900 mb-3 block">Investment Range</label>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="relative mt-1 rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <span className="text-gray-500 sm:text-sm">$</span>
-                </div>
-                <input
-                  type="number"
-                  {...register('min_price', { valueAsNumber: true })}
-                  className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="0"
-                />
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                  <span className="text-gray-500 sm:text-sm">USD</span>
-                </div>
-              </div>
-              {errors.min_price && (
-                <p className="mt-2 text-sm text-red-600">{errors.min_price.message}</p>
-              )}
-            </div>
-            <div>
-              <div className="relative mt-1 rounded-md shadow-sm">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <span className="text-gray-500 sm:text-sm">$</span>
-                </div>
-                <input
-                  type="number"
-                  {...register('max_price', { valueAsNumber: true })}
-                  className="block w-full rounded-md border-gray-300 pl-7 pr-12 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="1000000"
-                />
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                  <span className="text-gray-500 sm:text-sm">USD</span>
-                </div>
-              </div>
-              {errors.max_price && (
-                <p className="mt-2 text-sm text-red-600">{errors.max_price.message}</p>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Newsletter Frequency */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Alert Frequency
+        </label>
+        <select
+          {...register('newsletter_frequency')}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        >
+          <option value="instantly">Instantly</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
 
-        <div>
-          <label className="text-base font-medium text-gray-900 mb-3 block">Industries</label>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {["SaaS", "eCommerce", "Service", "Content", "Other"].map((industry) => (
-              <div key={industry} className="relative flex items-center">
-                <div className="flex h-6 items-center">
-                  <input
-                    type="checkbox"
-                    {...register('industries')}
-                    value={industry}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="ml-3 text-sm leading-6">
-                  <label className="font-medium text-gray-900">{industry}</label>
-                </div>
-              </div>
-            ))}
-          </div>
-          {errors.industries && (
-            <p className="mt-2 text-sm text-red-600">{errors.industries.message}</p>
-          )}
-        </div>
+      {/* Price Range */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Price Range (USD)
+        </label>
+        <RangeSlider
+          min={0}
+          max={10000000}
+          step={10000}
+          value={[watch('min_price') || 0, watch('max_price') || 10000000]}
+          onValueChange={([min, max]) => {
+            setValue('min_price', min);
+            setValue('max_price', max);
+          }}
+          formatValue={(value) => `$${value.toLocaleString()}`}
+        />
+      </div>
 
-        <div>
-          <label className="text-base font-medium text-gray-900 mb-3 block">Alert Frequency</label>
-          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {NEWSLETTER_OPTIONS.map(option => (
-              <div key={option.value} className="flex">
-                <input
-                  type="radio"
-                  {...register('newsletter_frequency')}
-                  value={option.value}
-                  id={option.value}
-                  className="peer hidden"
-                />
-                <label
-                  htmlFor={option.value}
-                  className="flex flex-1 items-center justify-center rounded-lg border border-gray-200 bg-white p-3 text-gray-600 hover:bg-gray-50 peer-checked:border-blue-600 peer-checked:text-blue-600 cursor-pointer"
-                >
-                  <span className="text-sm font-medium">{option.label}</span>
-                </label>
-              </div>
-            ))}
-          </div>
-          {errors.newsletter_frequency && (
-            <p className="mt-2 text-sm text-red-600">{errors.newsletter_frequency.message}</p>
-          )}
-          <p className="mt-2 text-sm text-gray-500">
-            Choose how often you want to receive deal notifications
-          </p>
+      {/* Industries */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Target Industries
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {INDUSTRIES.map((industry) => (
+            <label key={industry} className="inline-flex items-center">
+              <input
+                type="checkbox"
+                value={industry}
+                {...register('industries')}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-700">{industry}</span>
+            </label>
+          ))}
         </div>
       </div>
 
-      <div className="pt-6">
+      {/* Advanced Filters Toggle */}
+      <div>
         <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors duration-150"
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="inline-flex items-center text-sm font-medium text-gray-700"
         >
-          {isSubmitting ? (
-            <span className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Saving Changes...
-            </span>
-          ) : (
-            'Save Preferences'
-          )}
+          <ChevronDownIcon
+            className={`h-5 w-5 mr-1 transform transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+          />
+          Advanced Filters
         </button>
+      </div>
+
+      {/* Advanced Filters Section */}
+      {showAdvanced && (
+        <div className="space-y-8 border-t border-gray-200 pt-8">
+          {/* Business Models */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Business Models
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {BUSINESS_MODELS.map((model) => (
+                <label key={model} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    value={model}
+                    {...register('preferred_business_models')}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">{model}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Business Age */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Business Age (Years)
+            </label>
+            <RangeSlider
+              min={0}
+              max={50}
+              step={1}
+              value={[watch('min_business_age') || 0, watch('max_business_age') || 50]}
+              onValueChange={([min, max]) => {
+                setValue('min_business_age', min);
+                setValue('max_business_age', max);
+              }}
+              formatValue={(value) => `${value} years`}
+            />
+          </div>
+
+          {/* Number of Employees */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Number of Employees
+            </label>
+            <RangeSlider
+              min={0}
+              max={1000}
+              step={5}
+              value={[watch('min_employees') || 0, watch('max_employees') || 1000]}
+              onValueChange={([min, max]) => {
+                setValue('min_employees', min);
+                setValue('max_employees', max);
+              }}
+              formatValue={(value) => `${value} employees`}
+            />
+          </div>
+
+          {/* Annual Revenue */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Annual Revenue (USD)
+            </label>
+            <RangeSlider
+              min={0}
+              max={10000000}
+              step={100000}
+              value={[watch('min_annual_revenue') || 0, watch('max_annual_revenue') || 10000000]}
+              onValueChange={([min, max]) => {
+                setValue('min_annual_revenue', min);
+                setValue('max_annual_revenue', max);
+              }}
+              formatValue={(value) => `$${value.toLocaleString()}`}
+            />
+          </div>
+
+          {/* Annual EBITDA */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Annual EBITDA (USD)
+            </label>
+            <RangeSlider
+              min={0}
+              max={5000000}
+              step={50000}
+              value={[watch('min_ebitda') || 0, watch('max_ebitda') || 5000000]}
+              onValueChange={([min, max]) => {
+                setValue('min_ebitda', min);
+                setValue('max_ebitda', max);
+              }}
+              formatValue={(value) => `$${value.toLocaleString()}`}
+            />
+          </div>
+
+          {/* Profit Margin */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Profit Margin (%)
+            </label>
+            <RangeSlider
+              min={0}
+              max={100}
+              step={1}
+              value={[watch('min_profit_margin') || 0, watch('max_profit_margin') || 100]}
+              onValueChange={([min, max]) => {
+                setValue('min_profit_margin', min);
+                setValue('max_profit_margin', max);
+              }}
+              formatValue={(value) => `${value}%`}
+            />
+          </div>
+
+          {/* Selling Multiple */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Selling Multiple
+            </label>
+            <RangeSlider
+              min={0}
+              max={20}
+              step={0.1}
+              value={[watch('min_selling_multiple') || 0, watch('max_selling_multiple') || 20]}
+              onValueChange={([min, max]) => {
+                setValue('min_selling_multiple', min);
+                setValue('max_selling_multiple', max);
+              }}
+              formatValue={(value) => `${value}x`}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-between pt-8">
+        <div>
+          {alertId && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="inline-flex items-center px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Delete Alert
+            </button>
+          )}
+        </div>
+        <div className="flex space-x-4">
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard')}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            {isLoading ? 'Saving...' : alertId ? 'Update Alert' : 'Create Alert'}
+          </button>
+        </div>
       </div>
     </form>
   );
-}
-
-export default PreferencesForm; 
+} 

@@ -66,7 +66,7 @@ class SchedulerService:
             
             # Then process regular newsletters
             users_result = self.db.client.table('users')\
-                .select('*, user_preferences(*)')\
+                .select('*, alerts(*)')\
                 .eq('subscription_status', 'active')\
                 .execute()
                 
@@ -76,17 +76,18 @@ class SchedulerService:
                 
             for user in users_result.data:
                 try:
-                    preferences = user.get('user_preferences')
-                    if not preferences:
+                    alerts = user.get('alerts', [])
+                    if not alerts:
                         continue
                         
-                    frequency = preferences.get('newsletter_frequency', 'daily')
-                    last_sent = preferences.get('last_notification_sent')
-                    
-                    if self.should_send_newsletter(frequency, last_sent):
-                        # Schedule the next newsletter based on frequency
-                        next_schedule = self.calculate_next_schedule(frequency)
-                        self.newsletter_service.schedule_newsletter(user['id'], next_schedule)
+                    for alert in alerts:
+                        frequency = alert.get('newsletter_frequency', 'daily')
+                        last_sent = alert.get('last_notification_sent')
+                        
+                        if self.should_send_newsletter(frequency, last_sent):
+                            # Schedule the next newsletter based on frequency
+                            next_schedule = self.calculate_next_schedule(frequency)
+                            self.newsletter_service.schedule_newsletter(user['id'], next_schedule)
                     
                 except Exception as e:
                     print(f"Error processing user {user.get('id')}: {str(e)}")
@@ -114,18 +115,18 @@ class SchedulerService:
                 
         return next_time
 
-    def matches_user_preferences(self, listing: Dict, preferences: Dict) -> bool:
-        """Check if a listing matches user preferences"""
+    def matches_user_preferences(self, listing: Dict, alert: Dict) -> bool:
+        """Check if a listing matches alert criteria"""
         try:
             # Check price range
-            if preferences.get('min_price') and listing['asking_price'] < preferences['min_price']:
+            if alert.get('min_price') and listing['asking_price'] < alert['min_price']:
                 return False
-            if preferences.get('max_price') and listing['asking_price'] > preferences['max_price']:
+            if alert.get('max_price') and listing['asking_price'] > alert['max_price']:
                 return False
                 
             # Check industries
-            if preferences.get('industries'):
-                user_industries = [ind.strip().lower() for ind in preferences['industries'].split(',')]
+            if alert.get('industries'):
+                user_industries = [ind.strip().lower() for ind in alert['industries']]
                 if listing.get('industry', '').lower() not in user_industries:
                     return False
                     
