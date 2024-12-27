@@ -17,54 +17,35 @@ class NewsletterService:
     def send_personalized_newsletters(self):
         """Send personalized newsletters to all users based on their preferences"""
         try:
-            # Get all user preferences
-            preferences_result = self.db.client.table('user_preferences')\
-                .select('*')\
+            # Get all alerts
+            alerts_result = self.db.client.table('alerts')\
+                .select('*, users!inner(*)')\
                 .execute()
                 
-            if not preferences_result.data:
-                print("ℹ️ No user preferences found")
+            if not alerts_result.data:
+                print("ℹ️ No alerts found")
                 return
                 
-            print(f"\n📊 Found {len(preferences_result.data)} users with preferences")
+            print(f"\n📊 Found {len(alerts_result.data)} alerts")
             
             success_count = 0
             error_count = 0
             skipped_count = 0
             
-            # Process each user
-            for user_preferences in preferences_result.data:
+            # Process each alert
+            for alert in alerts_result.data:
                 try:
-                    # Get the user data
-                    user_result = self.db.client.table('users')\
-                        .select('*')\
-                        .eq('id', user_preferences['user_id'])\
-                        .single()\
-                        .execute()
+                    user = alert['users']
+                    print(f"\n📧 Processing alert '{alert['name']}' for user: {user['email']}")
                     
-                    if not user_result.data:
-                        print(f"ℹ️ Skipping: User not found for preferences {user_preferences['id']}")
+                    # Get matching listings for this alert
+                    matching_listings = self.get_matching_listings(alert)
+                    
+                    if not matching_listings:
+                        print(f"ℹ️ Skipping: No matching listings found for alert '{alert['name']}'")
                         skipped_count += 1
                         continue
                         
-                    user = user_result.data
-                    print(f"\n📧 Processing user: {user['email']}")
-                    
-                    # Get matching listings for this user
-                    listings_result = self.db.client.table('listings')\
-                        .select('*')\
-                        .gte('asking_price', user_preferences.get('min_price', 0))\
-                        .lte('asking_price', user_preferences.get('max_price', float('inf')))\
-                        .in_('industry', user_preferences.get('industries', []))\
-                        .limit(3)\
-                        .execute()
-                        
-                    if not listings_result.data:
-                        print(f"ℹ️ Skipping: No matching listings found for user {user['email']}")
-                        skipped_count += 1
-                        continue
-                        
-                    matching_listings = listings_result.data
                     print(f"📑 Found {len(matching_listings)} matching listings")
                     
                     # Send newsletter
@@ -72,7 +53,7 @@ class NewsletterService:
                     email_id = self.send_newsletter(
                         user={
                             'email': user['email'],
-                            'preferences': user_preferences
+                            'alert': alert
                         },
                         listings=matching_listings
                     )
@@ -83,27 +64,20 @@ class NewsletterService:
                         
                         try:
                             # Update last notification sent timestamp
-                            self.db.client.table('user_preferences')\
+                            self.db.client.table('alerts')\
                                 .update({'last_notification_sent': datetime.now().isoformat()})\
-                                .eq('id', user_preferences['id'])\
+                                .eq('id', alert['id'])\
                                 .execute()
                         except Exception as e:
                             # If we can't update the timestamp, log it but don't count as an error
-                            print(f"⚠️ Could not update last_notification_sent for {user['email']}: {str(e)}")
+                            print(f"⚠️ Could not update last_notification_sent for alert '{alert['name']}': {str(e)}")
                     else:
                         print(f"❌ Failed to send newsletter to {user['email']}")
                         error_count += 1
                     
                 except Exception as e:
-                    if 'PGRST116' in str(e):
-                        print(f"ℹ️ Skipping: User data not found")
-                        skipped_count += 1
-                    elif 'PGRST204' in str(e):
-                        print(f"⚠️ Note: last_notification_sent column not found - continuing anyway")
-                        # Don't count this as an error
-                    else:
-                        print(f"❌ Error processing user {user_preferences.get('user_id')}: {str(e)}")
-                        error_count += 1
+                    print(f"❌ Error processing alert {alert.get('id')}: {str(e)}")
+                    error_count += 1
                     continue
             
             # Print summary
@@ -111,7 +85,7 @@ class NewsletterService:
             print(f"✅ Successfully sent: {success_count}")
             print(f"⚠️ Skipped: {skipped_count}")
             print(f"❌ Errors: {error_count}")
-            print(f"📧 Total processed: {len(preferences_result.data)}")
+            print(f"📧 Total processed: {len(alerts_result.data)}")
             
         except Exception as e:
             print(f"❌ Error in send_personalized_newsletters: {str(e)}")
@@ -121,7 +95,7 @@ class NewsletterService:
         """Send a newsletter to a single user"""
         try:
             # Create a newsletter log entry
-            log_id = self.db.create_newsletter_log(user['preferences']['user_id'])
+            log_id = self.db.create_newsletter_log(user['alert']['user_id'])
             
             # Create email content
             email_content = self.generate_html_content(user, listings)
@@ -130,7 +104,7 @@ class NewsletterService:
             params = {
                 "from": self.from_email,
                 "to": [user['email']],
-                "subject": "Your Personalized Deal Updates",
+                "subject": f"Your {user['alert']['name']} Deal Alert",
                 "html": email_content
             }
             
@@ -323,31 +297,32 @@ class NewsletterService:
                 </div>
             """
 
-        # Add the advanced criteria to the search criteria section
+        # Add the alert criteria to the search criteria section
+        alert = user['alert']
         advanced_criteria_html = ""
-        if user['preferences'].get('preferred_business_models') and len(user['preferences']['preferred_business_models']) > 0:
-            advanced_criteria_html += f"Business Models: {', '.join(user['preferences']['preferred_business_models'])}<br>"
-        if user['preferences'].get('min_business_age') is not None or user['preferences'].get('max_business_age') is not None:
-            advanced_criteria_html += f"Business Age: {user['preferences'].get('min_business_age', '0')} - {user['preferences'].get('max_business_age', 'Any')} years<br>"
-        if user['preferences'].get('min_employees') is not None or user['preferences'].get('max_employees') is not None:
-            advanced_criteria_html += f"Team Size: {user['preferences'].get('min_employees', '0')} - {user['preferences'].get('max_employees', 'Any')} employees<br>"
-        if user['preferences'].get('min_profit_margin') is not None or user['preferences'].get('max_profit_margin') is not None:
-            advanced_criteria_html += f"Profit Margin: {user['preferences'].get('min_profit_margin', '0')}% - {user['preferences'].get('max_profit_margin', 'Any')}%<br>"
-        if user['preferences'].get('min_selling_multiple') is not None or user['preferences'].get('max_selling_multiple') is not None:
-            advanced_criteria_html += f"Selling Multiple: {user['preferences'].get('min_selling_multiple', '0')}x - {user['preferences'].get('max_selling_multiple', 'Any')}x<br>"
-        if user['preferences'].get('min_ebitda') is not None or user['preferences'].get('max_ebitda') is not None:
-            advanced_criteria_html += f"EBITDA: {self.format_currency(user['preferences'].get('min_ebitda', 0))} - {self.format_currency(user['preferences'].get('max_ebitda', 'Any'))}<br>"
-        if user['preferences'].get('min_annual_revenue') is not None or user['preferences'].get('max_annual_revenue') is not None:
-            advanced_criteria_html += f"Annual Revenue: {self.format_currency(user['preferences'].get('min_annual_revenue', 0))} - {self.format_currency(user['preferences'].get('max_annual_revenue', 'Any'))}<br>"
+        if alert.get('preferred_business_models') and len(alert['preferred_business_models']) > 0:
+            advanced_criteria_html += f"Business Models: {', '.join(alert['preferred_business_models'])}<br>"
+        if alert.get('min_business_age') is not None or alert.get('max_business_age') is not None:
+            advanced_criteria_html += f"Business Age: {alert.get('min_business_age', '0')} - {alert.get('max_business_age', 'Any')} years<br>"
+        if alert.get('min_employees') is not None or alert.get('max_employees') is not None:
+            advanced_criteria_html += f"Team Size: {alert.get('min_employees', '0')} - {alert.get('max_employees', 'Any')} employees<br>"
+        if alert.get('min_profit_margin') is not None or alert.get('max_profit_margin') is not None:
+            advanced_criteria_html += f"Profit Margin: {alert.get('min_profit_margin', '0')}% - {alert.get('max_profit_margin', 'Any')}%<br>"
+        if alert.get('min_selling_multiple') is not None or alert.get('max_selling_multiple') is not None:
+            advanced_criteria_html += f"Selling Multiple: {alert.get('min_selling_multiple', '0')}x - {alert.get('max_selling_multiple', 'Any')}x<br>"
+        if alert.get('min_ebitda') is not None or alert.get('max_ebitda') is not None:
+            advanced_criteria_html += f"EBITDA: {self.format_currency(alert.get('min_ebitda', 0))} - {self.format_currency(alert.get('max_ebitda', 'Any'))}<br>"
+        if alert.get('min_annual_revenue') is not None or alert.get('max_annual_revenue') is not None:
+            advanced_criteria_html += f"Annual Revenue: {self.format_currency(alert.get('min_annual_revenue', 0))} - {self.format_currency(alert.get('max_annual_revenue', 'Any'))}<br>"
 
         search_criteria_html = f"""
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 10px 0;">Your Search Criteria:</h3>
+                <h3 style="margin: 0 0 10px 0;">Alert Criteria: {alert['name']}</h3>
                 <div style="margin: 5px 0;">
                     <strong>Basic Criteria:</strong><br>
-                    Price Range: {self.format_currency(user['preferences'].get('min_price', 0))} - 
-                               {self.format_currency(user['preferences'].get('max_price', 0))}<br>
-                    Industries: {', '.join(user['preferences'].get('industries', ['All']))}<br>
+                    Price Range: {self.format_currency(alert.get('min_price', 0))} - 
+                               {self.format_currency(alert.get('max_price', 0))}<br>
+                    Industries: {', '.join(alert.get('industries', ['All']))}<br>
                 </div>
                 {f'<div style="margin-top: 10px;"><strong>Advanced Criteria:</strong><br>{advanced_criteria_html}</div>' if advanced_criteria_html else ''}
             </div>
@@ -355,7 +330,7 @@ class NewsletterService:
         
         return f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h1 style="color: #333; padding: 20px 0;">Your Personalized Deal Alert</h1>
+                <h1 style="color: #333; padding: 20px 0;">{alert['name']} - Deal Alert</h1>
                 <p style="color: #666;">Here are new listings matching your criteria:</p>
                 
                 {search_criteria_html}
