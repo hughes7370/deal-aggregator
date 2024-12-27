@@ -189,8 +189,8 @@ class NewsletterService:
                 query = query.lte('number_of_employees', preferences['max_employees'])
 
             # Business Models
-            if preferences.get('business_models') and len(preferences['business_models']) > 0:
-                query = query.in_('business_model', preferences['business_models'])
+            if preferences.get('preferred_business_models') and len(preferences['preferred_business_models']) > 0:
+                query = query.in_('business_model', preferences['preferred_business_models'])
 
             # Profit Margin
             if preferences.get('min_profit_margin') is not None:
@@ -204,11 +204,11 @@ class NewsletterService:
             if preferences.get('max_selling_multiple') is not None:
                 query = query.lte('selling_multiple', preferences['max_selling_multiple'])
 
-            # Annual Profit
-            if preferences.get('min_annual_profit') is not None:
-                query = query.gte('ebitda', preferences['min_annual_profit'])
-            if preferences.get('max_annual_profit') is not None:
-                query = query.lte('ebitda', preferences['max_annual_profit'])
+            # EBITDA
+            if preferences.get('min_ebitda') is not None:
+                query = query.gte('ebitda', preferences['min_ebitda'])
+            if preferences.get('max_ebitda') is not None:
+                query = query.lte('ebitda', preferences['max_ebitda'])
 
             # Annual Revenue
             if preferences.get('min_annual_revenue') is not None:
@@ -325,8 +325,8 @@ class NewsletterService:
 
         # Add the advanced criteria to the search criteria section
         advanced_criteria_html = ""
-        if user['preferences'].get('business_models') and len(user['preferences']['business_models']) > 0:
-            advanced_criteria_html += f"Business Models: {', '.join(user['preferences']['business_models'])}<br>"
+        if user['preferences'].get('preferred_business_models') and len(user['preferences']['preferred_business_models']) > 0:
+            advanced_criteria_html += f"Business Models: {', '.join(user['preferences']['preferred_business_models'])}<br>"
         if user['preferences'].get('min_business_age') is not None or user['preferences'].get('max_business_age') is not None:
             advanced_criteria_html += f"Business Age: {user['preferences'].get('min_business_age', '0')} - {user['preferences'].get('max_business_age', 'Any')} years<br>"
         if user['preferences'].get('min_employees') is not None or user['preferences'].get('max_employees') is not None:
@@ -335,6 +335,10 @@ class NewsletterService:
             advanced_criteria_html += f"Profit Margin: {user['preferences'].get('min_profit_margin', '0')}% - {user['preferences'].get('max_profit_margin', 'Any')}%<br>"
         if user['preferences'].get('min_selling_multiple') is not None or user['preferences'].get('max_selling_multiple') is not None:
             advanced_criteria_html += f"Selling Multiple: {user['preferences'].get('min_selling_multiple', '0')}x - {user['preferences'].get('max_selling_multiple', 'Any')}x<br>"
+        if user['preferences'].get('min_ebitda') is not None or user['preferences'].get('max_ebitda') is not None:
+            advanced_criteria_html += f"EBITDA: {self.format_currency(user['preferences'].get('min_ebitda', 0))} - {self.format_currency(user['preferences'].get('max_ebitda', 'Any'))}<br>"
+        if user['preferences'].get('min_annual_revenue') is not None or user['preferences'].get('max_annual_revenue') is not None:
+            advanced_criteria_html += f"Annual Revenue: {self.format_currency(user['preferences'].get('min_annual_revenue', 0))} - {self.format_currency(user['preferences'].get('max_annual_revenue', 'Any'))}<br>"
 
         search_criteria_html = f"""
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
