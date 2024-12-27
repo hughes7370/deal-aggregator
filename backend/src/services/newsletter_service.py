@@ -163,6 +163,7 @@ class NewsletterService:
         try:
             query = self.db.client.table('listings').select('*')
             
+            # Basic Filters
             # Filter by price range if specified
             if preferences.get('min_price'):
                 query = query.gte('asking_price', preferences['min_price'])
@@ -171,9 +172,50 @@ class NewsletterService:
                 
             # Filter by industries if specified
             if preferences.get('industries'):
-                industries = preferences['industries'].split(',')
+                industries = preferences['industries'] if isinstance(preferences['industries'], list) else preferences['industries'].split(',')
                 query = query.in_('industry', industries)
-                
+
+            # Advanced Filters
+            # Business Age
+            if preferences.get('min_business_age') is not None:
+                query = query.gte('business_age', preferences['min_business_age'])
+            if preferences.get('max_business_age') is not None:
+                query = query.lte('business_age', preferences['max_business_age'])
+
+            # Number of Employees
+            if preferences.get('min_employees') is not None:
+                query = query.gte('number_of_employees', preferences['min_employees'])
+            if preferences.get('max_employees') is not None:
+                query = query.lte('number_of_employees', preferences['max_employees'])
+
+            # Business Models
+            if preferences.get('business_models') and len(preferences['business_models']) > 0:
+                query = query.in_('business_model', preferences['business_models'])
+
+            # Profit Margin
+            if preferences.get('min_profit_margin') is not None:
+                query = query.gte('profit_margin', preferences['min_profit_margin'])
+            if preferences.get('max_profit_margin') is not None:
+                query = query.lte('profit_margin', preferences['max_profit_margin'])
+
+            # Selling Multiple
+            if preferences.get('min_selling_multiple') is not None:
+                query = query.gte('selling_multiple', preferences['min_selling_multiple'])
+            if preferences.get('max_selling_multiple') is not None:
+                query = query.lte('selling_multiple', preferences['max_selling_multiple'])
+
+            # Annual Profit
+            if preferences.get('min_annual_profit') is not None:
+                query = query.gte('ebitda', preferences['min_annual_profit'])
+            if preferences.get('max_annual_profit') is not None:
+                query = query.lte('ebitda', preferences['max_annual_profit'])
+
+            # Annual Revenue
+            if preferences.get('min_annual_revenue') is not None:
+                query = query.gte('revenue', preferences['min_annual_revenue'])
+            if preferences.get('max_annual_revenue') is not None:
+                query = query.lte('revenue', preferences['max_annual_revenue'])
+            
             # Filter by time based on newsletter frequency
             frequency = preferences.get('newsletter_frequency', 'daily')
             last_sent = preferences.get('last_notification_sent')
@@ -205,7 +247,7 @@ class NewsletterService:
                 else:  # monthly
                     cutoff = datetime.now(UTC) - timedelta(days=30)
                 query = query.gt('created_at', cutoff.isoformat())
-                
+
             # Order by newest first and limit to reasonable number
             query = query.order('created_at', desc=True).limit(10)
             
@@ -232,18 +274,46 @@ class NewsletterService:
             
         listings_html = ""
         for listing in listings:
+            # Calculate metrics if not already present
+            profit_margin = listing.get('profit_margin')
+            if profit_margin is None and listing.get('revenue') and listing.get('ebitda'):
+                profit_margin = (listing['ebitda'] / listing['revenue']) * 100
+
+            selling_multiple = listing.get('selling_multiple')
+            if selling_multiple is None and listing.get('asking_price') and listing.get('ebitda'):
+                selling_multiple = listing['asking_price'] / listing['ebitda']
+
             listings_html += f"""
                 <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
                     <h3 style="margin: 0 0 10px 0;">{listing.get('title', 'Untitled Listing')}</h3>
-                    <div style="margin: 5px 0;">
-                        <strong>💰 Asking Price:</strong> {self.format_currency(listing.get('asking_price'))}
-                        <br>
-                        <strong>📈 Revenue:</strong> {self.format_currency(listing.get('revenue'))}
-                        <br>
-                        <strong>💵 EBITDA:</strong> {self.format_currency(listing.get('ebitda'))}
-                        <br>
-                        <strong>🏢 Industry:</strong> {listing.get('industry', 'Not specified')}
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
+                        <div>
+                            <strong>💰 Asking Price:</strong> {self.format_currency(listing.get('asking_price'))}
+                            <br>
+                            <strong>📈 Revenue:</strong> {self.format_currency(listing.get('revenue'))}
+                            <br>
+                            <strong>💵 EBITDA:</strong> {self.format_currency(listing.get('ebitda'))}
+                            <br>
+                            <strong>🏢 Industry:</strong> {listing.get('industry', 'Not specified')}
+                            <br>
+                            <strong>🤝 Listing Broker:</strong> {listing.get('source_platform', 'Not specified')}
+                        </div>
+                        <div>
+                            <strong>📊 Profit Margin:</strong> {f"{profit_margin:.1f}%" if profit_margin is not None else "Not available"}
+                            <br>
+                            <strong>📈 Selling Multiple:</strong> {f"{selling_multiple:.1f}x" if selling_multiple is not None else "Not available"}
+                            <br>
+                            <strong>⏳ Business Age:</strong> {f"{listing.get('business_age')} years" if listing.get('business_age') is not None else "Not specified"}
+                            <br>
+                            <strong>👥 Team Size:</strong> {f"{listing.get('number_of_employees')} employees" if listing.get('number_of_employees') is not None else "Not specified"}
+                        </div>
                     </div>
+
+                    <div style="margin: 10px 0;">
+                        <strong>💼 Business Model:</strong> {listing.get('business_model', 'Not specified')}
+                    </div>
+
                     <p style="margin: 10px 0;">{listing.get('description', '')[:200]}...</p>
                     <a href="{listing.get('listing_url', '#')}" 
                        style="display: inline-block; padding: 8px 15px; background-color: #007bff; 
@@ -253,20 +323,38 @@ class NewsletterService:
                 </div>
             """
 
+        # Add the advanced criteria to the search criteria section
+        advanced_criteria_html = ""
+        if user['preferences'].get('business_models') and len(user['preferences']['business_models']) > 0:
+            advanced_criteria_html += f"Business Models: {', '.join(user['preferences']['business_models'])}<br>"
+        if user['preferences'].get('min_business_age') is not None or user['preferences'].get('max_business_age') is not None:
+            advanced_criteria_html += f"Business Age: {user['preferences'].get('min_business_age', '0')} - {user['preferences'].get('max_business_age', 'Any')} years<br>"
+        if user['preferences'].get('min_employees') is not None or user['preferences'].get('max_employees') is not None:
+            advanced_criteria_html += f"Team Size: {user['preferences'].get('min_employees', '0')} - {user['preferences'].get('max_employees', 'Any')} employees<br>"
+        if user['preferences'].get('min_profit_margin') is not None or user['preferences'].get('max_profit_margin') is not None:
+            advanced_criteria_html += f"Profit Margin: {user['preferences'].get('min_profit_margin', '0')}% - {user['preferences'].get('max_profit_margin', 'Any')}%<br>"
+        if user['preferences'].get('min_selling_multiple') is not None or user['preferences'].get('max_selling_multiple') is not None:
+            advanced_criteria_html += f"Selling Multiple: {user['preferences'].get('min_selling_multiple', '0')}x - {user['preferences'].get('max_selling_multiple', 'Any')}x<br>"
+
+        search_criteria_html = f"""
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 10px 0;">Your Search Criteria:</h3>
+                <div style="margin: 5px 0;">
+                    <strong>Basic Criteria:</strong><br>
+                    Price Range: {self.format_currency(user['preferences'].get('min_price', 0))} - 
+                               {self.format_currency(user['preferences'].get('max_price', 0))}<br>
+                    Industries: {', '.join(user['preferences'].get('industries', ['All']))}<br>
+                </div>
+                {f'<div style="margin-top: 10px;"><strong>Advanced Criteria:</strong><br>{advanced_criteria_html}</div>' if advanced_criteria_html else ''}
+            </div>
+        """
+        
         return f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h1 style="color: #333; padding: 20px 0;">Your Personalized Deal Alert</h1>
                 <p style="color: #666;">Here are new listings matching your criteria:</p>
                 
-                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 10px 0;">Your Search Criteria:</h3>
-                    <p style="margin: 5px 0;">
-                        Price Range: {self.format_currency(user['preferences'].get('min_price', 0))} - 
-                                   {self.format_currency(user['preferences'].get('max_price', 0))}
-                        <br>
-                        Industries: {user['preferences'].get('industries', 'All')}
-                    </p>
-                </div>
+                {search_criteria_html}
                 
                 {listings_html}
                 

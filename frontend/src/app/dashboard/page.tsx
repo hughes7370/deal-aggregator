@@ -4,8 +4,48 @@ import Link from 'next/link';
 import { 
   BanknotesIcon, 
   BuildingOfficeIcon, 
-  BellIcon 
+  BellIcon,
+  AdjustmentsHorizontalIcon,
+  UsersIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CubeIcon
 } from "@heroicons/react/24/outline";
+
+// Helper function to format currency
+const formatCurrency = (amount: number | null) => {
+  if (amount === null) return 'Any';
+  return `$${amount.toLocaleString()}`;
+};
+
+// Helper function to format percentage
+const formatPercentage = (value: number | null) => {
+  if (value === null) return 'Any';
+  return `${value}%`;
+};
+
+// Helper function to format multiple
+const formatMultiple = (value: number | null) => {
+  if (value === null) return 'Any';
+  return `${value}x`;
+};
+
+// Helper function to check if any advanced filters are set
+const hasAdvancedFilters = (preferences: any) => {
+  return preferences.min_business_age !== null ||
+    preferences.max_business_age !== null ||
+    preferences.min_employees !== null ||
+    preferences.max_employees !== null ||
+    preferences.min_profit_margin !== null ||
+    preferences.max_profit_margin !== null ||
+    preferences.min_selling_multiple !== null ||
+    preferences.max_selling_multiple !== null ||
+    preferences.min_annual_profit !== null ||
+    preferences.max_annual_profit !== null ||
+    preferences.min_annual_revenue !== null ||
+    preferences.max_annual_revenue !== null ||
+    (preferences.business_models && preferences.business_models.length > 0);
+};
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -42,66 +82,185 @@ export default async function DashboardPage() {
         </div>
         
         {preferences ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Your Alert Preferences</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                We'll notify you when deals match these criteria
-              </p>
-            </div>
-            
-            <div className="px-6 py-6 divide-y divide-gray-200">
-              {/* Price Range */}
-              <div className="py-4 first:pt-0 last:pb-0">
-                <div className="flex items-center">
-                  <BanknotesIcon className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900">Investment Range</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      ${preferences.min_price.toLocaleString()} - ${preferences.max_price.toLocaleString()} USD
-                    </p>
+          <div className="space-y-6">
+            {/* Basic Preferences Card */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <h2 className="text-lg font-medium text-gray-900">Basic Preferences</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Your primary deal alert criteria
+                </p>
+              </div>
+              
+              <div className="px-6 py-6 divide-y divide-gray-200">
+                {/* Price Range */}
+                <div className="py-4 first:pt-0 last:pb-0">
+                  <div className="flex items-center">
+                    <BanknotesIcon className="h-5 w-5 text-gray-400 mr-3" />
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900">Investment Range</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        ${preferences.min_price.toLocaleString()} - ${preferences.max_price.toLocaleString()} USD
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Industries */}
-              <div className="py-4">
-                <div className="flex items-center">
-                  <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900">Target Industries</h3>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {preferences.industries.map((industry: string) => (
-                        <span
-                          key={industry}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
-                        >
-                          {industry}
-                        </span>
-                      ))}
+                {/* Industries */}
+                <div className="py-4">
+                  <div className="flex items-center">
+                    <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-3" />
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900">Target Industries</h3>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {preferences.industries.map((industry: string) => (
+                          <span
+                            key={industry}
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                          >
+                            {industry}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Alert Frequency */}
+                <div className="py-4">
+                  <div className="flex items-center">
+                    <BellIcon className="h-5 w-5 text-gray-400 mr-3" />
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900">Alert Frequency</h3>
+                      <p className="mt-1 text-sm text-gray-500 capitalize">
+                        Receiving {preferences.newsletter_frequency} updates
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Alert Frequency */}
-              <div className="py-4">
-                <div className="flex items-center">
-                  <BellIcon className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900">Alert Frequency</h3>
-                    <p className="mt-1 text-sm text-gray-500 capitalize">
-                      Receiving {preferences.newsletter_frequency} updates
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50">
+            {/* Advanced Preferences Card */}
+            {hasAdvancedFilters(preferences) && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-200">
+                  <h2 className="text-lg font-medium text-gray-900">Advanced Filters</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Additional criteria for more specific matches
+                  </p>
+                </div>
+                
+                <div className="px-6 py-6 divide-y divide-gray-200">
+                  {/* Business Age */}
+                  {(preferences.min_business_age !== null || preferences.max_business_age !== null) && (
+                    <div className="py-4 first:pt-0">
+                      <div className="flex items-center">
+                        <ClockIcon className="h-5 w-5 text-gray-400 mr-3" />
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">Business Age</h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {preferences.min_business_age || '0'} - {preferences.max_business_age || 'Any'} Years
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Number of Employees */}
+                  {(preferences.min_employees !== null || preferences.max_employees !== null) && (
+                    <div className="py-4">
+                      <div className="flex items-center">
+                        <UsersIcon className="h-5 w-5 text-gray-400 mr-3" />
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">Team Size</h3>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {preferences.min_employees || '0'} - {preferences.max_employees || 'Any'} Employees
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Business Models */}
+                  {preferences.business_models && preferences.business_models.length > 0 && (
+                    <div className="py-4">
+                      <div className="flex items-center">
+                        <CubeIcon className="h-5 w-5 text-gray-400 mr-3" />
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">Business Models</h3>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {preferences.business_models.map((model: string) => (
+                              <span
+                                key={model}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100"
+                              >
+                                {model}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Financial Metrics */}
+                  {(preferences.min_annual_revenue !== null || preferences.max_annual_revenue !== null ||
+                    preferences.min_annual_profit !== null || preferences.max_annual_profit !== null) && (
+                    <div className="py-4">
+                      <div className="flex items-center">
+                        <ChartBarIcon className="h-5 w-5 text-gray-400 mr-3" />
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">Financial Criteria</h3>
+                          <div className="mt-1 space-y-1">
+                            {(preferences.min_annual_revenue !== null || preferences.max_annual_revenue !== null) && (
+                              <p className="text-sm text-gray-500">
+                                Revenue: {formatCurrency(preferences.min_annual_revenue)} - {formatCurrency(preferences.max_annual_revenue)}
+                              </p>
+                            )}
+                            {(preferences.min_annual_profit !== null || preferences.max_annual_profit !== null) && (
+                              <p className="text-sm text-gray-500">
+                                Profit: {formatCurrency(preferences.min_annual_profit)} - {formatCurrency(preferences.max_annual_profit)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Performance Metrics */}
+                  {(preferences.min_profit_margin !== null || preferences.max_profit_margin !== null ||
+                    preferences.min_selling_multiple !== null || preferences.max_selling_multiple !== null) && (
+                    <div className="py-4">
+                      <div className="flex items-center">
+                        <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-400 mr-3" />
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">Performance Metrics</h3>
+                          <div className="mt-1 space-y-1">
+                            {(preferences.min_profit_margin !== null || preferences.max_profit_margin !== null) && (
+                              <p className="text-sm text-gray-500">
+                                Profit Margin: {formatPercentage(preferences.min_profit_margin)} - {formatPercentage(preferences.max_profit_margin)}
+                              </p>
+                            )}
+                            {(preferences.min_selling_multiple !== null || preferences.max_selling_multiple !== null) && (
+                              <p className="text-sm text-gray-500">
+                                Selling Multiple: {formatMultiple(preferences.min_selling_multiple)} - {formatMultiple(preferences.max_selling_multiple)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">
-                  Last updated: {new Date().toLocaleDateString()}
+                  Last updated: {new Date(preferences.updated_at).toLocaleDateString()}
                 </span>
                 <Link
                   href="/dashboard/preferences"
