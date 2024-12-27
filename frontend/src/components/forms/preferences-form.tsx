@@ -106,7 +106,7 @@ export default function PreferencesForm() {
     };
 
     fetchAlerts();
-  }, [user, alertId]);
+  }, [user, alertId, reset]);
 
   const onSubmit = async (data: PreferencesFormData) => {
     if (!user) return;
@@ -115,27 +115,27 @@ export default function PreferencesForm() {
     setError(null);
 
     try {
+      let result;
+      
       if (alertId) {
         // Update existing alert
-        const { error } = await supabase
+        result = await supabase
           .from('alerts')
           .update(data)
           .eq('id', alertId);
-
-        if (error) throw error;
       } else {
         // Create new alert
-        const { error } = await supabase
+        result = await supabase
           .from('alerts')
           .insert([{ ...data, user_id: user.id }]);
-
-        if (error) throw error;
       }
 
+      if (result.error) throw result.error;
+      
+      // Only redirect after successful operation
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -156,10 +156,15 @@ export default function PreferencesForm() {
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
-    } finally {
       setIsLoading(false);
     }
   };
+
+  // Show form only when creating or editing
+  if (!isCreating && !alertId && existingAlerts.length === 0) {
+    router.push('/dashboard');
+    return null;
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -210,7 +215,7 @@ export default function PreferencesForm() {
         )}
       </div>
 
-      {/* Rest of the existing form fields... */}
+      {/* Rest of the form fields... */}
 
       <div className="flex justify-between pt-8">
         <div>
