@@ -33,6 +33,26 @@ const preferencesSchema = z.object({
 
 type PreferencesFormData = z.infer<typeof preferencesSchema>;
 
+const INDUSTRIES = [
+  'SaaS',
+  'E-commerce',
+  'Digital Products',
+  'Services',
+  'Content',
+  'Advertising',
+  'Mobile Apps'
+];
+
+const BUSINESS_MODELS = [
+  'Subscription',
+  'Marketplace',
+  'Agency',
+  'E-commerce',
+  'Advertising',
+  'Consulting',
+  'Software Licensing'
+];
+
 export default function PreferencesForm() {
   const { user } = useUser();
   const router = useRouter();
@@ -41,7 +61,6 @@ export default function PreferencesForm() {
   const isCreating = searchParams.get('action') === 'create';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [existingAlerts, setExistingAlerts] = useState<any[]>([]);
 
   const {
     register,
@@ -54,8 +73,8 @@ export default function PreferencesForm() {
     resolver: zodResolver(preferencesSchema),
     defaultValues: {
       name: '',
-      min_price: 0,
-      max_price: 0,
+      min_price: null,
+      max_price: null,
       industries: [],
       newsletter_frequency: 'weekly',
       preferred_business_models: [],
@@ -79,33 +98,29 @@ export default function PreferencesForm() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // Fetch existing alerts for the dropdown
+  // Fetch alert data if editing
   useEffect(() => {
-    const fetchAlerts = async () => {
-      if (!user) return;
+    const fetchAlert = async () => {
+      if (!user || !alertId) return;
 
       const { data, error } = await supabase
         .from('alerts')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('id', alertId)
+        .eq('user_id', user.id)
+        .single();
 
       if (error) {
-        console.error('Error fetching alerts:', error);
+        console.error('Error fetching alert:', error);
         return;
       }
 
-      setExistingAlerts(data || []);
-
-      // If editing an existing alert, load its data
-      if (alertId) {
-        const alert = data?.find(a => a.id === alertId);
-        if (alert) {
-          reset(alert);
-        }
+      if (data) {
+        reset(data);
       }
     };
 
-    fetchAlerts();
+    fetchAlert();
   }, [user, alertId, reset]);
 
   const onSubmit = async (data: PreferencesFormData) => {
@@ -122,7 +137,8 @@ export default function PreferencesForm() {
         result = await supabase
           .from('alerts')
           .update(data)
-          .eq('id', alertId);
+          .eq('id', alertId)
+          .eq('user_id', user.id);
       } else {
         // Create new alert
         result = await supabase
@@ -150,7 +166,8 @@ export default function PreferencesForm() {
       const { error } = await supabase
         .from('alerts')
         .delete()
-        .eq('id', alertId);
+        .eq('id', alertId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
       router.push('/dashboard');
@@ -160,42 +177,11 @@ export default function PreferencesForm() {
     }
   };
 
-  // Show form only when creating or editing
-  if (!isCreating && !alertId && existingAlerts.length === 0) {
-    router.push('/dashboard');
-    return null;
-  }
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700">{error}</p>
-        </div>
-      )}
-
-      {/* Alert Selection */}
-      {!isCreating && existingAlerts.length > 0 && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Select Alert to Edit
-          </label>
-          <select
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            onChange={(e) => {
-              if (e.target.value) {
-                router.push(`/dashboard/preferences?id=${e.target.value}`);
-              }
-            }}
-            value={alertId || ''}
-          >
-            <option value="">Select an alert</option>
-            {existingAlerts.map((alert) => (
-              <option key={alert.id} value={alert.id}>
-                {alert.name}
-              </option>
-            ))}
-          </select>
         </div>
       )}
 
@@ -215,7 +201,236 @@ export default function PreferencesForm() {
         )}
       </div>
 
-      {/* Rest of the form fields... */}
+      {/* Newsletter Frequency */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Alert Frequency
+        </label>
+        <select
+          {...register('newsletter_frequency')}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        >
+          <option value="instantly">Instantly</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+
+      {/* Price Range */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Price Range (USD)
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              {...register('min_price', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Min Price"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              {...register('max_price', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Max Price"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Industries */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Target Industries
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {INDUSTRIES.map((industry) => (
+            <label key={industry} className="inline-flex items-center">
+              <input
+                type="checkbox"
+                value={industry}
+                {...register('industries')}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-700">{industry}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Business Models */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Business Models
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {BUSINESS_MODELS.map((model) => (
+            <label key={model} className="inline-flex items-center">
+              <input
+                type="checkbox"
+                value={model}
+                {...register('preferred_business_models')}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-700">{model}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Business Age */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Business Age (Years)
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              {...register('min_business_age', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Min Age"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              {...register('max_business_age', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Max Age"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Number of Employees */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Number of Employees
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              {...register('min_employees', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Min Employees"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              {...register('max_employees', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Max Employees"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Annual Revenue */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Annual Revenue (USD)
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              {...register('min_annual_revenue', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Min Revenue"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              {...register('max_annual_revenue', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Max Revenue"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Annual EBITDA */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Annual EBITDA (USD)
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              {...register('min_ebitda', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Min EBITDA"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              {...register('max_ebitda', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Max EBITDA"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Profit Margin */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Profit Margin (%)
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              {...register('min_profit_margin', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Min Margin"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              {...register('max_profit_margin', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Max Margin"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Selling Multiple */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Selling Multiple
+        </label>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <div>
+            <input
+              type="number"
+              {...register('min_selling_multiple', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Min Multiple"
+            />
+          </div>
+          <div>
+            <input
+              type="number"
+              {...register('max_selling_multiple', { valueAsNumber: true })}
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Max Multiple"
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="flex justify-between pt-8">
         <div>
