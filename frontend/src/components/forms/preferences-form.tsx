@@ -32,7 +32,7 @@ const preferencesSchema = z.object({
   max_business_age: z.number().min(0).nullable().default(null),
   min_employees: z.number().min(0).nullable().default(null),
   max_employees: z.number().min(0).nullable().default(null),
-  business_models: z.array(z.enum(BUSINESS_MODELS)).default([]), // Empty array means "all"
+  preferred_business_models: z.array(z.enum(BUSINESS_MODELS)).default([]), // Empty array means "all"
   min_profit_margin: z.number().min(0).max(100).nullable().default(null),
   max_profit_margin: z.number().min(0).max(100).nullable().default(null),
   min_selling_multiple: z.number().min(0).nullable().default(null),
@@ -173,7 +173,7 @@ export function PreferencesForm() {
       max_price: 0,
       industries: [],
       newsletter_frequency: "weekly",
-      business_models: [],
+      preferred_business_models: [],
       min_business_age: null,
       max_business_age: null,
       min_employees: null,
@@ -219,7 +219,7 @@ export function PreferencesForm() {
             max_price: data.max_price,
             industries: data.industries,
             newsletter_frequency: data.newsletter_frequency || "weekly",
-            business_models: data.business_models || [],
+            preferred_business_models: data.preferred_business_models || [],
             min_business_age: data.min_business_age,
             max_business_age: data.max_business_age,
             min_employees: data.min_employees,
@@ -503,7 +503,7 @@ export function PreferencesForm() {
                       <div className="flex h-6 items-center">
                         <input
                           type="checkbox"
-                          {...register('business_models')}
+                          {...register('preferred_business_models')}
                           value={model}
                           className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
@@ -514,8 +514,8 @@ export function PreferencesForm() {
                     </div>
                   ))}
                 </div>
-                {errors.business_models && (
-                  <p className="mt-2 text-sm text-red-600">{errors.business_models.message}</p>
+                {errors.preferred_business_models && (
+                  <p className="mt-2 text-sm text-red-600">{errors.preferred_business_models.message}</p>
                 )}
               </div>
             </div>
