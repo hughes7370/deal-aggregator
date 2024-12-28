@@ -200,8 +200,29 @@ class AcquireScraper(BaseScraper):
                                         'industry': self._extract_industry(item.get('listing_title', '')),
                                         'location': 'United States',  # Default for now
                                         'description': item.get('description', ''),
+                                        'full_description': item.get('description', ''),  # Same as description for now
+                                        'business_highlights': json.dumps([]),  # Empty array for now
+                                        'financial_details': json.dumps({
+                                            'revenue': self._parse_price(item.get('TTM_revenue', '0')),
+                                            'ebitda': self._parse_price(item.get('TTM_profit', '0')),
+                                            'asking_price': self._parse_price(item.get('asking_price', '0'))
+                                        }),
+                                        'business_details': json.dumps({
+                                            'location': 'United States',
+                                            'business_age': None,
+                                            'number_of_employees': None
+                                        }),
+                                        'raw_data': json.dumps(item),
                                         'status': 'active',
-                                        'raw_data': json.dumps(item)
+                                        'first_seen_at': datetime.utcnow().isoformat(),
+                                        'last_seen_at': datetime.utcnow().isoformat(),
+                                        'created_at': datetime.utcnow().isoformat(),
+                                        'updated_at': datetime.utcnow().isoformat(),
+                                        'business_age': None,
+                                        'number_of_employees': None,
+                                        'business_model': None,
+                                        'profit_margin': None,
+                                        'selling_multiple': None
                                     }
                                     
                                     # Skip listings with zero revenue, EBITDA, or asking price
@@ -212,6 +233,14 @@ class AcquireScraper(BaseScraper):
                                     
                                     print(f"\nFound listing: {json.dumps(formatted_listing, indent=2)}")
                                     listings.append(formatted_listing)
+                                    
+                                    # Store in database
+                                    try:
+                                        listing_id = self.supabase.store_listing(formatted_listing)
+                                        print(f"Stored listing {listing_id}: {formatted_listing.get('title')}")
+                                    except Exception as e:
+                                        print(f"Error storing listing in database: {e}")
+                                        
                                 except Exception as e:
                                     print(f"Error processing listing: {e}")
                                     continue
