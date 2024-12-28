@@ -10,4 +10,6 @@ pytest-mockito==0.0.4
 python-dateutil==2.9.0
 fake-http-header==0.3.5
 resend==0.7.2
+playwright==1.41.0
+agentql==0.1.0
 

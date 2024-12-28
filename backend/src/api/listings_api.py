@@ -78,6 +78,12 @@ def get_all_listings(limit: int = None, queries: Dict[str, Dict[str, str]] = Non
         all_results['VikingMergers'] = viking_mergers_results
         print(f"Found {len(viking_mergers_results)} listings from Viking Mergers")
     
+    print("\nFetching listings from Acquire...")
+    acquire_results = fetch_acquire_listings(max_pages=1)
+    if acquire_results:
+        all_results['Acquire'] = acquire_results
+        print(f"Found {len(acquire_results)} listings from Acquire")
+    
     return all_results
 
 def fetch_websiteclosers_listings(max_pages: int) -> List[Dict]:
@@ -398,12 +404,9 @@ class ListingDetailsScraper:
                 
         return enriched_listings
 
-def fetch_acquire_listings() -> List[Dict]:
-    """Fetch listings from Acquire"""
-    try:
-        scraper = AcquireScraper()
-        listings = scraper.get_listings()
-        return listings
-    except Exception as e:
-        print(f"Error fetching Acquire listings: {e}")
-        return []
+def fetch_acquire_listings(max_pages: int) -> List[Dict]:
+    """
+    Fetch listings from acquire.com
+    """
+    scraper = AcquireScraper()
+    return scraper.get_listings(max_pages=max_pages)

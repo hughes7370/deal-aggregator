@@ -187,8 +187,24 @@ class AcquireScraper(BaseScraper):
                         # Process the data
                         listing_data = data.get('listings', [])
                         if listing_data:
+                            # Get all existing listing URLs from the database
+                            listing_urls = [item.get('listing_url') for item in listing_data if item.get('listing_url')]
+                            existing_urls = self.supabase.get_existing_listing_urls(listing_urls)
+                            
                             for item in listing_data:
                                 try:
+                                    # Get listing URL
+                                    listing_url = item.get('listing_url')
+                                    
+                                    # Skip if listing URL is None
+                                    if not listing_url:
+                                        continue
+                                    
+                                    # Check if listing already exists
+                                    if listing_url in existing_urls:
+                                        print(f"Listing already exists: {listing_url}")
+                                        continue
+                                    
                                     # Format listing for storage
                                     formatted_listing = {
                                         'title': item.get('listing_title', ''),
