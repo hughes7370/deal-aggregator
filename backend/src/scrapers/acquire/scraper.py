@@ -189,17 +189,27 @@ class AcquireScraper(BaseScraper):
                         if listing_data:
                             for item in listing_data:
                                 try:
+                                    # Format listing for storage
                                     formatted_listing = {
                                         'title': item.get('listing_title', ''),
+                                        'listing_url': item.get('listing_url', ''),
+                                        'source_platform': 'Acquire',
+                                        'asking_price': self._parse_price(item.get('asking_price', '0')),
+                                        'revenue': self._parse_price(item.get('TTM_revenue', '0')),
+                                        'ebitda': self._parse_price(item.get('TTM_profit', '0')),
+                                        'industry': self._extract_industry(item.get('listing_title', '')),
+                                        'location': 'United States',  # Default for now
                                         'description': item.get('description', ''),
-                                        'revenue': item.get('TTM_revenue', ''),
-                                        'cash_flow': item.get('TTM_profit', ''),
-                                        'price': item.get('asking_price', ''),
-                                        'url': item.get('listing_url', ''),
-                                        'source': 'acquire',
-                                        'created_at': datetime.utcnow().isoformat(),
-                                        'updated_at': datetime.utcnow().isoformat()
+                                        'status': 'active',
+                                        'raw_data': json.dumps(item)
                                     }
+                                    
+                                    # Skip listings with zero revenue, EBITDA, or asking price
+                                    if formatted_listing['revenue'] == 0 or formatted_listing['ebitda'] == 0 or formatted_listing['asking_price'] == 0:
+                                        print(f"Skipping listing with zero financial values: {formatted_listing['listing_url']}")
+                                        print(f"Revenue: ${formatted_listing['revenue']:,}, EBITDA: ${formatted_listing['ebitda']:,}, Asking Price: ${formatted_listing['asking_price']:,}")
+                                        continue
+                                    
                                     print(f"\nFound listing: {json.dumps(formatted_listing, indent=2)}")
                                     listings.append(formatted_listing)
                                 except Exception as e:
@@ -227,24 +237,37 @@ class AcquireScraper(BaseScraper):
         except Exception as e:
             print(f"Fatal error in Acquire scraper: {e}")
         
-        # Store listings in Supabase
-        if listings:
-            try:
-                print(f"\nStoring {len(listings)} listings in Supabase...")
-                for listing in listings:
-                    try:
-                        # Insert or update based on title and source
-                        result = self.supabase.table('listings').upsert(
-                            listing,
-                            on_conflict='title,source'
-                        ).execute()
-                        print(f"Stored listing: {listing['title']}")
-                    except Exception as e:
-                        print(f"Error storing listing {listing['title']}: {e}")
-            except Exception as e:
-                print(f"Error storing listings in Supabase: {e}")
-        
         return listings
+
+    def _parse_price(self, price_str: str) -> int:
+        """Convert price string to integer"""
+        try:
+            # Remove currency symbols and spaces
+            price_str = str(price_str).replace('$', '').replace(',', '').strip().lower()
+            
+            # Handle different formats
+            if 'm' in price_str:
+                return int(float(price_str.replace('m', '')) * 1000000)
+            elif 'k' in price_str:
+                return int(float(price_str.replace('k', '')) * 1000)
+            else:
+                return int(float(price_str))
+        except:
+            return 0
+
+    def _extract_industry(self, title: str) -> str:
+        """Extract industry from listing title"""
+        title = title.lower()
+        if any(term in title for term in ['saas', 'software', 'tech', 'app']):
+            return 'Software/SaaS'
+        elif any(term in title for term in ['ecommerce', 'e-commerce', 'amazon', 'shopify']):
+            return 'Ecommerce'
+        elif any(term in title for term in ['manufacturing', 'factory', 'production']):
+            return 'Manufacturing'
+        elif any(term in title for term in ['service', 'consulting', 'agency']):
+            return 'Service'
+        else:
+            return 'Other'
 
     def _do_login(self, page):
         """Helper method to perform login"""
