@@ -3,7 +3,8 @@ from datetime import datetime
 import os
 import json
 import requests
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+from agentql import wrap
 from ..base_scraper import BaseScraper
 from backend.src.database.supabase_db import SupabaseClient
 from config.search_queries import BASE_URLS
@@ -101,210 +102,191 @@ class AcquireScraper(BaseScraper):
             return False
 
     def get_listings(self, max_pages: int = 1) -> List[Dict]:
-        """Get listings from Acquire using AgentQL and fallback to Playwright"""
-        listings = []
-        
-        try:
-            # First authenticate
-            if not self._authenticate():
-                print("Failed to authenticate with Acquire")
-                return []
-            
-            # Use the stored cookies
-            if self.auth_cookies:
-                self.headers["Cookie"] = self.auth_cookies
-            else:
-                print("Warning: Could not set Cookie header because 'auth_cookies' is empty.")
-            
-            payload = {
-                "query": """
-                {
-                    listing_cards[] {
-                        business_name: h3, h2, div[class*='title'] { text }
-                        business_description: p, div[class*='description'] { text }
-                        annual_revenue: div[class*='metric']:nth-child(1) { text }
-                        annual_profit: div[class*='metric']:nth-child(2) { text }
-                        asking_price: div[class*='metric']:nth-child(3) { text }
-                        business_location: div[class*='detail']:nth-child(1) { text }
-                        team_size: div[class*='detail']:nth-child(2) { text }
-                        founded_year: div[class*='detail']:nth-child(3) { text }
-                        business_category: div[class*='detail']:nth-child(4) { text }
-                    }
-                }
-                """,
-                "url": self.base_url,
-                "params": {
-                    "wait_for": 30,
-                    "mode": "standard",
-                    "is_scroll_to_bottom_enabled": True
-                }
-            }
-            
-            print("\nAttempting to fetch listings via AgentQL...")
-            print(f"Using URL: {self.base_url}")
-            print(f"Headers: {json.dumps(self.headers, indent=2)}")
-            
-            response = requests.post(self.agentql_api_url, headers=self.headers, json=payload)
-            
-            if response.status_code != 200:
-                print(f"AgentQL error response: {response.text}")
-                return self._get_listings_with_playwright()
-            
-            data = response.json()
-            listing_cards = data.get('data', {}).get('listing_cards', [])
-            
-            if not listing_cards:
-                print("No listings found via AgentQL, falling back to Playwright...")
-                return self._get_listings_with_playwright()
-            
-            # Process listings
-            for card in listing_cards:
-                try:
-                    formatted_listing = {
-                        'title': card.get('business_name', [{}])[0].get('text', ''),
-                        'description': card.get('business_description', [{}])[0].get('text', ''),
-                        'revenue': card.get('annual_revenue', [{}])[0].get('text', ''),
-                        'cash_flow': card.get('annual_profit', [{}])[0].get('text', ''),
-                        'price': card.get('asking_price', [{}])[0].get('text', ''),
-                        'location': card.get('business_location', [{}])[0].get('text', ''),
-                        'employees': card.get('team_size', [{}])[0].get('text', ''),
-                        'established_year': card.get('founded_year', [{}])[0].get('text', ''),
-                        'industry': card.get('business_category', [{}])[0].get('text', '')
-                    }
-                    
-                    print(f"\nFound listing via AgentQL: {json.dumps(formatted_listing, indent=2)}")
-                    listings.append(formatted_listing)
-                    
-                except Exception as e:
-                    print(f"Error processing listing data: {e}")
-                    continue
-            
-        except Exception as e:
-            print(f"Error in Acquire scraper: {e}")
-            return self._get_listings_with_playwright()
-            
-        return listings
-
-    def _get_listings_with_playwright(self) -> List[Dict]:
-        """Backup method to get listings using Playwright directly"""
+        """Get listings from Acquire using direct AgentQL query"""
         listings = []
         
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=False)
                 context = browser.new_context()
-                
-                # Load stored state if available
-                if os.path.exists(self.login_state_path):
-                    context.storage_state(path=self.login_state_path)
-                
                 page = context.new_page()
-                page.goto(self.base_url)
                 
-                # Wait for page load
-                print("Waiting for listings page to load...")
-                page.wait_for_load_state('networkidle')
-                page.wait_for_load_state('domcontentloaded')
-                page.wait_for_load_state('load')
+                # Set longer default timeout
+                page.set_default_timeout(60000)  # 60 seconds
                 
-                # Wait for React app to initialize
-                print("Waiting for React app to initialize...")
-                page.wait_for_selector("div#root", timeout=30000)
-                page.wait_for_timeout(5000)
-                
-                # Take a screenshot for debugging
-                print("\nTaking screenshot...")
-                page.screenshot(path="acquire_listings.png")
-                
-                # Print page content for debugging
-                print("\nPage content:")
-                content = page.content()
-                print(content[:1000])
-                
-                # Scroll to trigger content loading
-                print("Scrolling page to trigger content loading...")
-                page.evaluate("""
-                    window.scrollTo({
-                        top: document.body.scrollHeight,
-                        behavior: 'smooth'
-                    });
-                """)
-                page.wait_for_timeout(5000)
-                
-                # Try different selectors to find listings
-                selectors = [
-                    "div[class*='ListingCard']",  # React component naming convention
-                    "div[class*='listing-card']",  # Kebab case
-                    "div[class*='listingCard']",   # Camel case
-                    "div[class*='card']",
-                    "div[class*='business']",
-                    "div[class*='listing']",
-                    "div[class*='Card']",          # PascalCase
-                    "div[class*='item']",          # Generic
-                    "div[class*='Item']",          # PascalCase
-                ]
-                
-                listing_elements = []
-                for selector in selectors:
-                    print(f"\nTrying selector: {selector}")
-                    elements = page.query_selector_all(selector)
-                    print(f"Found {len(elements)} elements")
-                    if elements:
-                        listing_elements = elements
-                        print("Sample element HTML:")
-                        print(elements[0].inner_html()[:200])
-                        break
-                
-                if not listing_elements:
-                    print("No listing elements found")
-                    return []
-                
-                print(f"\nProcessing {len(listing_elements)} listings...")
-                for element in listing_elements:
+                try:
+                    # First try to use stored state
+                    if os.path.exists(self.login_state_path):
+                        print("Found stored login state, restoring...")
+                        context.storage_state(path=self.login_state_path)
+                        
+                        # Try accessing listings page directly
+                        print("Attempting to access listings with stored state...")
+                        page.goto(self.base_url)
+                        page.wait_for_timeout(5000)  # Short wait for initial load
+                        
+                        # If we're still on the login page, stored state is invalid
+                        if '/signin' in page.url:
+                            print("Stored login state expired, logging in again...")
+                            os.remove(self.login_state_path)
+                            
+                            # Navigate to login page
+                            print("Navigating to login page...")
+                            page.goto(self.login_url)
+                            page.wait_for_timeout(2000)
+                            
+                            print("Filling login form...")
+                            email_input = page.wait_for_selector("input.input.special-input[inputmode='email']")
+                            email_input.fill("suncrestcap@gmail.com")
+                            page.wait_for_timeout(1000)
+                            
+                            password_input = page.wait_for_selector("input.input.special-input[type='password']")
+                            password_input.fill("6aZ!GF7^r*B^hyyVBA")
+                            page.wait_for_timeout(1000)
+                            
+                            login_button = page.wait_for_selector("button.btn.btn-main.btn-action.btn-full-width.sign-in")
+                            login_button.click()
+                            
+                            print("Waiting for login to complete...")
+                            page.wait_for_timeout(5000)
+                            
+                            # Store login state for next time
+                            print("Storing login state...")
+                            context.storage_state(path=self.login_state_path)
+                            
+                            # Navigate to listings page
+                            print("\nNavigating to listings page...")
+                            page.goto(self.base_url)
+                    
+                    print("Waiting 30 seconds for content to load...")
+                    page.wait_for_timeout(30000)  # Wait 30 seconds for everything to load
+                    
+                    print("Page URL:", page.url)
+                    
+                    # Wrap the page with AgentQL
+                    print("Initializing AgentQL...")
+                    agentql_page = wrap(page)
+                    
+                    print("Executing AgentQL query (this may take a minute)...")
                     try:
-                        # Extract data using various selectors
-                        title = element.query_selector("h3, h2, div[class*='title']")
-                        title_text = title.inner_text() if title else ""
-                        
-                        desc = element.query_selector("p, div[class*='description']")
-                        desc_text = desc.inner_text() if desc else ""
-                        
-                        # Extract metrics (revenue, profit, price)
-                        metrics = element.query_selector_all("div[class*='metric'] span, div[class*='value'] span")
-                        revenue = metrics[0].inner_text() if len(metrics) > 0 else ""
-                        profit = metrics[1].inner_text() if len(metrics) > 1 else ""
-                        price = metrics[2].inner_text() if len(metrics) > 2 else ""
-                        
-                        # Extract details (location, team size, founded year, category)
-                        details = element.query_selector_all("div[class*='detail'] span, div[class*='info'] span")
-                        location = details[0].inner_text() if len(details) > 0 else ""
-                        team_size = details[1].inner_text() if len(details) > 1 else ""
-                        founded_year = details[2].inner_text() if len(details) > 2 else ""
-                        category = details[3].inner_text() if len(details) > 3 else ""
-                        
-                        formatted_listing = {
-                            'title': title_text,
-                            'description': desc_text,
-                            'revenue': revenue,
-                            'cash_flow': profit,
-                            'price': price,
-                            'location': location,
-                            'employees': team_size,
-                            'established_year': founded_year,
-                            'industry': category
+                        data = agentql_page.query_data("""
+                        {
+                            listings[] {
+                                listing_title
+                                description
+                                TTM_revenue
+                                TTM_profit
+                                asking_price
+                                listing_url
+                            }
                         }
+                        """)
                         
-                        print(f"\nFound listing via Playwright: {json.dumps(formatted_listing, indent=2)}")
-                        listings.append(formatted_listing)
+                        print("Raw AgentQL response:", json.dumps(data, indent=2))
                         
+                        # Process the data
+                        listing_data = data.get('listings', [])
+                        if listing_data:
+                            for item in listing_data:
+                                try:
+                                    formatted_listing = {
+                                        'title': item.get('listing_title', ''),
+                                        'description': item.get('description', ''),
+                                        'revenue': item.get('TTM_revenue', ''),
+                                        'cash_flow': item.get('TTM_profit', ''),
+                                        'price': item.get('asking_price', ''),
+                                        'url': item.get('listing_url', ''),
+                                        'source': 'acquire',
+                                        'created_at': datetime.utcnow().isoformat(),
+                                        'updated_at': datetime.utcnow().isoformat()
+                                    }
+                                    print(f"\nFound listing: {json.dumps(formatted_listing, indent=2)}")
+                                    listings.append(formatted_listing)
+                                except Exception as e:
+                                    print(f"Error processing listing: {e}")
+                                    continue
+                        else:
+                            print("No listings found in the response")
+                            # Take a screenshot for debugging
+                            page.screenshot(path="debug_screenshot.png")
+                            print("Saved debug screenshot to debug_screenshot.png")
+                    
                     except Exception as e:
-                        print(f"Error extracting listing data: {e}")
-                        continue
-                
+                        print(f"Error during AgentQL query: {e}")
+                        # Take a screenshot for debugging
+                        page.screenshot(path="agentql_error.png")
+                        print("Saved error screenshot to agentql_error.png")
+                    
+                except PlaywrightTimeoutError as e:
+                    print(f"Timeout error: {e}")
+                except Exception as e:
+                    print(f"Error during scraping: {e}")
+                finally:
+                    browser.close()
+        
         except Exception as e:
-            print(f"Error in Playwright scraping: {e}")
-            
+            print(f"Fatal error in Acquire scraper: {e}")
+        
+        # Store listings in Supabase
+        if listings:
+            try:
+                print(f"\nStoring {len(listings)} listings in Supabase...")
+                for listing in listings:
+                    try:
+                        # Insert or update based on title and source
+                        result = self.supabase.table('listings').upsert(
+                            listing,
+                            on_conflict='title,source'
+                        ).execute()
+                        print(f"Stored listing: {listing['title']}")
+                    except Exception as e:
+                        print(f"Error storing listing {listing['title']}: {e}")
+            except Exception as e:
+                print(f"Error storing listings in Supabase: {e}")
+        
         return listings
+
+    def _do_login(self, page):
+        """Helper method to perform login"""
+        print("Filling login form...")
+        email_input = page.wait_for_selector("input.input.special-input[inputmode='email']")
+        email_input.fill("suncrestcap@gmail.com")
+        page.wait_for_timeout(1000)
+        
+        password_input = page.wait_for_selector("input.input.special-input[type='password']")
+        password_input.fill("6aZ!GF7^r*B^hyyVBA")
+        page.wait_for_timeout(1000)
+        
+        login_button = page.wait_for_selector("button.btn.btn-main.btn-action.btn-full-width.sign-in")
+        login_button.click()
+        
+        print("Waiting for login to complete...")
+        page.wait_for_load_state('networkidle')
+        
+        # Store login state
+        print("Storing login state...")
+        context = page.context
+        context.storage_state(path=self.login_state_path)
+        
+        # Navigate to listings page and wait for it to be interactive
+        print("\nNavigating to listings page...")
+        page.goto(self.base_url)
+        
+        print("Waiting for page to be interactive...")
+        # Wait for network activity to settle
+        page.wait_for_load_state('networkidle')
+        
+        # Wait for React to mount and render
+        page.wait_for_function("""
+            () => {
+                // Check if main content area exists and has children
+                const mainContent = document.querySelector('div[role="main"]');
+                return mainContent && mainContent.children.length > 0;
+            }
+        """)
+        
+        # Wait a bit for any final renders
+        page.wait_for_timeout(2000)
 
     def get_listing_details(self, listing_url: str) -> Optional[Dict]:
         """Get detailed information from a listing page"""
