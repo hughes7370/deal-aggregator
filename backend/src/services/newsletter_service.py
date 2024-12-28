@@ -343,11 +343,11 @@ class NewsletterService:
             </div>
         """
 
-    def schedule_newsletter(self, user_id: str, scheduled_for: datetime) -> str:
+    def schedule_newsletter(self, user_id: str, scheduled_for: datetime, alert_id: str = None) -> str:
         """Schedule a newsletter for future delivery"""
         try:
-            # Create a newsletter log entry with scheduled time
-            log_id = self.db.create_newsletter_log(user_id, scheduled_for)
+            # Create a newsletter log entry with scheduled time and alert ID
+            log_id = self.db.create_newsletter_log(user_id, scheduled_for, alert_id)
             print(f"📅 Scheduled newsletter for user {user_id} at {scheduled_for}")
             return log_id
         except Exception as e:
@@ -368,9 +368,20 @@ class NewsletterService:
             
             for newsletter in pending_newsletters:
                 try:
+                    # Get alert data if alert_id is present
+                    alert = None
+                    if newsletter.get('alert_id'):
+                        alert_result = self.db.client.table('alerts')\
+                            .select('*')\
+                            .eq('id', newsletter['alert_id'])\
+                            .single()\
+                            .execute()
+                        if alert_result.data:
+                            alert = alert_result.data
+                    
                     # Get user data
                     user_result = self.db.client.table('users')\
-                        .select('*, user_preferences(*)')\
+                        .select('*')\
                         .eq('id', newsletter['user_id'])\
                         .single()\
                         .execute()
@@ -381,29 +392,33 @@ class NewsletterService:
                         continue
                         
                     user = user_result.data
-                    preferences = user.get('user_preferences')
                     
-                    if not preferences:
-                        print(f"⚠️ No preferences found for user {user['email']}")
-                        self.db.update_newsletter_status(newsletter['id'], 'failed', 'No user preferences found')
+                    if not alert:
+                        print(f"⚠️ No alert found for newsletter {newsletter['id']}")
+                        self.db.update_newsletter_status(newsletter['id'], 'failed', 'Alert not found')
                         continue
                     
                     # Get matching listings
-                    matching_listings = self.get_matching_listings(preferences)
+                    matching_listings = self.get_matching_listings(alert)
                     
                     if not matching_listings:
-                        print(f"ℹ️ No matching listings for user {user['email']}")
+                        print(f"ℹ️ No matching listings for alert '{alert['name']}'")
                         self.db.update_newsletter_status(newsletter['id'], 'skipped', 'No matching listings')
                         continue
                     
                     # Send the newsletter
                     email_id = self.send_newsletter(
-                        user={'email': user['email'], 'preferences': preferences},
+                        user={'email': user['email'], 'alert': alert},
                         listings=matching_listings
                     )
                     
                     if email_id:
-                        print(f"✅ Scheduled newsletter sent successfully to {user['email']}")
+                        print(f"✅ Scheduled newsletter sent successfully to {user['email']}!")
+                        # Update last notification sent timestamp
+                        self.db.client.table('alerts')\
+                            .update({'last_notification_sent': datetime.now().isoformat()})\
+                            .eq('id', alert['id'])\
+                            .execute()
                     else:
                         print(f"❌ Failed to send scheduled newsletter to {user['email']}")
                     
@@ -414,3 +429,4 @@ class NewsletterService:
                     
         except Exception as e:
             print(f"❌ Error processing scheduled newsletters: {str(e)}")
+            raise

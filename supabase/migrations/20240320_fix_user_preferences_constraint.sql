@@ -1,9 +1,9 @@
 -- Drop existing foreign key constraint
-ALTER TABLE user_preferences
-DROP CONSTRAINT IF EXISTS fk_user_preferences_user;
+ALTER TABLE alerts
+DROP CONSTRAINT IF EXISTS alerts_user_id_fkey;
 
 -- Drop existing index
-DROP INDEX IF EXISTS idx_user_preferences_user_id;
+DROP INDEX IF EXISTS idx_alerts_user_id;
 
 -- Create trigger function to ensure user exists
 CREATE OR REPLACE FUNCTION ensure_user_exists()
@@ -18,18 +18,18 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger
-DROP TRIGGER IF EXISTS ensure_user_exists_trigger ON user_preferences;
+DROP TRIGGER IF EXISTS ensure_user_exists_trigger ON alerts;
 CREATE TRIGGER ensure_user_exists_trigger
-BEFORE INSERT OR UPDATE ON user_preferences
+BEFORE INSERT OR UPDATE ON alerts
 FOR EACH ROW
 EXECUTE FUNCTION ensure_user_exists();
 
 -- Add the foreign key constraint back
-ALTER TABLE user_preferences
-ADD CONSTRAINT fk_user_preferences_user
+ALTER TABLE alerts
+ADD CONSTRAINT alerts_user_id_fkey
 FOREIGN KEY (user_id)
 REFERENCES users(id)
 ON DELETE CASCADE;
 
 -- Recreate the index
-CREATE INDEX idx_user_preferences_user_id ON user_preferences(user_id); 
+CREATE INDEX idx_alerts_user_id ON alerts(user_id); 

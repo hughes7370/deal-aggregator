@@ -21,7 +21,13 @@ class SchedulerService:
             CronTrigger(hour=1, minute=0)
         )
         
-        # Check for newsletters every hour
+        # Schedule instant alerts one hour after scraping
+        self.scheduler.add_job(
+            self.process_instant_alerts,
+            CronTrigger(hour=2, minute=0)
+        )
+        
+        # Check for regular newsletters every hour
         self.scheduler.add_job(
             self.process_newsletters,
             CronTrigger(minute=0)
@@ -32,8 +38,40 @@ class SchedulerService:
             # Import and run main scraper
             from ...main import run_scrapers
             run_scrapers()
+            print("✅ Scraper completed, instant alerts will be processed in one hour")
         except Exception as e:
             print(f"Error running scraper: {str(e)}")
+
+    def process_instant_alerts(self):
+        """Process instant alerts after new listings are scraped"""
+        try:
+            # Get all instant alerts
+            alerts_result = self.db.client.table('alerts')\
+                .select('*, users!inner(*)')\
+                .eq('newsletter_frequency', 'instantly')\
+                .execute()
+
+            if not alerts_result.data:
+                print("No instant alerts found")
+                return
+
+            print(f"Processing {len(alerts_result.data)} instant alerts")
+            
+            for alert in alerts_result.data:
+                try:
+                    # Schedule the alert to be sent
+                    next_schedule = datetime.now(UTC) + timedelta(minutes=5)
+                    self.newsletter_service.schedule_newsletter(
+                        alert['user_id'],
+                        next_schedule,
+                        alert_id=alert['id']
+                    )
+                except Exception as e:
+                    print(f"Error scheduling instant alert {alert.get('id')}: {str(e)}")
+                    continue
+
+        except Exception as e:
+            print(f"Error processing instant alerts: {str(e)}")
             
     def should_send_newsletter(self, frequency: str, last_sent: str = None) -> bool:
         """Determine if a newsletter should be sent based on frequency and last send time"""
@@ -44,7 +82,10 @@ class SchedulerService:
             last_sent_dt = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
             now = datetime.now(UTC)
             
-            if frequency == 'daily':
+            if frequency == 'instantly':
+                # Instant alerts are handled separately
+                return False
+            elif frequency == 'daily':
                 # Send if last sent was more than 20 hours ago
                 return (now - last_sent_dt) > timedelta(hours=20)
             elif frequency == 'weekly':
@@ -59,7 +100,7 @@ class SchedulerService:
             return False
 
     def process_newsletters(self):
-        """Process newsletters for all users"""
+        """Process regular (non-instant) newsletters for all users"""
         try:
             # First process any scheduled newsletters that are due
             self.newsletter_service.process_scheduled_newsletters()
@@ -82,12 +123,19 @@ class SchedulerService:
                         
                     for alert in alerts:
                         frequency = alert.get('newsletter_frequency', 'daily')
+                        # Skip instant alerts as they're handled separately
+                        if frequency == 'instantly':
+                            continue
+                            
                         last_sent = alert.get('last_notification_sent')
-                        
                         if self.should_send_newsletter(frequency, last_sent):
                             # Schedule the next newsletter based on frequency
                             next_schedule = self.calculate_next_schedule(frequency)
-                            self.newsletter_service.schedule_newsletter(user['id'], next_schedule)
+                            self.newsletter_service.schedule_newsletter(
+                                user['id'],
+                                next_schedule,
+                                alert_id=alert['id']
+                            )
                     
                 except Exception as e:
                     print(f"Error processing user {user.get('id')}: {str(e)}")
@@ -100,7 +148,10 @@ class SchedulerService:
         """Calculate the next schedule time based on frequency"""
         now = datetime.now(UTC)
         
-        if frequency == 'daily':
+        if frequency == 'instantly':
+            # Schedule instant alerts for 5 minutes from now
+            next_time = now + timedelta(minutes=5)
+        elif frequency == 'daily':
             # Schedule for tomorrow at 9 AM UTC
             next_time = (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
         elif frequency == 'weekly':
