@@ -3,7 +3,10 @@ services:
     name: deal-aggregator-backend
     env: python
     region: oregon
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install
+      playwright install-deps
     startCommand: python -m src.services.scheduler_service & uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
