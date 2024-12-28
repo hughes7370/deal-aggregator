@@ -38,4 +38,11 @@ LISTING_DETAILS_QUERY = """
         payroll
     }
 }
+"""
+
+# Query specifically for description from listing detail page
+DESCRIPTION_QUERY = """
+{
+    description_text
+}
 """ 

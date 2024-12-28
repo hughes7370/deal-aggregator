@@ -4,7 +4,7 @@ import requests
 import os
 from ..base_scraper import BaseScraper
 from backend.src.database.supabase_db import SupabaseClient
-from .selectors import LISTING_QUERY, LISTING_DETAILS_QUERY
+from .selectors import LISTING_QUERY, LISTING_DETAILS_QUERY, DESCRIPTION_QUERY
 from datetime import datetime
 from config.search_queries import BASE_URLS
 
@@ -77,6 +77,10 @@ class QuietLightScraper(BaseScraper):
                         print(f"Listing already exists: {listing_url}")
                         continue
                     
+                    # Fetch detailed description from listing page
+                    print(f"Fetching description from: {listing_url}")
+                    detailed_description = self._fetch_description(listing_url)
+                    
                     # Format listing for storage
                     listing = {
                         'title': listing_data.get('title', ''),
@@ -87,7 +91,8 @@ class QuietLightScraper(BaseScraper):
                         'ebitda': self._parse_price(listing_data.get('cash_flow', '0')),
                         'industry': self._extract_industry(listing_data.get('title', '')),
                         'location': listing_data.get('location', 'United States'),
-                        'description': listing_data.get('description', ''),
+                        'description': listing_data.get('description', ''),  # Short description from listing
+                        'full_description': detailed_description,  # Full description from detail page
                         'business_highlights': json.dumps([]),
                         'financial_details': json.dumps({
                             'revenue': self._parse_price(listing_data.get('revenue', '0')),
@@ -156,3 +161,41 @@ class QuietLightScraper(BaseScraper):
             return 'Service'
         else:
             return 'Other' 
+
+    def _fetch_description(self, listing_url: str) -> str:
+        """Fetch description from individual listing page using AgentQL"""
+        try:
+            payload = {
+                "query": DESCRIPTION_QUERY,
+                "url": listing_url,
+                "params": {
+                    "wait_for": 5,
+                    "mode": "standard"
+                }
+            }
+            
+            response = requests.post(self.agentql_api_url, headers=self.headers, json=payload)
+            
+            if response.status_code != 200:
+                print(f"Error fetching description: {response.text}")
+                return ""
+            
+            data = response.json()
+            print(f"Description API Response: {json.dumps(data, indent=2)}")  # Debug the full response
+            
+            # Try to get description from response
+            description = data.get('data', {}).get('description_text', '')
+            print(f"Extracted description: {description}")  # Debug the extracted description
+            
+            if not description:
+                print("Description not found in expected path, trying alternative paths...")
+                # Try alternative paths or response structure
+                description = data.get('data', {}).get('description', '') or \
+                            data.get('description_text', '') or \
+                            data.get('description', '')
+            
+            return description
+            
+        except Exception as e:
+            print(f"Error fetching description for {listing_url}: {e}")
+            return "" 
