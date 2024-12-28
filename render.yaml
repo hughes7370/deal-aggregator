@@ -10,4 +10,16 @@ services:
         value: 18
       - key: PORT
         value: 3000
+    autoDeploy: true
+
+  - type: worker
+    name: deal-aggregator-scheduler
+    env: python
+    rootDir: backend
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m src.services.scheduler_service
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
     autoDeploy: true 
