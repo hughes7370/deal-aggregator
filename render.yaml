@@ -12,13 +12,12 @@ services:
         value: 3000
     autoDeploy: true
 
-  - type: worker
-    name: deal-aggregator-scheduler
+  - type: web
+    name: deal-aggregator-backend
     env: python
-    rootDir: backend
     region: oregon
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m src.services.scheduler_service
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && python -m src.services.scheduler_service & uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
