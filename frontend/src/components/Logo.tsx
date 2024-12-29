@@ -13,13 +13,11 @@ export default function Logo({ className = '' }: LogoProps) {
       <Image
         src="/images/branding/DealSightLogo.png"
         alt="DealSight Logo"
-        width={40}
+        width={150}
         height={40}
-        className="mr-2"
+        className="h-10 w-auto"
+        priority
       />
-      <span className="text-xl font-semibold text-gray-900">
-        DealSight
-      </span>
     </Link>
   );
 } 

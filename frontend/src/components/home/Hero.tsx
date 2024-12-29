@@ -4,8 +4,14 @@ import { motion } from "framer-motion";
 import { ChartBarIcon } from "@heroicons/react/24/outline";
 
 export default function Hero() {
+  const scrollToAnalysis = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const element = document.getElementById('sample-analysis');
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
-    <div className="relative bg-gradient-to-b from-white to-gray-50 overflow-hidden">
+    <section className="relative bg-gradient-to-b from-white to-gray-50 overflow-hidden">
       {/* Background decoration */}
       <div className="hidden sm:block sm:absolute sm:inset-y-0 sm:h-full sm:w-full">
         <div className="relative h-full max-w-7xl mx-auto">
@@ -56,21 +62,22 @@ export default function Hero() {
             </motion.p>
 
             <motion.div 
-              className="mt-10 flex justify-center gap-4"
+              className="mt-10 flex flex-col sm:flex-row justify-center gap-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <a
                 href="/sign-up"
-                className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 hover:scale-105"
+                className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 hover:scale-105"
               >
                 Get First Access to Digital Deals
                 <ChartBarIcon className="ml-2 -mr-1 h-5 w-5" />
               </a>
               <a
                 href="#sample-analysis"
-                className="inline-flex items-center px-8 py-4 border border-gray-300 text-lg font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
+                onClick={scrollToAnalysis}
+                className="inline-flex items-center justify-center px-8 py-4 border border-gray-300 text-lg font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
               >
                 See Sample Deal Analysis
               </a>
@@ -102,6 +109,6 @@ export default function Hero() {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 } 
