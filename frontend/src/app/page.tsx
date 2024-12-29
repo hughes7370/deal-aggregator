@@ -7,6 +7,7 @@ import CTASection from "@/components/home/CTASection";
 import SuccessStories from "@/components/home/SuccessStories";
 import HowItWorks from "@/components/home/HowItWorks";
 import BrokerLogos from "@/components/home/BrokerLogos";
+import DealsWeTrack from "@/components/home/DealsWeTrack";
 import { ChartBarIcon, ArrowTrendingUpIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 
 const examples = [
@@ -57,6 +58,7 @@ export default async function Home() {
       <Hero />
       <Stats />
       <BrokerLogos />
+      <DealsWeTrack />
       <Features />
       <HowItWorks />
       <SuccessStories />
