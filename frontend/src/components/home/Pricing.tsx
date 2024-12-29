@@ -1,12 +1,12 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, SparklesIcon } from "@heroicons/react/24/outline";
 
 const tiers = [
   {
     name: 'Basic',
-    price: 299,
+    price: 297,
     description: 'Perfect for individual buyers starting their acquisition journey',
     features: [
       'Daily deal alerts',
@@ -15,13 +15,17 @@ const tiers = [
       'Email support',
       'Deal filtering',
       'Basic comparables',
+      '1 saved search',
+      'Basic export options',
+      '1 team seat',
+      'Simple deal tracking',
     ],
     cta: 'Start Basic Trial',
     highlight: false,
   },
   {
     name: 'Pro',
-    price: 699,
+    price: 697,
     description: 'For serious buyers looking for competitive advantage',
     features: [
       '4-hour early access alerts',
@@ -30,15 +34,20 @@ const tiers = [
       'Priority support',
       'Advanced filtering',
       'Detailed comparables',
-      'Custom deal alerts',
+      '10 saved searches',
+      'Advanced exports',
+      '3 team seats',
+      'Full deal pipeline',
+      'Due diligence checklist',
       'Deal negotiation insights',
     ],
     cta: 'Start Pro Trial',
     highlight: true,
+    popular: true,
   },
   {
     name: 'Enterprise',
-    price: 1499,
+    price: 'Custom',
     description: 'For professional buyers and investment firms',
     features: [
       'Instant deal alerts',
@@ -47,7 +56,11 @@ const tiers = [
       'Dedicated account manager',
       'White-label reports',
       'Team collaboration',
-      'Custom integrations',
+      'Unlimited saved searches',
+      'Custom exports',
+      'Unlimited team seats',
+      'Custom pipeline',
+      'Full due diligence suite',
       'M&A advisory services',
       'Deal flow automation',
     ],
@@ -78,10 +91,16 @@ const featureComparison = [
         pro: 'Advanced',
         enterprise: 'Custom Rules',
       },
+      {
+        name: 'Saved Searches',
+        basic: '1',
+        pro: '10',
+        enterprise: 'Unlimited',
+      },
     ],
   },
   {
-    category: 'Analysis',
+    category: 'Analysis & Tools',
     features: [
       {
         name: 'Deal Analysis',
@@ -96,16 +115,34 @@ const featureComparison = [
         enterprise: 'Full historical',
       },
       {
-        name: 'Valuation Tools',
-        basic: 'Basic calculator',
-        pro: 'Advanced models',
-        enterprise: 'Custom models',
+        name: 'Due Diligence Tools',
+        basic: 'Basic checklist',
+        pro: 'Full toolkit',
+        enterprise: 'Custom suite',
+      },
+      {
+        name: 'Export Capabilities',
+        basic: 'Basic CSV',
+        pro: 'Advanced formats',
+        enterprise: 'Custom exports',
       },
     ],
   },
   {
-    category: 'Support',
+    category: 'Team & Support',
     features: [
+      {
+        name: 'Team Seats',
+        basic: '1',
+        pro: '3',
+        enterprise: 'Unlimited',
+      },
+      {
+        name: 'Deal Pipeline',
+        basic: 'Basic tracking',
+        pro: 'Full pipeline',
+        enterprise: 'Custom workflow',
+      },
       {
         name: 'Customer Support',
         basic: 'Email',
@@ -117,12 +154,6 @@ const featureComparison = [
         basic: 'Documentation',
         pro: 'Group sessions',
         enterprise: 'Custom training',
-      },
-      {
-        name: 'Deal Advisory',
-        basic: '-',
-        pro: 'Limited',
-        enterprise: 'Full service',
       },
     ],
   },
@@ -154,16 +185,30 @@ export default function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`bg-white rounded-2xl shadow-lg p-8 ${
+              className={`relative bg-white rounded-2xl shadow-lg p-8 ${
                 tier.highlight ? 'ring-2 ring-blue-600' : ''
               }`}
             >
+              {tier.popular && (
+                <div className="absolute top-0 right-0 -mt-4 -mr-4">
+                  <div className="inline-flex items-center rounded-full bg-blue-600 px-4 py-1 text-sm font-semibold text-white shadow-sm">
+                    <SparklesIcon className="mr-1.5 h-4 w-4" />
+                    Most Popular
+                  </div>
+                </div>
+              )}
               <div className="text-center">
                 <h3 className="text-2xl font-semibold text-gray-900">{tier.name}</h3>
                 <p className="mt-4 text-gray-500">{tier.description}</p>
                 <p className="mt-8">
-                  <span className="text-4xl font-bold text-gray-900">${tier.price}</span>
-                  <span className="text-gray-500">/month</span>
+                  {typeof tier.price === 'number' ? (
+                    <>
+                      <span className="text-4xl font-bold text-gray-900">${tier.price}</span>
+                      <span className="text-gray-500">/month</span>
+                    </>
+                  ) : (
+                    <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
+                  )}
                 </p>
               </div>
 
@@ -262,24 +307,30 @@ export default function Pricing() {
           transition={{ duration: 0.5 }}
           className="mt-24 bg-white rounded-2xl shadow-lg p-8 text-center"
         >
-          <h3 className="text-2xl font-bold text-gray-900">14-Day Free Trial Includes:</h3>
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
+          <h3 className="text-2xl font-bold text-gray-900">Start Your Free Trial Today</h3>
+          <div className="mt-8 grid gap-6 md:grid-cols-4">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900">Sample Deal Analysis</h4>
+              <h4 className="text-lg font-semibold text-gray-900">No Credit Card Required</h4>
               <p className="mt-2 text-gray-500">
-                Get a taste of our AI-powered deal analysis capabilities
+                Start your trial without any commitment
               </p>
             </div>
             <div>
-              <h4 className="text-lg font-semibold text-gray-900">Limited Alert Access</h4>
+              <h4 className="text-lg font-semibold text-gray-900">Full Pro Features</h4>
               <p className="mt-2 text-gray-500">
-                Experience our deal alert system with basic notifications
+                Access all Pro features for 14 days
               </p>
             </div>
             <div>
-              <h4 className="text-lg font-semibold text-gray-900">Historical Database</h4>
+              <h4 className="text-lg font-semibold text-gray-900">Cancel Anytime</h4>
               <p className="mt-2 text-gray-500">
-                Browse our database of past deals and market trends
+                No questions asked, easy cancellation
+              </p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900">Special Offer</h4>
+              <p className="mt-2 text-gray-500">
+                50% off first 3 months if you upgrade
               </p>
             </div>
           </div>

@@ -2,23 +2,42 @@
 
 import { useState } from 'react';
 import { motion } from "framer-motion";
-import { ClockIcon, CurrencyDollarIcon, ChartBarIcon } from "@heroicons/react/24/outline";
+import { ClockIcon, CurrencyDollarIcon, ChartBarIcon, ScaleIcon } from "@heroicons/react/24/outline";
 
 export default function ROICalculator() {
   const [dealSize, setDealSize] = useState(1000000);
   const [dealsPerYear, setDealsPerYear] = useState(2);
   const [searchHoursPerDeal, setSearchHoursPerDeal] = useState(40);
+  const [currentMultiple, setCurrentMultiple] = useState(3.5);
+  const [analysisHours, setAnalysisHours] = useState(20);
+  const [competitionLevel, setCompetitionLevel] = useState(3);
+  const [missedDeals, setMissedDeals] = useState(1);
 
   // Calculate ROI metrics
   const hourlyRate = 150; // Assumed hourly rate for time value
   const avgSavingsPercent = 0.175; // 17.5% average savings through early access
   const timeSavedPercent = 0.8; // 80% time saved vs manual searching
 
-  const annualTimeSaved = searchHoursPerDeal * dealsPerYear * timeSavedPercent;
+  // Time savings calculations
+  const annualTimeSaved = (searchHoursPerDeal + analysisHours) * dealsPerYear * timeSavedPercent;
   const timeSavingsValue = annualTimeSaved * hourlyRate;
+
+  // Deal savings calculations
   const dealSavings = dealSize * dealsPerYear * avgSavingsPercent;
-  const totalSavings = timeSavingsValue + dealSavings;
-  const annualCost = 699 * 12; // Pro plan annual cost
+
+  // Missed opportunity calculations
+  const avgMultipleReduction = 0.3; // Average multiple reduction through platform
+  const multipleImprovement = currentMultiple - avgMultipleReduction;
+  const multiplesSavings = dealSize * (currentMultiple - multipleImprovement);
+  
+  // Competition impact
+  const competitionImpact = (competitionLevel / 5) * dealSize * 0.1; // Up to 10% premium due to competition
+  
+  // Missed deals impact
+  const missedDealCost = missedDeals * dealSize * 0.15; // Assumed 15% growth opportunity lost
+
+  const totalSavings = timeSavingsValue + dealSavings + multiplesSavings + competitionImpact + missedDealCost;
+  const annualCost = 697 * 12; // Pro plan annual cost
   const netReturn = totalSavings - annualCost;
   const roi = (netReturn / annualCost) * 100;
 
@@ -34,7 +53,7 @@ export default function ROICalculator() {
         >
           <h2 className="text-3xl font-bold text-gray-900">ROI Calculator</h2>
           <p className="mt-4 text-xl text-gray-500">
-            See how much you could save with DealSight
+            Calculate your potential savings and returns with DealSight
           </p>
         </motion.div>
 
@@ -65,6 +84,24 @@ export default function ROICalculator() {
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   ${dealSize.toLocaleString()}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Multiple Paid
+                </label>
+                <input
+                  type="range"
+                  min="2"
+                  max="6"
+                  step="0.1"
+                  value={currentMultiple}
+                  onChange={(e) => setCurrentMultiple(Number(e.target.value))}
+                  className="w-full"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  {currentMultiple}x multiple
                 </p>
               </div>
 
@@ -102,6 +139,58 @@ export default function ROICalculator() {
                   {searchHoursPerDeal} hours
                 </p>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Analysis Hours Per Deal
+                </label>
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  step="5"
+                  value={analysisHours}
+                  onChange={(e) => setAnalysisHours(Number(e.target.value))}
+                  className="w-full"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  {analysisHours} hours
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Competition Level in Target Market
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={competitionLevel}
+                  onChange={(e) => setCompetitionLevel(Number(e.target.value))}
+                  className="w-full"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  {['Very Low', 'Low', 'Medium', 'High', 'Very High'][competitionLevel - 1]}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Missed Deals Last Year
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  value={missedDeals}
+                  onChange={(e) => setMissedDeals(Number(e.target.value))}
+                  className="w-full"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  {missedDeals} deals
+                </p>
+              </div>
             </div>
           </motion.div>
 
@@ -135,10 +224,23 @@ export default function ROICalculator() {
                   <h4 className="text-lg font-medium text-gray-900">Deal Savings</h4>
                 </div>
                 <p className="text-sm text-gray-500 mb-2">
-                  Through early access advantage
+                  Through early access and multiple improvement
                 </p>
                 <p className="text-2xl font-bold text-green-600">
-                  ${Math.round(dealSavings).toLocaleString()}
+                  ${Math.round(dealSavings + multiplesSavings).toLocaleString()}
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center mb-2">
+                  <ScaleIcon className="h-5 w-5 text-purple-600 mr-2" />
+                  <h4 className="text-lg font-medium text-gray-900">Competition & Opportunity</h4>
+                </div>
+                <p className="text-sm text-gray-500 mb-2">
+                  Value from reduced competition and missed deals
+                </p>
+                <p className="text-2xl font-bold text-purple-600">
+                  ${Math.round(competitionImpact + missedDealCost).toLocaleString()}
                 </p>
               </div>
 

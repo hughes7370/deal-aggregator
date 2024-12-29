@@ -23,11 +23,11 @@ export default async function Home() {
       <Hero />
       <BrokerLogos />
       <SampleDeal />
+      <Pricing />
       <DealFlowOverview />
       <Features />
       <SuccessStories />
       <ROICalculator />
-      <Pricing />
       <CTASection />
     </main>
   );
