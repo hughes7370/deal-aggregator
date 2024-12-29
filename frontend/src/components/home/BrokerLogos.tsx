@@ -25,13 +25,18 @@ export default function BrokerLogos() {
               key={broker.name}
               className="flex justify-center items-center p-4"
             >
-              <div className="relative w-32 h-16">
+              <div className="relative h-20 w-40">
                 <Image
                   src={broker.logo}
                   alt={`${broker.name} logo`}
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority
                   style={{ objectFit: 'contain' }}
                   className="filter grayscale hover:grayscale-0 transition-all duration-200"
+                  onError={(e) => {
+                    console.error(`Error loading image for ${broker.name}:`, e);
+                  }}
                 />
               </div>
             </div>
