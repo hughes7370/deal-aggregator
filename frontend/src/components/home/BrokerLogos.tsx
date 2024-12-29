@@ -1,11 +1,11 @@
 import Image from 'next/image';
 
 const brokers = [
-  { name: 'QuietLight', logo: '/images/logos/quietlight.png' },
-  { name: 'Empire Flippers', logo: '/images/logos/empire-flippers.png' },
-  { name: 'Flippa', logo: '/images/logos/flippa.png' },
-  { name: 'Acquire.com', logo: '/images/logos/acquire.png' },
-  { name: 'Website Closers', logo: '/images/logos/website-closers.png' },
+  { name: 'QuietLight', logo: '/images/logos/logo1.png' },
+  { name: 'Empire Flippers', logo: '/images/logos/logo2.png' },
+  { name: 'Flippa', logo: '/images/logos/logo3.jpeg' },
+  { name: 'Acquire.com', logo: '/images/logos/logo4.png' },
+  { name: 'Website Closers', logo: '/images/logos/logo5.png' },
   // Add more brokers here
 ];
 
