@@ -105,7 +105,11 @@ class NewsletterService:
 
             # Create a newsletter log entry
             try:
-                log_id = self.db.create_newsletter_log(user['alert']['user_id'])
+                user_id = user['alert'].get('user_id')
+                if not user_id:
+                    print("❌ No user_id found in alert")
+                    return None
+                log_id = self.db.create_newsletter_log(user_id)
             except Exception as e:
                 print(f"❌ Error creating newsletter log: {str(e)}")
                 return None
@@ -269,12 +273,18 @@ class NewsletterService:
         for listing in listings:
             # Calculate metrics if not already present
             profit_margin = listing.get('profit_margin')
-            if profit_margin is None and listing.get('revenue') and listing.get('ebitda'):
-                profit_margin = (listing['ebitda'] / listing['revenue']) * 100
+            if profit_margin is None:
+                revenue = listing.get('revenue')
+                ebitda = listing.get('ebitda')
+                if revenue and ebitda and revenue != 0:
+                    profit_margin = (ebitda / revenue) * 100
 
             selling_multiple = listing.get('selling_multiple')
-            if selling_multiple is None and listing.get('asking_price') and listing.get('ebitda'):
-                selling_multiple = listing['asking_price'] / listing['ebitda']
+            if selling_multiple is None:
+                asking_price = listing.get('asking_price')
+                ebitda = listing.get('ebitda')
+                if asking_price and ebitda and ebitda != 0:
+                    selling_multiple = asking_price / ebitda
 
             listings_html += f"""
                 <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
@@ -307,7 +317,7 @@ class NewsletterService:
                         <strong>💼 Business Model:</strong> {listing.get('business_model', 'Not specified')}
                     </div>
 
-                    <p style="margin: 10px 0;">{listing.get('description', '')[:200]}...</p>
+                    <p style="margin: 10px 0;">{(listing.get('description') or '')[:200]}...</p>
                     <a href="{listing.get('listing_url', '#')}" 
                        style="display: inline-block; padding: 8px 15px; background-color: #007bff; 
                               color: white; text-decoration: none; border-radius: 3px;">
@@ -319,8 +329,8 @@ class NewsletterService:
         # Add the alert criteria to the search criteria section
         alert = user['alert']
         advanced_criteria_html = ""
-        if alert.get('preferred_business_models') and len(alert['preferred_business_models']) > 0:
-            advanced_criteria_html += f"Business Models: {', '.join(alert['preferred_business_models'])}<br>"
+        if alert.get('preferred_business_models') and len(alert.get('preferred_business_models', [])) > 0:
+            advanced_criteria_html += f"Business Models: {', '.join(alert.get('preferred_business_models', []))}<br>"
         if alert.get('min_business_age') is not None or alert.get('max_business_age') is not None:
             advanced_criteria_html += f"Business Age: {alert.get('min_business_age', '0')} - {alert.get('max_business_age', 'Any')} years<br>"
         if alert.get('min_employees') is not None or alert.get('max_employees') is not None:
@@ -336,7 +346,7 @@ class NewsletterService:
 
         search_criteria_html = f"""
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 10px 0;">Alert Criteria: {alert['name']}</h3>
+                <h3 style="margin: 0 0 10px 0;">Alert Criteria{f": {alert.get('name')}" if alert.get('name') else ''}</h3>
                 <div style="margin: 5px 0;">
                     <strong>Basic Criteria:</strong><br>
                     Price Range: {self.format_currency(alert.get('min_price', 0))} - 
@@ -349,7 +359,7 @@ class NewsletterService:
         
         return f"""
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h1 style="color: #333; padding: 20px 0;">{alert['name']} - Deal Alert</h1>
+                <h1 style="color: #333; padding: 20px 0;">{alert.get('name', 'Your')} - Deal Alert</h1>
                 <p style="color: #666;">Here are new listings matching your criteria:</p>
                 
                 {search_criteria_html}

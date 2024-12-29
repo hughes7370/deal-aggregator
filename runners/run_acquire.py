@@ -17,7 +17,7 @@ from backend.src.services.deal_analyzer import analyze_listings
 def main():
     # Fetch listings from Acquire
     print("\nFetching listings from Acquire...")
-    listings = fetch_acquire_listings()
+    listings = fetch_acquire_listings(max_pages=1)
     
     if not listings:
         print("No listings found")
