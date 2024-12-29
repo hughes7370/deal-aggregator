@@ -42,8 +42,8 @@ export default function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              Find Profitable Digital Businesses
-              <span className="text-blue-600 block mt-2">Before Anyone Else</span>
+              Never Miss Quality Digital
+              <span className="text-blue-600 block mt-2">Acquisitions Again</span>
             </motion.h1>
             
             <motion.p 
@@ -52,7 +52,7 @@ export default function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Stop missing great deals. Our AI analyzes 20+ broker sites 24/7 and alerts you to matches that meet your exact criteria.
+              Get instant alerts from QuietLight, Empire Flippers, Flippa & 15+ specialized brokers
             </motion.p>
 
             <motion.div 
@@ -65,28 +65,29 @@ export default function Hero() {
                 href="/sign-up"
                 className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 hover:scale-105"
               >
-                Start Free Trial
+                Get First Access to Digital Deals
                 <ChartBarIcon className="ml-2 -mr-1 h-5 w-5" />
               </a>
               <a
-                href="#how-it-works"
+                href="#sample-analysis"
                 className="inline-flex items-center px-8 py-4 border border-gray-300 text-lg font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200"
               >
-                Learn More
+                See Sample Deal Analysis
               </a>
             </motion.div>
 
             {/* Stats */}
             <motion.div 
-              className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3"
+              className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.6 }}
             >
               {[
-                { label: 'Broker Sites', value: '20+' },
-                { label: 'Hours Saved Monthly', value: '30+' },
-                { label: 'Quality Metrics', value: '50+' },
+                { label: 'Digital-Focused Brokers', value: '15+' },
+                { label: 'New Digital Listings Weekly', value: '100+' },
+                { label: 'Digital Assets Listed Monthly', value: '$500M+' },
+                { label: 'Head Start on New Listings', value: '48h' },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col">
                   <dt className="order-2 mt-2 text-lg leading-6 font-medium text-gray-500">
