@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 
 const brokers = [
@@ -34,9 +36,6 @@ export default function BrokerLogos() {
                   priority
                   style={{ objectFit: 'contain' }}
                   className="filter grayscale hover:grayscale-0 transition-all duration-200"
-                  onError={(e) => {
-                    console.error(`Error loading image for ${broker.name}:`, e);
-                  }}
                 />
               </div>
             </div>
