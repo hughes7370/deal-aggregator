@@ -25,19 +25,37 @@ export default async function DashboardPage() {
 
   // Format the user ID to match Supabase format
   const formattedUserId = `user_${userId}`;
+  console.log('Clerk userId:', userId);
+  console.log('Formatted userId:', formattedUserId);
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: false
+      }
+    }
   );
+
+  // First check if we can access the alerts table at all
+  const { data: testData, error: testError } = await supabase
+    .from('alerts')
+    .select('count')
+    .limit(1);
+
+  console.log('Test query response:', { testData, testError });
 
   const { data: alerts, error } = await supabase
     .from('alerts')
     .select('*')
     .eq('user_id', formattedUserId);
 
+  console.log('Supabase Response:', { alerts, error });
+
   // If no alerts exist yet, show the empty state
   if (!alerts || alerts.length === 0) {
+    console.log('No alerts found for user');
     return (
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,6 +92,8 @@ export default async function DashboardPage() {
       </div>
     );
   }
+
+  console.log('Found alerts:', alerts);
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
