@@ -23,10 +23,8 @@ export default async function DashboardPage() {
     );
   }
 
-  // Format the user ID to match Supabase format
-  const formattedUserId = `user_${userId}`;
+  // The Clerk userId already includes the 'user_' prefix
   console.log('Clerk userId:', userId);
-  console.log('Formatted userId:', formattedUserId);
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -49,7 +47,7 @@ export default async function DashboardPage() {
   const { data: alerts, error } = await supabase
     .from('alerts')
     .select('*')
-    .eq('user_id', formattedUserId);
+    .eq('user_id', userId);
 
   console.log('Supabase Response:', { alerts, error });
 
@@ -118,7 +116,7 @@ export default async function DashboardPage() {
         
         <div className="space-y-6">
           {alerts.map((alert) => (
-            <AlertCard key={alert.id} alert={alert} userId={formattedUserId} />
+            <AlertCard key={alert.id} alert={alert} userId={userId} />
           ))}
         </div>
       </div>
