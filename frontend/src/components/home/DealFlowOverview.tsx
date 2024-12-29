@@ -15,6 +15,9 @@ const dealCategories = [
     avgMultiple: "4.2x",
     dealSize: "$500K-3M",
     timeToClose: "45-60 days",
+    buyerCompetition: "Medium",
+    negotiationLeverage: "High",
+    financingAvailable: "75%",
     icon: ChartBarIcon,
   },
   {
@@ -23,6 +26,9 @@ const dealCategories = [
     avgMultiple: "3.5x",
     dealSize: "$300K-2M",
     timeToClose: "30-45 days",
+    buyerCompetition: "High",
+    negotiationLeverage: "Medium",
+    financingAvailable: "65%",
     icon: CurrencyDollarIcon,
   },
   {
@@ -31,6 +37,9 @@ const dealCategories = [
     avgMultiple: "3.8x",
     dealSize: "$100K-1M",
     timeToClose: "20-30 days",
+    buyerCompetition: "Low",
+    negotiationLeverage: "High",
+    financingAvailable: "50%",
     icon: ArrowTrendingUpIcon,
   },
 ];
@@ -75,53 +84,12 @@ export default function DealFlowOverview() {
           </p>
         </motion.div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-3">
-          {dealCategories.map((category, index) => (
-            <motion.div
-              key={category.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 hover:shadow-lg transition-shadow duration-300"
-            >
-              <div className="flex items-center mb-6">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <category.icon className="h-6 w-6 text-blue-600" />
-                </div>
-                <h3 className="ml-3 text-xl font-semibold text-gray-900">
-                  {category.name}
-                </h3>
-              </div>
-
-              <dl className="space-y-4">
-                <div className="flex justify-between">
-                  <dt className="text-sm text-gray-500">Weekly New Listings</dt>
-                  <dd className="text-sm font-medium text-gray-900">{category.newListings}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-sm text-gray-500">Average Multiple</dt>
-                  <dd className="text-sm font-medium text-gray-900">{category.avgMultiple}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-sm text-gray-500">Typical Deal Size</dt>
-                  <dd className="text-sm font-medium text-gray-900">{category.dealSize}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-sm text-gray-500">Time to Close</dt>
-                  <dd className="text-sm font-medium text-gray-900">{category.timeToClose}</dd>
-                </div>
-              </dl>
-            </motion.div>
-          ))}
-        </div>
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mt-20 grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+          className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
         >
           {stats.map((stat, index) => (
             <motion.div
@@ -137,6 +105,21 @@ export default function DealFlowOverview() {
               <p className="mt-1 text-sm text-gray-500">{stat.description}</p>
             </motion.div>
           ))}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mt-12 text-center"
+        >
+          <a
+            href="/market-intelligence"
+            className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
+          >
+            View Full Market Data
+          </a>
         </motion.div>
       </div>
     </section>
