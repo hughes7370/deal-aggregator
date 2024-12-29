@@ -23,6 +23,9 @@ export default async function DashboardPage() {
     );
   }
 
+  // Format the user ID to match Supabase format
+  const formattedUserId = `user_${userId}`;
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -31,7 +34,7 @@ export default async function DashboardPage() {
   const { data: alerts, error } = await supabase
     .from('alerts')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', formattedUserId);
 
   // If no alerts exist yet, show the empty state
   if (!alerts || alerts.length === 0) {
@@ -95,7 +98,7 @@ export default async function DashboardPage() {
         
         <div className="space-y-6">
           {alerts.map((alert) => (
-            <AlertCard key={alert.id} alert={alert} userId={userId} />
+            <AlertCard key={alert.id} alert={alert} userId={formattedUserId} />
           ))}
         </div>
       </div>
