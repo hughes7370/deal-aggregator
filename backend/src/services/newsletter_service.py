@@ -91,9 +91,13 @@ class NewsletterService:
             print(f"❌ Error in send_personalized_newsletters: {str(e)}")
             raise
 
-    def send_newsletter(self, user: dict, listings: list) -> str:
+    async def send_newsletter(self, user: dict, listings: list) -> str:
         """Send a newsletter to a single user"""
         try:
+            if not user or not user.get('email') or not user.get('alert'):
+                print("❌ Invalid user data provided")
+                return None
+            
             # Create a newsletter log entry
             log_id = self.db.create_newsletter_log(user['alert']['user_id'])
             
@@ -104,12 +108,12 @@ class NewsletterService:
             params = {
                 "from": self.from_email,
                 "to": [user['email']],
-                "subject": f"Your {user['alert']['name']} Deal Alert",
+                "subject": f"Your {user['alert'].get('name', 'Deal')} Alert",
                 "html": email_content
             }
             
             try:
-                # Send email using Resend
+                # Send email using Resend (synchronously since it doesn't support async)
                 response = resend.Emails.send(params)
                 
                 if response and response.get('id'):

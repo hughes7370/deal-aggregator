@@ -77,14 +77,46 @@ class SupabaseClient:
             raise
 
     def get_user_preferences(self, user_id: str) -> Optional[Dict]:
-        """Get user preferences"""
+        """Get user preferences from the database"""
         try:
-            result = self.client.table('user_preferences').select('*').eq('user_id', user_id).execute()
+            result = self.client.table('alerts').select('*').eq('user_id', user_id).execute()
             return result.data[0] if result.data else None
-            
         except Exception as e:
-            print(f"Error getting user preferences: {e}")
+            print(f"Error getting user preferences: {str(e)}")
             return None
+
+    def create_user_preferences(self, preferences_data: Dict) -> Optional[Dict]:
+        """Create user preferences in the database"""
+        try:
+            pref_result = self.client.table('alerts').insert(preferences_data).execute()
+            return pref_result.data[0] if pref_result.data else None
+        except Exception as e:
+            print(f"Error creating user preferences: {str(e)}")
+            return None
+
+    def update_user_preferences(self, user_id: str, preferences_data: Dict) -> Optional[Dict]:
+        """Update user preferences in the database"""
+        try:
+            result = self.client.table('alerts')\
+                .update(preferences_data)\
+                .eq('user_id', user_id)\
+                .execute()
+            return result.data[0] if result.data else None
+        except Exception as e:
+            print(f"Error updating user preferences: {str(e)}")
+            return None
+
+    def delete_user_preferences(self, user_id: str) -> bool:
+        """Delete user preferences from the database"""
+        try:
+            self.client.table('alerts')\
+                .delete()\
+                .eq('user_id', user_id)\
+                .execute()
+            return True
+        except Exception as e:
+            print(f"Error deleting user preferences: {str(e)}")
+            return False
 
     def get_pending_newsletters(self) -> List[Dict]:
         """Get newsletters that need to be sent"""

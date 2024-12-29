@@ -88,7 +88,7 @@ async def test_scheduled_newsletter(newsletter_service, db_client):
         test_user = user_result.data[0]
         
         # Get user preferences separately
-        preferences_result = db_client.client.table('user_preferences')\
+        preferences_result = db_client.client.table('alerts')\
             .select('*')\
             .eq('user_id', test_user['id'])\
             .execute()
@@ -201,7 +201,7 @@ async def test_scheduler_integration(scheduler_service):
         test_user = user_result.data[0]
         
         # Get user preferences separately
-        preferences_result = scheduler_service.db.client.table('user_preferences')\
+        preferences_result = scheduler_service.db.client.table('alerts')\
             .select('*')\
             .eq('user_id', test_user['id'])\
             .execute()
