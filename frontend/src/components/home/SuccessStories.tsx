@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import NewsletterPreview from "./NewsletterPreview";
 
 const testimonials = [
   {
@@ -14,7 +15,7 @@ const testimonials = [
     author: {
       name: "Michael Chen",
       role: "Former PE Associate, now Digital Portfolio Owner",
-      image: "/testimonials/michael.jpg"
+      image: "/images/testimonials/Michael_Chen.jpeg"
     }
   },
   {
@@ -27,7 +28,7 @@ const testimonials = [
     author: {
       name: "Sarah Thompson",
       role: "Serial Digital Acquirer",
-      image: "/testimonials/sarah.jpg"
+      image: "/images/testimonials/Sarah_Thompson.jpeg"
     }
   },
   {
@@ -40,7 +41,7 @@ const testimonials = [
     author: {
       name: "David Rodriguez",
       role: "E-commerce Portfolio Manager",
-      image: "/testimonials/david.jpg"
+      image: "/images/testimonials/David_Rodriguez.jpeg"
     }
   }
 ];
@@ -62,42 +63,50 @@ export default function SuccessStories() {
           </p>
         </motion.div>
 
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
-          {testimonials.map((testimonial, index) => (
-            <motion.div
-              key={testimonial.author.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="relative bg-white rounded-2xl shadow-lg p-8"
-            >
-              <div className="h-full flex flex-col">
-                <div className="flex-grow">
-                  <div className="relative h-12 w-12 mb-6">
+        <div className="mt-16 grid gap-8 lg:grid-cols-2">
+          <div className="grid gap-8 content-start">
+            {testimonials.map((testimonial, index) => (
+              <motion.div
+                key={testimonial.author.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="relative bg-white rounded-2xl shadow-lg p-8"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="relative h-16 w-16 flex-shrink-0">
                     <Image
                       src={testimonial.author.image}
                       alt={testimonial.author.name}
                       fill
                       className="rounded-full object-cover filter grayscale"
+                      sizes="(max-width: 768px) 64px, 64px"
+                      priority={index === 0}
                     />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {testimonial.title}
-                  </h3>
-                  <div className="space-y-2 mb-6">
-                    <p className="text-gray-600">{testimonial.metrics.arr || testimonial.metrics.mrr}</p>
-                    <p className="text-gray-600">{testimonial.metrics.margins}</p>
-                    <p className="text-gray-600">{testimonial.metrics.timeline}</p>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      {testimonial.title}
+                    </h3>
+                    <div className="space-y-2 mb-4">
+                      <p className="text-gray-600">{testimonial.metrics.arr || testimonial.metrics.mrr}</p>
+                      <p className="text-gray-600">{testimonial.metrics.margins}</p>
+                      <p className="text-gray-600">{testimonial.metrics.timeline}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{testimonial.author.name}</p>
+                      <p className="text-sm text-gray-500">{testimonial.author.role}</p>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">{testimonial.author.name}</p>
-                  <p className="text-sm text-gray-500">{testimonial.author.role}</p>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="lg:sticky lg:top-8">
+            <NewsletterPreview />
+          </div>
         </div>
       </div>
     </section>
