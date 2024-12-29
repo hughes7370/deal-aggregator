@@ -6,6 +6,7 @@ import Stats from "@/components/home/Stats";
 import CTASection from "@/components/home/CTASection";
 import SuccessStories from "@/components/home/SuccessStories";
 import HowItWorks from "@/components/home/HowItWorks";
+import BrokerLogos from "@/components/home/BrokerLogos";
 import { ChartBarIcon, ArrowTrendingUpIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 
 const examples = [
@@ -55,6 +56,7 @@ export default async function Home() {
     <main className="min-h-screen">
       <Hero />
       <Stats />
+      <BrokerLogos />
       <Features />
       <HowItWorks />
       <SuccessStories />
