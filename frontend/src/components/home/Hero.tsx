@@ -58,7 +58,7 @@ export default function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Get instant alerts from QuietLight, Empire Flippers, Flippa & 15+ specialized brokers
+              Get 48-hour early access to digital acquisitions from specialized brokers like QuietLight, Empire Flippers & more
             </motion.p>
 
             <motion.div 
@@ -91,10 +91,10 @@ export default function Hero() {
               transition={{ duration: 0.5, delay: 0.6 }}
             >
               {[
+                { label: 'Digital Listings Analyzed Monthly', value: '2,500+' },
+                { label: 'Average Deal Size', value: '$500K-5M' },
+                { label: 'Exclusive Access Window', value: '48h' },
                 { label: 'Digital-Focused Brokers', value: '15+' },
-                { label: 'New Digital Listings Weekly', value: '100+' },
-                { label: 'Digital Assets Listed Monthly', value: '$500M+' },
-                { label: 'Head Start on New Listings', value: '48h' },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col">
                   <dt className="order-2 mt-2 text-lg leading-6 font-medium text-gray-500">

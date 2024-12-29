@@ -1,123 +1,115 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { StarIcon } from '@heroicons/react/24/solid';
-import { ArrowTrendingUpIcon, BanknotesIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { motion } from "framer-motion";
+import { ChartBarIcon, CurrencyDollarIcon, ArrowTrendingUpIcon } from "@heroicons/react/24/outline";
 
-const testimonials = [
+const stories = [
   {
-    name: "Sarah Chen",
-    role: "Founder",
-    company: "TechVentures Inc",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    quote: "The AI analysis helped us spot a SaaS business with hidden potential. Post-acquisition, we've grown revenue by 156% in 12 months.",
-    rating: 5,
-    stats: {
-      icon: ArrowTrendingUpIcon,
-      label: "Growth",
-      value: "+156%"
-    }
+    title: "Acquired SaaS business at 3.2x multiple through early access alert",
+    details: {
+      revenue: "$2.5M ARR",
+      margins: "65% margins",
+      timeline: "closed in 45 days"
+    },
+    background: "Former PE Associate, now Digital Portfolio Owner",
+    icon: ChartBarIcon,
+    color: "blue",
   },
   {
-    name: "Michael Roberts",
-    role: "Serial Acquirer",
-    company: "Digital Assets Group",
-    image: "https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    quote: "Thanks to early deal alerts, we acquired a profitable e-commerce brand at 3.2x multiple, well below market average.",
-    rating: 5,
-    stats: {
-      icon: BanknotesIcon,
-      label: "Multiple",
-      value: "3.2x"
-    }
+    title: "Found content site before public listing, saved 22% on purchase price",
+    details: {
+      revenue: "$75K MRR",
+      margins: "80% profit margins",
+      timeline: "closed in 30 days"
+    },
+    background: "Serial Digital Acquirer",
+    icon: ArrowTrendingUpIcon,
+    color: "green",
   },
   {
-    name: "Lisa Thompson",
-    role: "Investment Partner",
-    company: "Growth Capital Partners",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    quote: "From deal discovery to due diligence, we closed our latest acquisition in just 45 days. The platform's analysis tools are exceptional.",
-    rating: 5,
-    stats: {
-      icon: ClockIcon,
-      label: "Time to Close",
-      value: "45 days"
-    }
-  }
+    title: "Secured FBA brand through exclusive early access window",
+    details: {
+      revenue: "$150K MRR",
+      margins: "55% margins",
+      timeline: "closed in 60 days"
+    },
+    background: "E-commerce Portfolio Manager",
+    icon: CurrencyDollarIcon,
+    color: "indigo",
+  },
 ];
 
 export default function SuccessStories() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div 
-          className="text-center mb-16"
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
+          className="text-center"
         >
-          <h2 className="text-base text-blue-600 font-semibold tracking-wide uppercase">
-            Success Stories
-          </h2>
-          <p className="mt-2 text-3xl leading-8 font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Real Results from Real Buyers
-          </p>
-          <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
-            Join hundreds of entrepreneurs who found their perfect acquisition through our platform
+          <h2 className="text-3xl font-bold text-gray-900">Success Stories</h2>
+          <p className="mt-4 text-xl text-gray-500">
+            Real results from our early access community
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          {testimonials.map((testimonial, index) => (
+        <div className="mt-12 grid gap-8 lg:grid-cols-3">
+          {stories.map((story, index) => (
             <motion.div
-              key={testimonial.name}
-              className="relative p-8 bg-white rounded-2xl border border-gray-100 shadow-sm transition-all duration-300 hover:shadow-lg"
+              key={story.title}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+              transition={{ duration: 0.5, delay: index * 0.2 }}
+              className="relative bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300"
             >
-              <div className="flex items-center gap-4 mb-6">
-                <img
-                  className="h-12 w-12 rounded-full"
-                  src={testimonial.image}
-                  alt={testimonial.name}
-                />
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {testimonial.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {testimonial.role} at {testimonial.company}
-                  </p>
+              <div className={`absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-${story.color}-100 rounded-full opacity-50`} />
+              
+              <div className="relative">
+                <div className={`inline-flex p-3 rounded-lg bg-${story.color}-100 text-${story.color}-600`}>
+                  <story.icon className="h-6 w-6" />
                 </div>
-              </div>
 
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <StarIcon key={i} className="h-5 w-5 text-yellow-400" />
-                ))}
-              </div>
+                <h3 className="mt-6 text-xl font-semibold text-gray-900">
+                  {story.title}
+                </h3>
 
-              <blockquote className="text-gray-600 text-lg mb-6">
-                "{testimonial.quote}"
-              </blockquote>
+                <dl className="mt-4 space-y-2">
+                  {Object.entries(story.details).map(([key, value]) => (
+                    <div key={key} className="flex items-center text-gray-500">
+                      <dt className="sr-only">{key}</dt>
+                      <dd className="text-sm">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
 
-              <div className="pt-6 border-t border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <testimonial.stats.icon className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">{testimonial.stats.label}</p>
-                    <p className="text-lg font-semibold text-gray-900">{testimonial.stats.value}</p>
-                  </div>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-sm font-medium text-gray-900">
+                    {story.background}
+                  </p>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="mt-12 text-center"
+        >
+          <a
+            href="/sign-up"
+            className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
+          >
+            Join Our Success Stories
+          </a>
+        </motion.div>
       </div>
     </section>
   );

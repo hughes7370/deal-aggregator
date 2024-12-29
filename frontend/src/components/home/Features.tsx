@@ -6,7 +6,9 @@ import {
   BoltIcon,
   ShieldCheckIcon,
   DocumentMagnifyingGlassIcon,
-  BellAlertIcon
+  BellAlertIcon,
+  ArrowTrendingUpIcon,
+  CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
 
@@ -15,31 +17,85 @@ const features = [
     title: "AI-Powered Deal Analysis",
     description: "Get instant insights on business health, growth trajectory, and risk factors using our advanced AI algorithms.",
     icon: SparklesIcon,
+    example: {
+      title: "Sample Analysis Report",
+      items: [
+        "Customer Cohort Analysis",
+        "Revenue Quality Score: 8.5/10",
+        "Growth Sustainability Index",
+        "Risk Factor Breakdown"
+      ]
+    }
   },
   {
     title: "Smart Deal Filtering",
     description: "Save time with automated spam removal and intelligent ranking of high-potential opportunities based on your criteria.",
     icon: DocumentMagnifyingGlassIcon,
+    example: {
+      title: "Filter Interface",
+      items: [
+        "Revenue Range: $100K-$5M",
+        "Industry: SaaS, Content, FBA",
+        "Growth Rate: >15% YoY",
+        "Profit Margins: >40%"
+      ]
+    }
   },
   {
-    title: "Real-time Market Comps",
+    title: "Market Comparables",
     description: "Compare deals against our database of verified transactions to ensure you're getting the best value.",
     icon: ChartBarIcon,
+    example: {
+      title: "Comparison Dashboard",
+      items: [
+        "Similar Deals Analysis",
+        "Industry Multiple Range",
+        "Valuation Benchmarks",
+        "Growth vs. Multiple Chart"
+      ]
+    }
   },
   {
     title: "Priority Access",
     description: "Get notified about matching deals before they're publicly listed, giving you a competitive edge.",
     icon: BoltIcon,
+    example: {
+      title: "Alert System",
+      items: [
+        "48-Hour Early Access",
+        "Instant SMS/Email Alerts",
+        "One-Click Deal Review",
+        "Direct Broker Contact"
+      ]
+    }
   },
   {
     title: "Risk Assessment",
     description: "Comprehensive evaluation of customer concentration, churn rates, and other critical risk factors.",
     icon: ShieldCheckIcon,
+    example: {
+      title: "Risk Dashboard",
+      items: [
+        "Customer Concentration",
+        "Platform Dependencies",
+        "Traffic Diversity Score",
+        "Competitive Analysis"
+      ]
+    }
   },
   {
-    title: "Smart Alerts",
-    description: "Customizable notifications via email and mobile, with detailed PDF reports and key metrics.",
-    icon: BellAlertIcon,
+    title: "Performance Tracking",
+    description: "Track key performance metrics and identify growth opportunities in your target deals.",
+    icon: ArrowTrendingUpIcon,
+    example: {
+      title: "Metrics Dashboard",
+      items: [
+        "MRR/ARR Growth Trends",
+        "Customer Acquisition Cost",
+        "Lifetime Value Analysis",
+        "Margin Evolution"
+      ]
+    }
   },
 ];
 
@@ -82,9 +138,23 @@ export default function Features() {
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 leading-relaxed">
+              <p className="text-gray-600 leading-relaxed mb-6">
                 {feature.description}
               </p>
+              
+              <div className="pt-6 border-t border-gray-100">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">
+                  {feature.example.title}
+                </h4>
+                <ul className="space-y-2">
+                  {feature.example.items.map((item, i) => (
+                    <li key={i} className="flex items-center text-sm text-gray-500">
+                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-2" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </motion.div>
           ))}
         </motion.div>
