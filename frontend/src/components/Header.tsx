@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import Logo from "./Logo";
 
 export default function Header() {
   const pathname = usePathname();
@@ -70,9 +71,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-semibold text-gray-900 font-inter">
-              DealSight
-            </Link>
+            <Logo />
             {userId && (
               <nav className="hidden md:flex ml-10 space-x-4">
                 <DesktopNavLinks />

@@ -14,6 +14,38 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DealSight",
   description: "Find and analyze business deals",
+  icons: {
+    icon: [
+      {
+        url: "/images/branding/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/images/branding/favicon-32x32.png",
+        type: "image/png",
+        sizes: "32x32",
+      },
+      {
+        url: "/images/branding/favicon-16x16.png",
+        type: "image/png",
+        sizes: "16x16",
+      },
+    ],
+    apple: {
+      url: "/images/branding/apple-touch-icon.png",
+      sizes: "180x180",
+    },
+    other: [
+      {
+        rel: "android-chrome-192x192",
+        url: "/images/branding/android-chrome-192x192.png",
+      },
+      {
+        rel: "android-chrome-512x512",
+        url: "/images/branding/android-chrome-512x512.png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
