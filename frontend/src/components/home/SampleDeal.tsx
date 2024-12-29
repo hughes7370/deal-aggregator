@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from "framer-motion";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import NewsletterPreview from "./NewsletterPreview";
 
 export default function SampleDeal() {
   const [showMetrics, setShowMetrics] = useState(false);
@@ -24,7 +25,7 @@ export default function SampleDeal() {
           </p>
         </motion.div>
 
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
+        <div className="mt-16 grid gap-8 lg:grid-cols-2">
           {/* SaaS Business */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -148,8 +149,10 @@ export default function SampleDeal() {
             </div>
           </motion.div>
 
-          {/* Similar cards for FBA and Content Site */}
-          {/* ... Copy the same structure for other business types ... */}
+          {/* Newsletter Preview */}
+          <div className="lg:sticky lg:top-8">
+            <NewsletterPreview />
+          </div>
         </div>
       </div>
     </section>
