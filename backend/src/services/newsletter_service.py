@@ -96,13 +96,27 @@ class NewsletterService:
         try:
             if not user or not user.get('email') or not user.get('alert'):
                 print("❌ Invalid user data provided")
+                print(f"User data: {user}")
                 return None
             
+            if not listings:
+                print("❌ No listings provided")
+                return None
+
             # Create a newsletter log entry
-            log_id = self.db.create_newsletter_log(user['alert']['user_id'])
+            try:
+                log_id = self.db.create_newsletter_log(user['alert']['user_id'])
+            except Exception as e:
+                print(f"❌ Error creating newsletter log: {str(e)}")
+                return None
             
             # Create email content
-            email_content = self.generate_html_content(user, listings)
+            try:
+                email_content = self.generate_html_content(user, listings)
+            except Exception as e:
+                print(f"❌ Error generating email content: {str(e)}")
+                self.db.update_newsletter_status(log_id, 'failed', f"Error generating content: {str(e)}")
+                return None
             
             # Prepare email parameters
             params = {
@@ -134,6 +148,7 @@ class NewsletterService:
             
         except Exception as e:
             print(f"❌ Error in send_newsletter: {str(e)}")
+            print(f"User data: {user}")
             return None
 
     def get_matching_listings(self, preferences: Dict) -> List[Dict]:
