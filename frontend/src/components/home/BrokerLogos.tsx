@@ -27,7 +27,7 @@ export default function BrokerLogos() {
               key={broker.name}
               className="flex justify-center items-center p-4"
             >
-              <div className="relative h-20 w-40">
+              <div className={`relative ${broker.name === 'Acquire.com' ? 'h-16 w-32' : 'h-20 w-40'}`}>
                 <Image
                   src={broker.logo}
                   alt={`${broker.name} logo`}
@@ -36,6 +36,9 @@ export default function BrokerLogos() {
                   priority
                   style={{ objectFit: 'contain' }}
                   className="filter grayscale hover:grayscale-0 transition-all duration-200"
+                  onLoadingComplete={(img) => {
+                    console.log(`Loaded ${broker.name} logo:`, img.naturalWidth, 'x', img.naturalHeight);
+                  }}
                 />
               </div>
             </div>
