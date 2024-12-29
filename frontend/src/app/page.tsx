@@ -8,6 +8,8 @@ import SuccessStories from "@/components/home/SuccessStories";
 import BrokerLogos from "@/components/home/BrokerLogos";
 import SampleDeal from "@/components/home/SampleDeal";
 import DealFlowOverview from "@/components/home/DealFlowOverview";
+import ROICalculator from "@/components/home/ROICalculator";
+import Pricing from "@/components/home/Pricing";
 
 export default async function Home() {
   const session = await auth();
@@ -24,6 +26,8 @@ export default async function Home() {
       <DealFlowOverview />
       <Features />
       <SuccessStories />
+      <ROICalculator />
+      <Pricing />
       <CTASection />
     </main>
   );

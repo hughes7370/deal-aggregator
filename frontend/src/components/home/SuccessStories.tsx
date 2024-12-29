@@ -11,16 +11,6 @@ const stories = [
       margins: "65% margins",
       timeline: "closed in 45 days"
     },
-    roi: {
-      purchasePrice: "$8M (vs. $9.6M market value)",
-      timeSaved: "120+ hours in sourcing",
-      growth: "+45% ARR in 12 months",
-      valueAdds: [
-        "Customer segmentation opportunity",
-        "International expansion potential",
-        "Enterprise upsell strategy"
-      ]
-    },
     background: "Former PE Associate, now Digital Portfolio Owner",
     icon: ChartBarIcon,
     color: "blue",
@@ -32,20 +22,21 @@ const stories = [
       margins: "80% profit margins",
       timeline: "closed in 30 days"
     },
-    roi: {
-      purchasePrice: "$2.1M (vs. $2.7M market value)",
-      timeSaved: "80+ hours in sourcing",
-      growth: "+65% traffic in 6 months",
-      valueAdds: [
-        "Monetization optimization",
-        "Content expansion strategy",
-        "Affiliate diversification"
-      ]
-    },
     background: "Serial Digital Acquirer",
     icon: ArrowTrendingUpIcon,
     color: "green",
-  }
+  },
+  {
+    title: "Secured FBA brand through exclusive early access window",
+    details: {
+      revenue: "$150K MRR",
+      margins: "55% margins",
+      timeline: "closed in 60 days"
+    },
+    background: "E-commerce Portfolio Manager",
+    icon: CurrencyDollarIcon,
+    color: "indigo",
+  },
 ];
 
 export default function SuccessStories() {
@@ -65,7 +56,7 @@ export default function SuccessStories() {
           </p>
         </motion.div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-2">
+        <div className="mt-12 grid gap-8 lg:grid-cols-3">
           {stories.map((story, index) => (
             <motion.div
               key={story.title}
@@ -95,32 +86,6 @@ export default function SuccessStories() {
                   ))}
                 </dl>
 
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <h4 className="text-sm font-medium text-gray-900 mb-4">ROI Metrics</h4>
-                  <dl className="space-y-3">
-                    <div>
-                      <dt className="text-sm text-gray-500">Purchase vs. Market Value</dt>
-                      <dd className="mt-1 text-sm font-medium text-gray-900">{story.roi.purchasePrice}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-gray-500">Time Saved</dt>
-                      <dd className="mt-1 text-sm font-medium text-gray-900">{story.roi.timeSaved}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-gray-500">Post-Acquisition Growth</dt>
-                      <dd className="mt-1 text-sm font-medium text-gray-900">{story.roi.growth}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-gray-500">Value-Add Opportunities</dt>
-                      <dd className="mt-1 space-y-1">
-                        {story.roi.valueAdds.map((value, i) => (
-                          <p key={i} className="text-sm text-gray-900">• {value}</p>
-                        ))}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <p className="text-sm font-medium text-gray-900">
                     {story.background}
@@ -139,10 +104,10 @@ export default function SuccessStories() {
           className="mt-12 text-center"
         >
           <a
-            href="/success-stories"
+            href="/sign-up"
             className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
           >
-            Read More Stories
+            Join Our Success Stories
           </a>
         </motion.div>
       </div>

@@ -1,88 +1,131 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { CheckIcon } from "@heroicons/react/24/solid";
+import { CheckIcon } from "@heroicons/react/24/outline";
 
 const tiers = [
   {
-    name: "Basic",
-    price: "$299",
-    description: "Perfect for individual buyers and small teams.",
+    name: 'Basic',
+    price: 299,
+    description: 'Perfect for individual buyers starting their acquisition journey',
     features: [
-      "Daily deal alerts",
-      "Basic AI analysis",
-      "Standard deal filtering",
-      "Email notifications",
-      "Historical deal database",
-      "Basic market comps",
-      "Standard support"
+      'Daily deal alerts',
+      'Basic deal analysis',
+      'Market trends dashboard',
+      'Email support',
+      'Deal filtering',
+      'Basic comparables',
     ],
-    cta: "Start Basic Trial",
-    highlighted: false
+    cta: 'Start Basic Trial',
+    highlight: false,
   },
   {
-    name: "Pro",
-    price: "$699",
-    description: "For serious buyers who need comprehensive analysis.",
+    name: 'Pro',
+    price: 699,
+    description: 'For serious buyers looking for competitive advantage',
     features: [
-      "4-hour early access alerts",
-      "Full AI-powered analysis",
-      "Advanced deal filtering",
-      "Email + SMS notifications",
-      "Full historical database",
-      "Detailed market comps",
-      "Priority support",
-      "Custom deal scoring",
-      "Team collaboration"
+      '4-hour early access alerts',
+      'Full AI-powered analysis',
+      'Advanced market analytics',
+      'Priority support',
+      'Advanced filtering',
+      'Detailed comparables',
+      'Custom deal alerts',
+      'Deal negotiation insights',
     ],
-    cta: "Start Pro Trial",
-    highlighted: true
+    cta: 'Start Pro Trial',
+    highlight: true,
   },
   {
-    name: "Enterprise",
-    price: "$1,499",
-    description: "For professional buyers and investment firms.",
+    name: 'Enterprise',
+    price: 1499,
+    description: 'For professional buyers and investment firms',
     features: [
-      "Instant deal alerts",
-      "Custom AI analysis",
-      "Advanced filtering + API",
-      "Multi-channel alerts",
-      "Full data access + API",
-      "Custom market analysis",
-      "24/7 dedicated support",
-      "Custom integrations",
-      "Team + portfolio management",
-      "M&A advisory services"
+      'Instant deal alerts',
+      'Custom analysis framework',
+      'API access',
+      'Dedicated account manager',
+      'White-label reports',
+      'Team collaboration',
+      'Custom integrations',
+      'M&A advisory services',
+      'Deal flow automation',
     ],
-    cta: "Contact Sales",
-    highlighted: false
-  }
+    cta: 'Contact Sales',
+    highlight: false,
+  },
 ];
 
-const calculatorMetrics = [
+const featureComparison = [
   {
-    label: "Time Saved vs Manual Search",
-    value: "80%",
-    detail: "~32 hours/month"
+    category: 'Deal Access',
+    features: [
+      {
+        name: 'Alert Speed',
+        basic: 'Daily',
+        pro: '4-hour',
+        enterprise: 'Instant',
+      },
+      {
+        name: 'Deal Database Access',
+        basic: 'Limited',
+        pro: 'Full',
+        enterprise: 'Full + Historical',
+      },
+      {
+        name: 'Custom Alerts',
+        basic: 'Basic',
+        pro: 'Advanced',
+        enterprise: 'Custom Rules',
+      },
+    ],
   },
   {
-    label: "Average Deal Savings",
-    value: "15-20%",
-    detail: "Through early access"
+    category: 'Analysis',
+    features: [
+      {
+        name: 'Deal Analysis',
+        basic: 'Basic metrics',
+        pro: 'Full AI analysis',
+        enterprise: 'Custom framework',
+      },
+      {
+        name: 'Market Comparables',
+        basic: '3 months data',
+        pro: '12 months data',
+        enterprise: 'Full historical',
+      },
+      {
+        name: 'Valuation Tools',
+        basic: 'Basic calculator',
+        pro: 'Advanced models',
+        enterprise: 'Custom models',
+      },
+    ],
   },
   {
-    label: "ROI on Subscription",
-    value: "10x+",
-    detail: "Based on avg. deal size"
-  }
-];
-
-const trialFeatures = [
-  "Complete sample deal analysis",
-  "Limited alert access (2/day)",
-  "Basic historical deal database",
-  "Standard filtering tools",
-  "Email support"
+    category: 'Support',
+    features: [
+      {
+        name: 'Customer Support',
+        basic: 'Email',
+        pro: 'Priority email & chat',
+        enterprise: 'Dedicated manager',
+      },
+      {
+        name: 'Training',
+        basic: 'Documentation',
+        pro: 'Group sessions',
+        enterprise: 'Custom training',
+      },
+      {
+        name: 'Deal Advisory',
+        basic: '-',
+        pro: 'Limited',
+        enterprise: 'Full service',
+      },
+    ],
+  },
 ];
 
 export default function Pricing() {
@@ -98,7 +141,7 @@ export default function Pricing() {
         >
           <h2 className="text-3xl font-bold text-gray-900">Transparent Pricing</h2>
           <p className="mt-4 text-xl text-gray-500">
-            Choose the plan that fits your acquisition strategy
+            Choose the plan that best fits your acquisition strategy
           </p>
         </motion.div>
 
@@ -111,69 +154,103 @@ export default function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative bg-white rounded-2xl shadow-lg overflow-hidden ${
-                tier.highlighted ? 'ring-2 ring-blue-600' : ''
+              className={`bg-white rounded-2xl shadow-lg p-8 ${
+                tier.highlight ? 'ring-2 ring-blue-600' : ''
               }`}
             >
-              {tier.highlighted && (
-                <div className="absolute top-0 right-0 left-0 bg-blue-600 text-white text-sm font-medium text-center py-2">
-                  Most Popular
-                </div>
-              )}
-              <div className="p-8">
-                <h3 className="text-2xl font-bold text-gray-900">{tier.name}</h3>
+              <div className="text-center">
+                <h3 className="text-2xl font-semibold text-gray-900">{tier.name}</h3>
                 <p className="mt-4 text-gray-500">{tier.description}</p>
                 <p className="mt-8">
-                  <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
+                  <span className="text-4xl font-bold text-gray-900">${tier.price}</span>
                   <span className="text-gray-500">/month</span>
                 </p>
-                <ul className="mt-8 space-y-4">
-                  {tier.features.map((feature) => (
-                    <li key={feature} className="flex items-start">
-                      <CheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                      <span className="ml-3 text-gray-600">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-8">
-                  <a
-                    href="/sign-up"
-                    className={`block w-full py-3 px-6 text-center rounded-lg font-medium ${
-                      tier.highlighted
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    {tier.cta}
-                  </a>
-                </div>
+              </div>
+
+              <ul className="mt-8 space-y-4">
+                {tier.features.map((feature) => (
+                  <li key={feature} className="flex items-center">
+                    <CheckIcon className="h-5 w-5 text-green-500 mr-3" />
+                    <span className="text-gray-600">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-8">
+                <a
+                  href={tier.name === 'Enterprise' ? '/contact' : '/sign-up'}
+                  className={`block w-full text-center px-6 py-3 rounded-md text-sm font-semibold ${
+                    tier.highlight
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  {tier.cta}
+                </a>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* ROI Calculator */}
+        {/* Feature Comparison */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mt-24 bg-white rounded-2xl shadow-lg p-8"
+          className="mt-24"
         >
-          <h3 className="text-2xl font-bold text-gray-900 text-center">ROI Calculator</h3>
-          <p className="mt-4 text-gray-500 text-center">
-            See the potential return on your subscription investment
-          </p>
-          <div className="mt-8 grid gap-8 md:grid-cols-3">
-            {calculatorMetrics.map((metric) => (
-              <div key={metric.label} className="text-center">
-                <dt className="text-lg font-medium text-gray-900">{metric.label}</dt>
-                <dd className="mt-2">
-                  <span className="text-4xl font-bold text-blue-600">{metric.value}</span>
-                  <p className="mt-1 text-sm text-gray-500">{metric.detail}</p>
-                </dd>
-              </div>
-            ))}
+          <h3 className="text-2xl font-bold text-gray-900 text-center mb-12">
+            Feature Comparison
+          </h3>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-t border-gray-200">
+                  <th className="py-5 px-4 text-left text-sm font-semibold text-gray-900">
+                    Feature
+                  </th>
+                  <th className="py-5 px-4 text-center text-sm font-semibold text-gray-900">
+                    Basic
+                  </th>
+                  <th className="py-5 px-4 text-center text-sm font-semibold text-gray-900">
+                    Pro
+                  </th>
+                  <th className="py-5 px-4 text-center text-sm font-semibold text-gray-900">
+                    Enterprise
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {featureComparison.map((category) => (
+                  <>
+                    <tr key={category.category} className="bg-gray-50">
+                      <td
+                        colSpan={4}
+                        className="py-3 px-4 text-sm font-semibold text-gray-900"
+                      >
+                        {category.category}
+                      </td>
+                    </tr>
+                    {category.features.map((feature) => (
+                      <tr key={feature.name}>
+                        <td className="py-3 px-4 text-sm text-gray-900">{feature.name}</td>
+                        <td className="py-3 px-4 text-sm text-gray-500 text-center">
+                          {feature.basic}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-500 text-center">
+                          {feature.pro}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-500 text-center">
+                          {feature.enterprise}
+                        </td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
           </div>
         </motion.div>
 
@@ -183,23 +260,30 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mt-16 bg-white rounded-2xl shadow-lg p-8"
+          className="mt-24 bg-white rounded-2xl shadow-lg p-8 text-center"
         >
-          <h3 className="text-2xl font-bold text-gray-900 text-center">14-Day Free Trial</h3>
-          <p className="mt-4 text-gray-500 text-center">
-            Test drive our platform with these features
-          </p>
-          <div className="mt-8 max-w-2xl mx-auto">
-            <ul className="grid gap-4 md:grid-cols-2">
-              {trialFeatures.map((feature) => (
-                <li key={feature} className="flex items-start">
-                  <CheckIcon className="h-6 w-6 text-green-500 flex-shrink-0" />
-                  <span className="ml-3 text-gray-600">{feature}</span>
-                </li>
-              ))}
-            </ul>
+          <h3 className="text-2xl font-bold text-gray-900">14-Day Free Trial Includes:</h3>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900">Sample Deal Analysis</h4>
+              <p className="mt-2 text-gray-500">
+                Get a taste of our AI-powered deal analysis capabilities
+              </p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900">Limited Alert Access</h4>
+              <p className="mt-2 text-gray-500">
+                Experience our deal alert system with basic notifications
+              </p>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900">Historical Database</h4>
+              <p className="mt-2 text-gray-500">
+                Browse our database of past deals and market trends
+              </p>
+            </div>
           </div>
-          <div className="mt-8 text-center">
+          <div className="mt-12">
             <a
               href="/sign-up"
               className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
