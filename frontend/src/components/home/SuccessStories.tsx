@@ -1,42 +1,48 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { ChartBarIcon, CurrencyDollarIcon, ArrowTrendingUpIcon } from "@heroicons/react/24/outline";
+import Image from "next/image";
 
-const stories = [
+const testimonials = [
   {
     title: "Acquired SaaS business at 3.2x multiple through early access alert",
-    details: {
-      revenue: "$2.5M ARR",
+    metrics: {
+      arr: "$2.5M ARR",
       margins: "65% margins",
       timeline: "closed in 45 days"
     },
-    background: "Former PE Associate, now Digital Portfolio Owner",
-    icon: ChartBarIcon,
-    color: "blue",
+    author: {
+      name: "Michael Chen",
+      role: "Former PE Associate, now Digital Portfolio Owner",
+      image: "/testimonials/michael.jpg"
+    }
   },
   {
     title: "Found content site before public listing, saved 22% on purchase price",
-    details: {
-      revenue: "$75K MRR",
+    metrics: {
+      mrr: "$75K MRR",
       margins: "80% profit margins",
       timeline: "closed in 30 days"
     },
-    background: "Serial Digital Acquirer",
-    icon: ArrowTrendingUpIcon,
-    color: "green",
+    author: {
+      name: "Sarah Thompson",
+      role: "Serial Digital Acquirer",
+      image: "/testimonials/sarah.jpg"
+    }
   },
   {
     title: "Secured FBA brand through exclusive early access window",
-    details: {
-      revenue: "$150K MRR",
+    metrics: {
+      mrr: "$150K MRR",
       margins: "55% margins",
       timeline: "closed in 60 days"
     },
-    background: "E-commerce Portfolio Manager",
-    icon: CurrencyDollarIcon,
-    color: "indigo",
-  },
+    author: {
+      name: "David Rodriguez",
+      role: "E-commerce Portfolio Manager",
+      image: "/testimonials/david.jpg"
+    }
+  }
 ];
 
 export default function SuccessStories() {
@@ -52,64 +58,47 @@ export default function SuccessStories() {
         >
           <h2 className="text-3xl font-bold text-gray-900">Success Stories</h2>
           <p className="mt-4 text-xl text-gray-500">
-            Real results from our early access community
+            See how buyers are finding and closing deals through our platform
           </p>
         </motion.div>
 
-        <div className="mt-12 grid gap-8 lg:grid-cols-3">
-          {stories.map((story, index) => (
+        <div className="mt-16 grid gap-8 lg:grid-cols-3">
+          {testimonials.map((testimonial, index) => (
             <motion.div
-              key={story.title}
+              key={testimonial.author.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.2 }}
-              className="relative bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300"
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="relative bg-white rounded-2xl shadow-lg p-8"
             >
-              <div className={`absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-${story.color}-100 rounded-full opacity-50`} />
-              
-              <div className="relative">
-                <div className={`inline-flex p-3 rounded-lg bg-${story.color}-100 text-${story.color}-600`}>
-                  <story.icon className="h-6 w-6" />
+              <div className="h-full flex flex-col">
+                <div className="flex-grow">
+                  <div className="relative h-12 w-12 mb-6">
+                    <Image
+                      src={testimonial.author.image}
+                      alt={testimonial.author.name}
+                      fill
+                      className="rounded-full object-cover filter grayscale"
+                    />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {testimonial.title}
+                  </h3>
+                  <div className="space-y-2 mb-6">
+                    <p className="text-gray-600">{testimonial.metrics.arr || testimonial.metrics.mrr}</p>
+                    <p className="text-gray-600">{testimonial.metrics.margins}</p>
+                    <p className="text-gray-600">{testimonial.metrics.timeline}</p>
+                  </div>
                 </div>
-
-                <h3 className="mt-6 text-xl font-semibold text-gray-900">
-                  {story.title}
-                </h3>
-
-                <dl className="mt-4 space-y-2">
-                  {Object.entries(story.details).map(([key, value]) => (
-                    <div key={key} className="flex items-center text-gray-500">
-                      <dt className="sr-only">{key}</dt>
-                      <dd className="text-sm">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-900">
-                    {story.background}
-                  </p>
+                <div>
+                  <p className="font-medium text-gray-900">{testimonial.author.name}</p>
+                  <p className="text-sm text-gray-500">{testimonial.author.role}</p>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mt-12 text-center"
-        >
-          <a
-            href="/sign-up"
-            className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
-          >
-            Join Our Success Stories
-          </a>
-        </motion.div>
       </div>
     </section>
   );
