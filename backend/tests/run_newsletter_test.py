@@ -65,7 +65,7 @@ async def run_test():
                     # Send test newsletter
                     print(f"📤 Sending newsletter to {user['email']}...")
                     print(f"Using from email: {newsletter_service.from_email}")
-                    email_id = await newsletter_service.send_newsletter(
+                    email_id = newsletter_service.send_newsletter(
                         user={
                             'email': user['email'],
                             'alert': alert

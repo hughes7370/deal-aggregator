@@ -91,7 +91,7 @@ class NewsletterService:
             print(f"❌ Error in send_personalized_newsletters: {str(e)}")
             raise
 
-    async def send_newsletter(self, user: dict, listings: list) -> str:
+    def send_newsletter(self, user: dict, listings: list) -> str:
         """Send a newsletter to a single user"""
         try:
             if not user or not user.get('email') or not user.get('alert'):

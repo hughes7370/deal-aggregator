@@ -90,7 +90,7 @@ async def test_newsletter_sending():
                 
                 # Send test newsletter
                 print("📤 Sending newsletter...")
-                result = await newsletter_service.send_newsletter(
+                result = newsletter_service.send_newsletter(
                     user={
                         'email': user['email'],
                         'alert': alert
