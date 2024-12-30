@@ -100,50 +100,72 @@ class SchedulerService:
             return False
 
     def process_newsletters(self):
-        """Process regular (non-instant) newsletters for all users"""
+        """Process newsletters for all users"""
         try:
-            # First process any scheduled newsletters that are due
-            self.newsletter_service.process_scheduled_newsletters()
+            print("Processing newsletters...")
             
-            # Then process regular newsletters
+            # Get all users with alerts
             users_result = self.db.client.table('users')\
-                .select('*, alerts(*)')\
-                .eq('subscription_status', 'active')\
+                .select('*')\
                 .execute()
                 
             if not users_result.data:
-                print("No active users found")
+                print("No users found")
                 return
                 
             for user in users_result.data:
                 try:
-                    alerts = user.get('alerts', [])
-                    if not alerts:
+                    # Get user's alerts
+                    alerts_result = self.db.client.table('alerts')\
+                        .select('*')\
+                        .eq('user_id', user['id'])\
+                        .execute()
+                        
+                    if not alerts_result.data:
+                        print(f"No alerts found for user {user['id']}")
                         continue
                         
-                    for alert in alerts:
-                        frequency = alert.get('newsletter_frequency', 'daily')
-                        # Skip instant alerts as they're handled separately
-                        if frequency == 'instantly':
+                    for alert in alerts_result.data:
+                        try:
+                            # Calculate next send time based on frequency
+                            frequency = alert.get('newsletter_frequency', 'daily')
+                            last_sent = alert.get('last_notification_sent')
+                            
+                            if last_sent:
+                                last_sent = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
+                                
+                                # Check if it's time to send based on frequency
+                                if frequency == 'daily':
+                                    next_send = last_sent + timedelta(days=1)
+                                elif frequency == 'weekly':
+                                    next_send = last_sent + timedelta(days=7)
+                                else:  # monthly
+                                    next_send = last_sent + timedelta(days=30)
+                                    
+                                if datetime.now(UTC) < next_send:
+                                    print(f"Skipping alert {alert['id']}, next send at {next_send}")
+                                    continue
+                            
+                            # Schedule newsletter
+                            scheduled_time = datetime.now(UTC) + timedelta(minutes=1)
+                            self.newsletter_service.schedule_newsletter(
+                                user_id=user['id'],
+                                scheduled_for=scheduled_time
+                            )
+                            print(f"Scheduled newsletter for user {user['id']}")
+                            
+                        except Exception as e:
+                            print(f"Error processing alert {alert['id']}: {str(e)}")
                             continue
                             
-                        last_sent = alert.get('last_notification_sent')
-                        if self.should_send_newsletter(frequency, last_sent):
-                            # Schedule the next newsletter based on frequency
-                            next_schedule = self.calculate_next_schedule(frequency)
-                            self.newsletter_service.schedule_newsletter(
-                                user['id'],
-                                next_schedule,
-                                alert_id=alert['id']
-                            )
-                    
                 except Exception as e:
-                    print(f"Error processing user {user.get('id')}: {str(e)}")
+                    print(f"Error processing user {user['id']}: {str(e)}")
                     continue
-                
+                    
         except Exception as e:
-            print(f"Error processing newsletters: {str(e)}")
-            
+            print(f"Error in process_newsletters: {str(e)}")
+            raise
+
     def calculate_next_schedule(self, frequency: str) -> datetime:
         """Calculate the next schedule time based on frequency"""
         now = datetime.now(UTC)
