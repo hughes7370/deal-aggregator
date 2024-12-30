@@ -1,7 +1,7 @@
 from supabase import create_client
 import os
 from typing import Dict, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, UTC
 import json
 
 class SupabaseClient:
@@ -119,38 +119,40 @@ class SupabaseClient:
             return False
 
     def get_pending_newsletters(self) -> List[Dict]:
-        """Get newsletters that need to be sent"""
+        """Get pending newsletters that are due to be sent"""
         try:
+            now = datetime.now(UTC).isoformat()
             result = self.client.table('newsletter_logs')\
                 .select('*')\
                 .eq('status', 'pending')\
-                .lte('scheduled_for', datetime.now().isoformat())\
+                .lte('scheduled_for', now)\
                 .execute()
             
-            return result.data
+            return result.data if result.data else []
             
         except Exception as e:
-            print(f"Error getting pending newsletters: {e}")
+            print(f"Error getting pending newsletters: {str(e)}")
             return []
 
-    def update_newsletter_status(self, newsletter_id: str, status: str, error_message: str = None):
-        """Update newsletter status"""
+    def update_newsletter_status(self, newsletter_id: str, status: str, error_message: str = None) -> bool:
+        """Update the status of a newsletter"""
         try:
             update_data = {
                 'status': status,
-                'updated_at': datetime.now().isoformat()
+                'updated_at': datetime.now(UTC).isoformat()
             }
-            
-            if status == 'sent':
-                update_data['sent_at'] = datetime.now().isoformat()
-            elif status == 'failed' and error_message:
+            if error_message:
                 update_data['error_message'] = error_message
-            
-            self.client.table('newsletter_logs').update(update_data).eq('id', newsletter_id).execute()
+                
+            self.client.table('newsletter_logs')\
+                .update(update_data)\
+                .eq('id', newsletter_id)\
+                .execute()
+            return True
             
         except Exception as e:
-            print(f"Error updating newsletter status: {e}")
-            raise 
+            print(f"Error updating newsletter status: {str(e)}")
+            return False
 
     def get_existing_listing_urls(self, urls: List[str]) -> List[str]:
         """Check which URLs already exist in the database"""
@@ -240,24 +242,26 @@ class SupabaseClient:
             return []
 
     def create_newsletter_log(self, user_id: str, scheduled_for: datetime = None, analysis_id: str = None) -> str:
-        """Create a new newsletter log entry"""
+        """Create a newsletter log entry"""
         try:
+            if not scheduled_for:
+                scheduled_for = datetime.now(UTC)
+                
             data = {
                 'user_id': user_id,
                 'status': 'pending',
-                'created_at': datetime.now().isoformat(),
-                'updated_at': datetime.now().isoformat()
+                'scheduled_for': scheduled_for.isoformat(),
+                'created_at': datetime.now(UTC).isoformat()
             }
-            
-            if scheduled_for:
-                data['scheduled_for'] = scheduled_for.isoformat()
-                
             if analysis_id:
                 data['analysis_id'] = analysis_id
-            
-            result = self.client.table('newsletter_logs').insert(data).execute()
-            return result.data[0]['id']
+                
+            result = self.client.table('newsletter_logs')\
+                .insert(data)\
+                .execute()
+                
+            return result.data[0]['id'] if result.data else None
             
         except Exception as e:
-            print(f"Error creating newsletter log: {e}")
-            raise
+            print(f"Error creating newsletter log: {str(e)}")
+            return None

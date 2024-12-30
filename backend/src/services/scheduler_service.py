@@ -161,6 +161,13 @@ class SchedulerService:
                 except Exception as e:
                     print(f"Error processing user {user['id']}: {str(e)}")
                     continue
+
+            # After scheduling new newsletters, process any pending ones
+            try:
+                print("Processing pending newsletters...")
+                self.newsletter_service.send_personalized_newsletters()
+            except Exception as e:
+                print(f"Error processing pending newsletters: {str(e)}")
                     
         except Exception as e:
             print(f"Error in process_newsletters: {str(e)}")
