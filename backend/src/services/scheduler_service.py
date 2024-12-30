@@ -35,12 +35,20 @@ class SchedulerService:
         
     def run_scraper(self):
         try:
-            # Import and run main scraper
-            from ...main import run_scrapers
+            print("🔄 Starting scraper run...")
+            # Use absolute import instead of relative
+            from backend.main import run_scrapers
             run_scrapers()
             print("✅ Scraper completed, instant alerts will be processed in one hour")
+        except ImportError as e:
+            print(f"❌ Error importing scraper module: {str(e)}")
+            print(f"Current PYTHONPATH: {os.environ.get('PYTHONPATH', 'Not set')}")
+            raise
         except Exception as e:
-            print(f"Error running scraper: {str(e)}")
+            print(f"❌ Error running scraper: {str(e)}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            raise
 
     def process_instant_alerts(self):
         """Process instant alerts after new listings are scraped"""
