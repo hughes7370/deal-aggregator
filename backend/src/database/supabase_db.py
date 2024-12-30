@@ -239,7 +239,7 @@ class SupabaseClient:
             print(f"Error getting filtered listings: {e}")
             return []
 
-    def create_newsletter_log(self, user_id: str, scheduled_for: datetime = None) -> str:
+    def create_newsletter_log(self, user_id: str, scheduled_for: datetime = None, analysis_id: str = None) -> str:
         """Create a new newsletter log entry"""
         try:
             data = {
@@ -251,6 +251,9 @@ class SupabaseClient:
             
             if scheduled_for:
                 data['scheduled_for'] = scheduled_for.isoformat()
+                
+            if analysis_id:
+                data['analysis_id'] = analysis_id
             
             result = self.client.table('newsletter_logs').insert(data).execute()
             return result.data[0]['id']

@@ -372,11 +372,11 @@ class NewsletterService:
             </div>
         """
 
-    def schedule_newsletter(self, user_id: str, scheduled_for: datetime, alert_id: str = None) -> str:
+    def schedule_newsletter(self, user_id: str, scheduled_for: datetime, analysis_id: str = None) -> str:
         """Schedule a newsletter for future delivery"""
         try:
-            # Create a newsletter log entry with scheduled time and alert ID
-            log_id = self.db.create_newsletter_log(user_id, scheduled_for, alert_id)
+            # Create a newsletter log entry with scheduled time and analysis ID
+            log_id = self.db.create_newsletter_log(user_id, scheduled_for, analysis_id)
             print(f"📅 Scheduled newsletter for user {user_id} at {scheduled_for}")
             return log_id
         except Exception as e:
@@ -416,16 +416,26 @@ class NewsletterService:
                         .execute()
                         
                     if not user_result.data:
-                        print(f"⚠️ User not found for newsletter {newsletter['id']}")
-                        self.db.update_newsletter_status(newsletter['id'], 'failed', 'User not found')
+                        error_msg = f"User not found for newsletter {newsletter['id']}"
+                        print(f"⚠️ {error_msg}")
+                        self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
                         continue
                         
                     user = user_result.data
                     
-                    if not alert:
-                        print(f"⚠️ No alert found for newsletter {newsletter['id']}")
-                        self.db.update_newsletter_status(newsletter['id'], 'failed', 'Alert not found')
+                    # Get user's preferences/alerts
+                    alerts_result = self.db.client.table('alerts')\
+                        .select('*')\
+                        .eq('user_id', user['id'])\
+                        .execute()
+                        
+                    if not alerts_result.data:
+                        error_msg = f"No preferences or alerts found for user {user['email']}"
+                        print(f"⚠️ {error_msg}")
+                        self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
                         continue
+                    
+                    alert = alerts_result.data[0]  # Use the first alert if multiple exist
                     
                     # Get matching listings
                     matching_listings = self.get_matching_listings(alert)
@@ -449,11 +459,14 @@ class NewsletterService:
                             .eq('id', alert['id'])\
                             .execute()
                     else:
-                        print(f"❌ Failed to send scheduled newsletter to {user['email']}")
+                        error_msg = f"Failed to send newsletter to {user['email']}"
+                        print(f"❌ {error_msg}")
+                        self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
                     
                 except Exception as e:
-                    print(f"❌ Error processing scheduled newsletter {newsletter['id']}: {str(e)}")
-                    self.db.update_newsletter_status(newsletter['id'], 'failed', str(e))
+                    error_msg = f"Error processing scheduled newsletter {newsletter['id']}: {str(e)}"
+                    print(f"❌ {error_msg}")
+                    self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
                     continue
                     
         except Exception as e:
