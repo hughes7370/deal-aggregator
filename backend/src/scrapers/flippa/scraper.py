@@ -32,12 +32,14 @@ class FlippaScraper(BaseScraper):
                     listings[] {
                         title
                         price
-                        monthly_revenue
+                        revenue_multiple
+                        multiple
+                        valuation_multiple
                         monthly_profit
                         description
                         listing_url
                         location
-                        established_year
+                        site_age
                         business_type
                     }
                 }
@@ -71,9 +73,10 @@ class FlippaScraper(BaseScraper):
                         print("Skipping listing with no URL")
                         continue
                     
-                    if listing_url in existing_urls:
-                        print(f"Skipping existing listing: {listing_url}")
-                        continue
+                    # Temporarily commenting out existing URL check for testing
+                    # if listing_url in existing_urls:
+                    #     print(f"Skipping existing listing: {listing_url}")
+                    #     continue
                     
                     listing_details = self._get_listing_details(listing_url)
                     
@@ -105,11 +108,13 @@ class FlippaScraper(BaseScraper):
                 {
                     business_details {
                         asking_price
-                        monthly_revenue
+                        revenue_multiple
+                        multiple
+                        valuation_multiple
                         monthly_profit
                         business_type
                         employees
-                        established_year
+                        site_age
                         location
                     }
                     description_text
@@ -117,9 +122,11 @@ class FlippaScraper(BaseScraper):
                         text
                     }
                     financial_info {
-                        monthly_revenue
                         monthly_profit
                         business_model
+                        revenue_multiple
+                        multiple
+                        valuation_multiple
                     }
                 }
                 """,
@@ -135,37 +142,98 @@ class FlippaScraper(BaseScraper):
             if response.status_code != 200:
                 response.raise_for_status()
             
-            return response.json().get('data', {})
+            data = response.json()
+            print("\nRaw AgentQL Response Data:")
+            print(json.dumps(data.get('data', {}), indent=2))
+            
+            return data.get('data', {})
             
         except Exception as e:
             print(f"Error getting listing details: {e}")
             return None
+
+    def _parse_site_age(self, age_str: str) -> int:
+        """Convert site age string to number of years"""
+        try:
+            age_str = str(age_str).strip().lower()
+            if not age_str:
+                return 0
+                
+            # Extract the number
+            number = ''.join(filter(str.isdigit, age_str))
+            if not number:
+                return 0
+                
+            years = int(number)
+            
+            # Convert months to years if specified in months
+            if 'month' in age_str:
+                years = max(1, round(years / 12))
+                
+            return years
+        except:
+            return 0
 
     def _format_listing_for_storage(self, listing_data: Dict, listing_details: Dict) -> Dict:
         try:
             financial_info = listing_details.get('financial_info', {})
             business_details = listing_details.get('business_details', {})
             
-            # Convert monthly values to annual
-            monthly_revenue = self._parse_price(business_details.get('monthly_revenue', listing_data.get('monthly_revenue', '0')))
+            print("\nRaw Business Details:")
+            print(json.dumps(business_details, indent=2))
+            print("\nRaw Financial Info:")
+            print(json.dumps(financial_info, indent=2))
+            
+            # Parse site age
+            site_age = self._parse_site_age(business_details.get('site_age', listing_data.get('site_age', '')))
+            print(f"Parsed Site Age: {site_age} years")
+            
+            # Calculate revenue using revenue multiple
+            asking_price = self._parse_price(business_details.get('asking_price', listing_data.get('price', '0')))
+            
+            # Try different possible field names for revenue multiple
+            revenue_multiple = 0.0
+            for field in ['revenue_multiple', 'multiple', 'valuation_multiple']:
+                multiple = business_details.get(field, listing_data.get(field, 0))
+                if multiple:
+                    revenue_multiple = self._parse_revenue_multiple(multiple)
+                    if revenue_multiple > 0:
+                        break
+            
+            # Also check financial_info for the multiple
+            if revenue_multiple == 0 and financial_info:
+                for field in ['revenue_multiple', 'multiple', 'valuation_multiple']:
+                    multiple = financial_info.get(field, 0)
+                    if multiple:
+                        revenue_multiple = self._parse_revenue_multiple(multiple)
+                        if revenue_multiple > 0:
+                            break
+            
+            annual_revenue = int(asking_price / revenue_multiple) if revenue_multiple > 0 else 0
+            
+            print(f"\nRevenue Calculation Debug for {listing_data.get('title', '')}:")
+            print(f"Asking Price: ${asking_price:,}")
+            print(f"Revenue Multiple: {revenue_multiple:.2f}x")
+            print(f"Calculated Annual Revenue: ${annual_revenue:,}")
+            
+            # Calculate annual profit
             monthly_profit = self._parse_price(business_details.get('monthly_profit', listing_data.get('monthly_profit', '0')))
-            annual_revenue = monthly_revenue * 12
             annual_profit = monthly_profit * 12
             
             formatted_listing = {
                 'title': listing_data.get('title', ''),
                 'listing_url': listing_data.get('listing_url', ''),
                 'source_platform': 'Flippa',
-                'asking_price': self._parse_price(business_details.get('asking_price', listing_data.get('price', '0'))),
-                'revenue': annual_revenue,  # Converted to annual
-                'ebitda': annual_profit,    # Converted to annual
+                'asking_price': asking_price,
+                'revenue': annual_revenue,
+                'ebitda': annual_profit,
                 'industry': self._extract_industry(listing_data.get('business_type', '')),
                 'location': business_details.get('location', 'United States'),
                 'description': listing_data.get('description', ''),
                 'full_description': listing_details.get('description_text', ''),
                 'business_highlights': json.dumps(listing_details.get('highlights', [])),
                 'financial_details': json.dumps({
-                    'monthly_revenue': monthly_revenue,
+                    'revenue_multiple': revenue_multiple,
                     'annual_revenue': annual_revenue,
                     'monthly_profit': monthly_profit,
                     'annual_profit': annual_profit,
@@ -174,7 +242,7 @@ class FlippaScraper(BaseScraper):
                 'business_details': json.dumps({
                     'location': business_details.get('location', 'United States'),
                     'employees': business_details.get('employees', ''),
-                    'established_year': business_details.get('established_year', ''),
+                    'business_age': site_age,
                     'business_type': business_details.get('business_type', '')
                 }),
                 'raw_data': json.dumps({
@@ -215,3 +283,12 @@ class FlippaScraper(BaseScraper):
             return 'Service'
         else:
             return 'Other' 
+
+    def _parse_revenue_multiple(self, multiple_str: str) -> float:
+        try:
+            multiple_str = str(multiple_str).strip().lower()
+            if 'x' in multiple_str:
+                multiple_str = multiple_str.replace('x', '')
+            return float(multiple_str) if multiple_str else 0.0
+        except:
+            return 0.0 
