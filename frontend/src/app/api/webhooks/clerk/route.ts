@@ -66,14 +66,28 @@ export async function POST(req: Request) {
       console.log('Processing user data:', { id, email });
 
       try {
-        // First check if user already exists
-        const { data: existingUser } = await supabase
+        // First check if user exists by email
+        const { data: existingUserByEmail } = await supabase
           .from('users')
           .select('*')
-          .eq('id', id)
+          .eq('email', email)
           .single();
 
-        console.log('Existing user check:', existingUser);
+        console.log('Existing user check by email:', existingUserByEmail);
+
+        if (existingUserByEmail) {
+          // Update alerts to use new user ID
+          const { error: alertsError } = await supabase
+            .from('alerts')
+            .update({ user_id: id })
+            .eq('user_id', existingUserByEmail.id);
+
+          if (alertsError) {
+            console.error('Error updating alerts:', alertsError);
+          } else {
+            console.log('Successfully updated alerts for user');
+          }
+        }
 
         // First, create/update the user in the users table
         const { data: userData, error: userError } = await supabase
@@ -81,9 +95,9 @@ export async function POST(req: Request) {
           .upsert({
             id,
             email,
-            subscription_tier: 'free',
-            subscription_status: 'active',
-            created_at: new Date(created_at).toISOString(),
+            subscription_tier: existingUserByEmail?.subscription_tier || 'free',
+            subscription_status: existingUserByEmail?.subscription_status || 'active',
+            created_at: existingUserByEmail?.created_at || new Date(created_at).toISOString(),
             updated_at: new Date().toISOString()
           }, {
             onConflict: 'id'
