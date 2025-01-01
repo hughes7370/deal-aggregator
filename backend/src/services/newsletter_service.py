@@ -106,10 +106,11 @@ class NewsletterService:
             # Create a newsletter log entry
             try:
                 user_id = user['alert'].get('user_id')
+                alert_id = user['alert'].get('id')
                 if not user_id:
                     print("❌ No user_id found in alert")
                     return None
-                log_id = self.db.create_newsletter_log(user_id)
+                log_id = self.db.create_newsletter_log(user_id, alert_id=alert_id)
             except Exception as e:
                 print(f"❌ Error creating newsletter log: {str(e)}")
                 return None
@@ -140,10 +141,11 @@ class NewsletterService:
                     
                     # Update last_notification_sent timestamp with UTC time
                     try:
-                        self.db.client.table('alerts')\
-                            .update({'last_notification_sent': datetime.now(UTC).isoformat()})\
-                            .eq('id', user['alert']['id'])\
-                            .execute()
+                        if alert_id:
+                            self.db.client.table('alerts')\
+                                .update({'last_notification_sent': datetime.now(UTC).isoformat()})\
+                                .eq('id', alert_id)\
+                                .execute()
                     except Exception as e:
                         print(f"⚠️ Could not update last_notification_sent: {str(e)}")
                     

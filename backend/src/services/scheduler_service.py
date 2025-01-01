@@ -146,14 +146,15 @@ class SchedulerService:
                                 print(f"Skipping alert {alert['id']}, too soon to send next newsletter (last sent: {last_sent})")
                                 continue
                             
-                            # Schedule newsletter
-                            scheduled_time = datetime.now(UTC) + timedelta(minutes=1)
-                            self.newsletter_service.schedule_newsletter(
+                            # Schedule newsletter for 5 minutes from now
+                            scheduled_time = datetime.now(UTC) + timedelta(minutes=5)
+                            log_id = self.newsletter_service.schedule_newsletter(
                                 user_id=user['id'],
                                 scheduled_for=scheduled_time,
-                                alert_id=alert['id']  # Pass the alert_id
+                                alert_id=alert['id']
                             )
-                            print(f"Scheduled newsletter for user {user['id']} with alert {alert['id']}")
+                            if log_id:
+                                print(f"Scheduled newsletter for user {user['id']} with alert {alert['id']}")
                             
                         except Exception as e:
                             print(f"Error processing alert {alert['id']}: {str(e)}")
@@ -163,10 +164,10 @@ class SchedulerService:
                     print(f"Error processing user {user['id']}: {str(e)}")
                     continue
 
-            # After scheduling new newsletters, process any pending ones
+            # Process any pending newsletters that are due
             try:
                 print("Processing pending newsletters...")
-                self.newsletter_service.send_personalized_newsletters()
+                self.newsletter_service.process_scheduled_newsletters()
             except Exception as e:
                 print(f"Error processing pending newsletters: {str(e)}")
                     
