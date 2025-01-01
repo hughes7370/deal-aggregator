@@ -7,6 +7,8 @@ import {
 } from "@heroicons/react/24/outline";
 import AlertCard from "@/components/alerts/alert-card";
 
+export const revalidate = 0;
+
 export default async function DashboardPage() {
   const { userId } = await auth();
   
@@ -32,6 +34,9 @@ export default async function DashboardPage() {
     {
       auth: {
         persistSession: false
+      },
+      db: {
+        schema: 'public'
       }
     }
   );
@@ -47,7 +52,8 @@ export default async function DashboardPage() {
   const { data: alerts, error } = await supabase
     .from('alerts')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
   console.log('Supabase Response:', { alerts, error });
 
