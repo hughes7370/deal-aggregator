@@ -64,7 +64,6 @@ export default function PreferencesForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [otherIndustry, setOtherIndustry] = useState('');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [selectedBusinessModels, setSelectedBusinessModels] = useState<string[]>([]);
 
@@ -268,9 +267,8 @@ export default function PreferencesForm() {
           <button
             type="button"
             onClick={() => {
-              const allIndustries = INDUSTRIES.filter(i => i !== 'Other');
-              setSelectedIndustries(allIndustries);
-              setValue('industries', allIndustries);
+              setSelectedIndustries(INDUSTRIES);
+              setValue('industries', INDUSTRIES);
             }}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
@@ -297,22 +295,6 @@ export default function PreferencesForm() {
             </label>
           ))}
         </div>
-        {selectedIndustries.includes('Other') && (
-          <div className="mt-2">
-            <input
-              type="text"
-              value={otherIndustry}
-              onChange={(e) => {
-                setOtherIndustry(e.target.value);
-                // Update the form value to include the custom industry
-                const industriesWithoutOther = selectedIndustries.filter(i => i !== 'Other');
-                setValue('industries', [...industriesWithoutOther, `Other: ${e.target.value}`]);
-              }}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              placeholder="Enter custom industry"
-            />
-          </div>
-        )}
       </div>
 
       {/* Advanced Filters Toggle */}

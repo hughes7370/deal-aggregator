@@ -182,21 +182,7 @@ class NewsletterService:
                 industries = preferences['industries'] if isinstance(preferences['industries'], list) else preferences['industries'].split(',')
                 # If industries is empty or None, don't apply any industry filter (select all)
                 if industries and len(industries) > 0:
-                    # Handle "Other" category by using LIKE operator for custom industries
-                    other_industries = [ind for ind in industries if ind.startswith('Other:')]
-                    regular_industries = [ind for ind in industries if not ind.startswith('Other:')]
-                    
-                    if other_industries and regular_industries:
-                        # If we have both Other and regular industries
-                        query = query.or_(
-                            f"industry.in.({','.join(regular_industries)}),industry.like.*{other_industries[0].split('Other: ')[1]}*"
-                        )
-                    elif other_industries:
-                        # If we only have Other industry
-                        query = query.like('industry', f"*{other_industries[0].split('Other: ')[1]}*")
-                    else:
-                        # If we only have regular industries
-                        query = query.in_('industry', regular_industries)
+                    query = query.in_('industry', industries)
 
             # Advanced Filters
             # Business Age
