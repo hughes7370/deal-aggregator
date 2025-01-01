@@ -137,6 +137,16 @@ class NewsletterService:
                 if response and response.get('id'):
                     # Update newsletter log as sent
                     self.db.update_newsletter_status(log_id, 'sent')
+                    
+                    # Update last_notification_sent timestamp with UTC time
+                    try:
+                        self.db.client.table('alerts')\
+                            .update({'last_notification_sent': datetime.now(UTC).isoformat()})\
+                            .eq('id', user['alert']['id'])\
+                            .execute()
+                    except Exception as e:
+                        print(f"⚠️ Could not update last_notification_sent: {str(e)}")
+                    
                     return response['id']
                 else:
                     # Update newsletter log as failed

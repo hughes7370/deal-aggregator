@@ -87,7 +87,10 @@ class SchedulerService:
             return True
         
         try:
+            # Ensure UTC timezone for comparison
             last_sent_dt = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
+            if last_sent_dt.tzinfo is None:
+                last_sent_dt = last_sent_dt.replace(tzinfo=UTC)
             now = datetime.now(UTC)
             
             if frequency == 'instantly':
@@ -140,7 +143,7 @@ class SchedulerService:
                             last_sent = alert.get('last_notification_sent')
                             
                             if not self.should_send_newsletter(frequency, last_sent):
-                                print(f"Skipping alert {alert['id']}, too soon to send next newsletter")
+                                print(f"Skipping alert {alert['id']}, too soon to send next newsletter (last sent: {last_sent})")
                                 continue
                             
                             # Schedule newsletter
@@ -151,12 +154,6 @@ class SchedulerService:
                                 alert_id=alert['id']  # Pass the alert_id
                             )
                             print(f"Scheduled newsletter for user {user['id']} with alert {alert['id']}")
-                            
-                            # Update last_notification_sent timestamp
-                            self.db.client.table('alerts')\
-                                .update({'last_notification_sent': datetime.now(UTC).isoformat()})\
-                                .eq('id', alert['id'])\
-                                .execute()
                             
                         except Exception as e:
                             print(f"Error processing alert {alert['id']}: {str(e)}")
