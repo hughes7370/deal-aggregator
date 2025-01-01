@@ -41,7 +41,8 @@ const INDUSTRIES = [
   'Services',
   'Content',
   'Advertising',
-  'Mobile Apps'
+  'Mobile Apps',
+  'Other'
 ];
 
 const BUSINESS_MODELS = [
@@ -63,6 +64,9 @@ export default function PreferencesForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [otherIndustry, setOtherIndustry] = useState('');
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [selectedBusinessModels, setSelectedBusinessModels] = useState<string[]>([]);
 
   const {
     register,
@@ -260,19 +264,55 @@ export default function PreferencesForm() {
         <label className="block text-sm font-medium text-gray-700">
           Target Industries
         </label>
+        <div className="mb-2">
+          <button
+            type="button"
+            onClick={() => {
+              const allIndustries = INDUSTRIES.filter(i => i !== 'Other');
+              setSelectedIndustries(allIndustries);
+              setValue('industries', allIndustries);
+            }}
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Select All Industries
+          </button>
+        </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {INDUSTRIES.map((industry) => (
             <label key={industry} className="inline-flex items-center">
               <input
                 type="checkbox"
                 value={industry}
-                {...register('industries')}
+                checked={selectedIndustries.includes(industry)}
+                onChange={(e) => {
+                  const updatedIndustries = e.target.checked
+                    ? [...selectedIndustries, industry]
+                    : selectedIndustries.filter(i => i !== industry);
+                  setSelectedIndustries(updatedIndustries);
+                  setValue('industries', updatedIndustries);
+                }}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               <span className="ml-2 text-sm text-gray-700">{industry}</span>
             </label>
           ))}
         </div>
+        {selectedIndustries.includes('Other') && (
+          <div className="mt-2">
+            <input
+              type="text"
+              value={otherIndustry}
+              onChange={(e) => {
+                setOtherIndustry(e.target.value);
+                // Update the form value to include the custom industry
+                const industriesWithoutOther = selectedIndustries.filter(i => i !== 'Other');
+                setValue('industries', [...industriesWithoutOther, `Other: ${e.target.value}`]);
+              }}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Enter custom industry"
+            />
+          </div>
+        )}
       </div>
 
       {/* Advanced Filters Toggle */}
@@ -295,15 +335,34 @@ export default function PreferencesForm() {
           {/* Business Models */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Business Models
+              Preferred Business Models
             </label>
+            <div className="mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedBusinessModels(BUSINESS_MODELS);
+                  setValue('preferred_business_models', BUSINESS_MODELS);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Select All Business Models
+              </button>
+            </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {BUSINESS_MODELS.map((model) => (
                 <label key={model} className="inline-flex items-center">
                   <input
                     type="checkbox"
                     value={model}
-                    {...register('preferred_business_models')}
+                    checked={selectedBusinessModels.includes(model)}
+                    onChange={(e) => {
+                      const updatedModels = e.target.checked
+                        ? [...selectedBusinessModels, model]
+                        : selectedBusinessModels.filter(m => m !== model);
+                      setSelectedBusinessModels(updatedModels);
+                      setValue('preferred_business_models', updatedModels);
+                    }}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm text-gray-700">{model}</span>
