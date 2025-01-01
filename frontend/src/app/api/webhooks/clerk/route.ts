@@ -66,6 +66,15 @@ export async function POST(req: Request) {
       console.log('Processing user data:', { id, email });
 
       try {
+        // First check if user already exists
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        console.log('Existing user check:', existingUser);
+
         // First, create/update the user in the users table
         const { data: userData, error: userError } = await supabase
           .from('users')

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { 
@@ -11,6 +11,7 @@ export const revalidate = 0;
 
 export default async function DashboardPage() {
   const { userId } = await auth();
+  const user = await currentUser();
   
   if (!userId) {
     return (
@@ -25,8 +26,13 @@ export default async function DashboardPage() {
     );
   }
 
-  // The Clerk userId already includes the 'user_' prefix
-  console.log('Clerk userId:', userId);
+  // Log full user details for debugging
+  console.log('Clerk session details:', {
+    userId,
+    userEmail: user?.emailAddresses[0]?.emailAddress,
+    primaryEmailId: user?.primaryEmailAddressId,
+    createdAt: user?.createdAt
+  });
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
