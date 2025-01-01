@@ -372,11 +372,11 @@ class NewsletterService:
             </div>
         """
 
-    def schedule_newsletter(self, user_id: str, scheduled_for: datetime, analysis_id: str = None) -> str:
+    def schedule_newsletter(self, user_id: str, scheduled_for: datetime = None, alert_id: str = None) -> str:
         """Schedule a newsletter for future delivery"""
         try:
-            # Create a newsletter log entry with scheduled time and analysis ID
-            log_id = self.db.create_newsletter_log(user_id, scheduled_for, analysis_id)
+            # Create a newsletter log entry with scheduled time and alert ID
+            log_id = self.db.create_newsletter_log(user_id, scheduled_for, alert_id)
             print(f"📅 Scheduled newsletter for user {user_id} at {scheduled_for}")
             return log_id
         except Exception as e:

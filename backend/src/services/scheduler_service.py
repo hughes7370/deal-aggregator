@@ -135,32 +135,28 @@ class SchedulerService:
                         
                     for alert in alerts_result.data:
                         try:
-                            # Calculate next send time based on frequency
+                            # Check if we should send based on frequency and last sent time
                             frequency = alert.get('newsletter_frequency', 'daily')
                             last_sent = alert.get('last_notification_sent')
                             
-                            if last_sent:
-                                last_sent = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
-                                
-                                # Check if it's time to send based on frequency
-                                if frequency == 'daily':
-                                    next_send = last_sent + timedelta(days=1)
-                                elif frequency == 'weekly':
-                                    next_send = last_sent + timedelta(days=7)
-                                else:  # monthly
-                                    next_send = last_sent + timedelta(days=30)
-                                    
-                                if datetime.now(UTC) < next_send:
-                                    print(f"Skipping alert {alert['id']}, next send at {next_send}")
-                                    continue
+                            if not self.should_send_newsletter(frequency, last_sent):
+                                print(f"Skipping alert {alert['id']}, too soon to send next newsletter")
+                                continue
                             
                             # Schedule newsletter
                             scheduled_time = datetime.now(UTC) + timedelta(minutes=1)
                             self.newsletter_service.schedule_newsletter(
                                 user_id=user['id'],
-                                scheduled_for=scheduled_time
+                                scheduled_for=scheduled_time,
+                                alert_id=alert['id']  # Pass the alert_id
                             )
-                            print(f"Scheduled newsletter for user {user['id']}")
+                            print(f"Scheduled newsletter for user {user['id']} with alert {alert['id']}")
+                            
+                            # Update last_notification_sent timestamp
+                            self.db.client.table('alerts')\
+                                .update({'last_notification_sent': datetime.now(UTC).isoformat()})\
+                                .eq('id', alert['id'])\
+                                .execute()
                             
                         except Exception as e:
                             print(f"Error processing alert {alert['id']}: {str(e)}")
