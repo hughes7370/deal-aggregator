@@ -121,12 +121,25 @@ class SupabaseClient:
     def get_pending_newsletters(self) -> List[Dict]:
         """Get pending newsletters that are due to be sent"""
         try:
-            now = datetime.now(UTC).isoformat()
+            # Get current time in UTC
+            now = datetime.now(UTC)
+            
+            # Format for Supabase timestamp comparison
+            now_str = now.strftime('%Y-%m-%d %H:%M:%S.%f+00')
+            
+            print(f"Checking for newsletters due before {now_str}")
+            
             result = self.client.table('newsletter_logs')\
                 .select('*')\
                 .eq('status', 'pending')\
-                .lte('scheduled_for', now)\
+                .lte('scheduled_for', now_str)\
+                .order('scheduled_for')\
                 .execute()
+            
+            if result.data:
+                print(f"Found {len(result.data)} pending newsletters")
+            else:
+                print("No pending newsletters found")
             
             return result.data if result.data else []
             

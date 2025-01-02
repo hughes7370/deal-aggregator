@@ -27,10 +27,16 @@ class SchedulerService:
             CronTrigger(hour=2, minute=0)
         )
         
-        # Check for regular newsletters every hour
+        # Schedule newsletters at 9 AM UTC
+        self.scheduler.add_job(
+            self.schedule_newsletters,
+            CronTrigger(hour=9, minute=0)
+        )
+        
+        # Process scheduled newsletters every 5 minutes
         self.scheduler.add_job(
             self.process_newsletters,
-            CronTrigger(minute=0)
+            CronTrigger(minute='*/5')
         )
         
     def run_scraper(self):
@@ -110,10 +116,10 @@ class SchedulerService:
             print(f"Error checking newsletter schedule: {e}")
             return False
 
-    def process_newsletters(self):
-        """Process newsletters for all users"""
+    def schedule_newsletters(self):
+        """Schedule newsletters for all users"""
         try:
-            print("Processing newsletters...")
+            print("Scheduling newsletters...")
             
             # Get all users with alerts
             users_result = self.db.client.table('users')\
@@ -146,8 +152,8 @@ class SchedulerService:
                                 print(f"Skipping alert {alert['id']}, too soon to send next newsletter (last sent: {last_sent})")
                                 continue
                             
-                            # Schedule newsletter for 5 minutes from now
-                            scheduled_time = datetime.now(UTC) + timedelta(minutes=5)
+                            # Schedule newsletter for 15 minutes from now
+                            scheduled_time = datetime.now(UTC) + timedelta(minutes=15)
                             log_id = self.newsletter_service.schedule_newsletter(
                                 user_id=user['id'],
                                 scheduled_for=scheduled_time,
@@ -163,16 +169,18 @@ class SchedulerService:
                 except Exception as e:
                     print(f"Error processing user {user['id']}: {str(e)}")
                     continue
-
-            # Process any pending newsletters that are due
-            try:
-                print("Processing pending newsletters...")
-                self.newsletter_service.process_scheduled_newsletters()
-            except Exception as e:
-                print(f"Error processing pending newsletters: {str(e)}")
                     
         except Exception as e:
-            print(f"Error in process_newsletters: {str(e)}")
+            print(f"Error in schedule_newsletters: {str(e)}")
+            raise
+
+    def process_newsletters(self):
+        """Process any pending newsletters that are due"""
+        try:
+            print("Processing pending newsletters...")
+            self.newsletter_service.process_scheduled_newsletters()
+        except Exception as e:
+            print(f"Error processing pending newsletters: {str(e)}")
             raise
 
     def calculate_next_schedule(self, frequency: str) -> datetime:
