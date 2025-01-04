@@ -203,22 +203,48 @@ export default function DealFlowPage() {
         return
       }
 
-      console.log('Fetching saved listings')
-      console.log('User ID:', user.id)
-      
-      const { data: savedData, error: savedError } = await supabaseClient
+      // Get fresh token and client for this operation
+      const token = await getToken({ template: "supabase" })
+      if (!token) {
+        throw new Error('Failed to get authentication token')
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      })
+
+      // Log user info for debugging
+      console.log('Clerk User ID:', user.id)
+      console.log('Clerk User:', {
+        id: user.id,
+        primaryEmailAddress: user.primaryEmailAddress,
+        publicMetadata: user.publicMetadata
+      })
+
+      // Use the email as the user identifier instead of Clerk's ID
+      const userEmail = user.primaryEmailAddress?.emailAddress
+      if (!userEmail) {
+        throw new Error('No email address found for user')
+      }
+
+      const { data: savedData, error: savedError } = await client
         .from('user_saved_listings')
         .select('listing_id')
-        .eq('user_id', user.id)
+        .eq('user_email', userEmail)
 
       if (savedError) {
         console.error('Error fetching saved listings:', savedError)
         throw savedError
       }
 
-      console.log('Saved listings response:', savedData)
       const savedIds = new Set(savedData.map(item => item.listing_id))
-      console.log('Setting saved listings to:', Array.from(savedIds))
       setSavedListings(savedIds)
     } catch (err) {
       console.error('Error fetching saved listings:', err)
@@ -284,6 +310,12 @@ export default function DealFlowPage() {
         throw new Error('Failed to get authentication token')
       }
 
+      // Get user email
+      const userEmail = user.primaryEmailAddress?.emailAddress
+      if (!userEmail) {
+        throw new Error('No email address found for user')
+      }
+
       // Create fresh client
       const freshClient = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
@@ -302,7 +334,7 @@ export default function DealFlowPage() {
           .from('user_saved_listings')
           .delete()
           .eq('listing_id', id)
-          .eq('user_id', user.id)
+          .eq('user_email', userEmail)
 
         if (deleteError) {
           console.error('Failed to delete saved listing:', deleteError)
@@ -321,7 +353,7 @@ export default function DealFlowPage() {
           .insert([
             {
               listing_id: id,
-              user_id: user.id,
+              user_email: userEmail,
               saved_at: new Date().toISOString(),
             }
           ])
