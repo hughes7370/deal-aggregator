@@ -30,24 +30,56 @@ export default function DealFlowPage() {
   // Set up authenticated Supabase client
   useEffect(() => {
     const setupSupabase = async () => {
-      if (!user) return
+      if (!user) {
+        console.log('No user found, skipping Supabase auth setup')
+        return
+      }
 
       try {
+        console.log('Attempting to get Clerk token...')
         const token = await getToken({ template: "supabase" })
-        console.log('Got Clerk token for Supabase authentication')
+        console.log('Got Clerk token:', token ? 'Token received' : 'No token received')
         
+        if (!token) {
+          console.error('No token received from Clerk')
+          return
+        }
+
+        console.log('Creating authenticated Supabase client...')
         const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
           global: {
             headers: {
               Authorization: `Bearer ${token}`
             }
+          },
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
           }
         })
         
-        setSupabaseClient(authenticatedClient)
-        console.log('Supabase client updated with authentication')
+        // Test the authenticated client
+        const { data: testData, error: testError } = await authenticatedClient
+          .from('user_saved_listings')
+          .select('count')
+          .limit(1)
+        
+        console.log('Test query result:', {
+          success: !testError,
+          error: testError,
+          data: testData
+        })
+
+        if (testError) {
+          console.error('Test query failed:', testError)
+        } else {
+          console.log('Authentication successful')
+          setSupabaseClient(authenticatedClient)
+        }
+
       } catch (error) {
-        console.error('Error setting up authenticated Supabase client:', error)
+        console.error('Error in Supabase auth setup:', error)
       }
     }
 
