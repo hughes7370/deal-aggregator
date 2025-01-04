@@ -129,15 +129,22 @@ class SupabaseClient:
             
             print(f"Checking for newsletters due before {now_str}")
             
+            # Get newsletters that are:
+            # 1. Status is 'pending'
+            # 2. Either:
+            #    a. scheduled_for is not null and due (scheduled_for <= now)
+            #    b. scheduled_for is null (legacy entries)
             result = self.client.table('newsletter_logs')\
                 .select('*')\
                 .eq('status', 'pending')\
-                .lte('scheduled_for', now_str)\
-                .order('scheduled_for')\
+                .or_(f'scheduled_for.lte.{now_str},scheduled_for.is.null')\
+                .order('created_at')\
                 .execute()
             
             if result.data:
                 print(f"Found {len(result.data)} pending newsletters")
+                for newsletter in result.data:
+                    print(f"Newsletter {newsletter['id']}: scheduled_for={newsletter.get('scheduled_for')}")
             else:
                 print("No pending newsletters found")
             
@@ -156,6 +163,8 @@ class SupabaseClient:
             }
             if error_message:
                 update_data['error_message'] = error_message
+            if status == 'sent':
+                update_data['sent_at'] = datetime.now(UTC).isoformat()
                 
             self.client.table('newsletter_logs')\
                 .update(update_data)\

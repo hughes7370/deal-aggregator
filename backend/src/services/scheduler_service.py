@@ -119,7 +119,7 @@ class SchedulerService:
     def schedule_newsletters(self):
         """Schedule newsletters for all users"""
         try:
-            print("Scheduling newsletters...")
+            print("\n📅 Starting newsletter scheduling process...")
             
             # Get all users with alerts
             users_result = self.db.client.table('users')\
@@ -127,11 +127,15 @@ class SchedulerService:
                 .execute()
                 
             if not users_result.data:
-                print("No users found")
+                print("❌ No users found in database")
                 return
+                
+            print(f"Found {len(users_result.data)} users to process")
                 
             for user in users_result.data:
                 try:
+                    print(f"\n👤 Processing user: {user.get('email', user['id'])}")
+                    
                     # Get user's alerts
                     alerts_result = self.db.client.table('alerts')\
                         .select('*')\
@@ -139,39 +143,65 @@ class SchedulerService:
                         .execute()
                         
                     if not alerts_result.data:
-                        print(f"No alerts found for user {user['id']}")
+                        print(f"⚠️ No alerts found for user {user['id']}")
                         continue
+                        
+                    print(f"Found {len(alerts_result.data)} alerts for user")
                         
                     for alert in alerts_result.data:
                         try:
+                            print(f"\n🔔 Processing alert: {alert.get('name', alert['id'])}")
+                            print(f"Alert settings:")
+                            print(f"- Frequency: {alert.get('newsletter_frequency', 'daily')}")
+                            print(f"- Industries: {alert.get('industries', [])}")
+                            print(f"- Price range: ${alert.get('min_price', 0):,} - ${alert.get('max_price', 'unlimited')}")
+                            print(f"- Last sent: {alert.get('last_notification_sent', 'Never')}")
+                            
                             # Check if we should send based on frequency and last sent time
                             frequency = alert.get('newsletter_frequency', 'daily')
                             last_sent = alert.get('last_notification_sent')
                             
                             if not self.should_send_newsletter(frequency, last_sent):
-                                print(f"Skipping alert {alert['id']}, too soon to send next newsletter (last sent: {last_sent})")
+                                print(f"⏳ Skipping alert {alert['id']}, too soon to send next newsletter")
+                                print(f"  Last sent: {last_sent}")
                                 continue
                             
-                            # Schedule newsletter for 15 minutes from now
-                            scheduled_time = datetime.now(UTC) + timedelta(minutes=15)
+                            # Calculate when this newsletter should be sent
+                            scheduled_time = datetime.now(UTC) + timedelta(minutes=5)  # Schedule for 5 minutes from now
+                            print(f"📅 Scheduling newsletter for {scheduled_time} UTC")
+                            
+                            # Check for existing pending newsletters
+                            pending_result = self.db.client.table('newsletter_logs')\
+                                .select('id')\
+                                .eq('alert_id', alert['id'])\
+                                .eq('status', 'pending')\
+                                .execute()
+                                
+                            if pending_result.data:
+                                print(f"⚠️ Found existing pending newsletter for this alert, skipping")
+                                continue
+                            
+                            # Schedule the newsletter
                             log_id = self.newsletter_service.schedule_newsletter(
                                 user_id=user['id'],
                                 scheduled_for=scheduled_time,
                                 alert_id=alert['id']
                             )
                             if log_id:
-                                print(f"Scheduled newsletter for user {user['id']} with alert {alert['id']}")
+                                print(f"✅ Successfully scheduled newsletter (Log ID: {log_id})")
+                            else:
+                                print(f"❌ Failed to schedule newsletter")
                             
                         except Exception as e:
-                            print(f"Error processing alert {alert['id']}: {str(e)}")
+                            print(f"❌ Error processing alert {alert['id']}: {str(e)}")
                             continue
                             
                 except Exception as e:
-                    print(f"Error processing user {user['id']}: {str(e)}")
+                    print(f"❌ Error processing user {user['id']}: {str(e)}")
                     continue
                     
         except Exception as e:
-            print(f"Error in schedule_newsletters: {str(e)}")
+            print(f"❌ Error in schedule_newsletters: {str(e)}")
             raise
 
     def process_newsletters(self):

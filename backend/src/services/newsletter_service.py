@@ -505,20 +505,30 @@ class NewsletterService:
     def process_scheduled_newsletters(self):
         """Process all pending scheduled newsletters"""
         try:
+            print("\n📬 Processing scheduled newsletters...")
+            
             # Get pending newsletters that are due
             pending_newsletters = self.db.get_pending_newsletters()
             
             if not pending_newsletters:
-                print("No pending newsletters to process")
+                print("ℹ️ No pending newsletters to process")
                 return
                 
-            print(f"Processing {len(pending_newsletters)} pending newsletters")
+            print(f"📋 Found {len(pending_newsletters)} pending newsletters")
             
             for newsletter in pending_newsletters:
                 try:
+                    print(f"\n📨 Processing newsletter {newsletter['id']}")
+                    print(f"Newsletter details:")
+                    print(f"- Created: {newsletter.get('created_at')}")
+                    print(f"- Scheduled for: {newsletter.get('scheduled_for')}")
+                    print(f"- User ID: {newsletter.get('user_id')}")
+                    print(f"- Alert ID: {newsletter.get('alert_id')}")
+                    
                     # Get alert data if alert_id is present
                     alert = None
                     if newsletter.get('alert_id'):
+                        print(f"🔍 Fetching alert data...")
                         alert_result = self.db.client.table('alerts')\
                             .select('*')\
                             .eq('id', newsletter['alert_id'])\
@@ -526,8 +536,12 @@ class NewsletterService:
                             .execute()
                         if alert_result.data:
                             alert = alert_result.data
+                            print(f"✅ Found alert: {alert.get('name')}")
+                        else:
+                            print(f"⚠️ Alert not found for ID: {newsletter['alert_id']}")
                     
                     # Get user data
+                    print(f"🔍 Fetching user data...")
                     user_result = self.db.client.table('users')\
                         .select('*')\
                         .eq('id', newsletter['user_id'])\
@@ -536,27 +550,32 @@ class NewsletterService:
                         
                     if not user_result.data:
                         error_msg = f"User not found for newsletter {newsletter['id']}"
-                        print(f"⚠️ {error_msg}")
+                        print(f"❌ {error_msg}")
                         self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
                         continue
-                        
+                    
                     user = user_result.data
+                    print(f"✅ Found user: {user.get('email')}")
                     
-                    # Get user's preferences/alerts
-                    alerts_result = self.db.client.table('alerts')\
-                        .select('*')\
-                        .eq('user_id', user['id'])\
-                        .execute()
+                    # Get user's preferences/alerts if not already fetched
+                    if not alert:
+                        print(f"🔍 Fetching user alerts...")
+                        alerts_result = self.db.client.table('alerts')\
+                            .select('*')\
+                            .eq('user_id', user['id'])\
+                            .execute()
+                            
+                        if not alerts_result.data:
+                            error_msg = f"No alerts found for user {user['email']}"
+                            print(f"❌ {error_msg}")
+                            self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
+                            continue
                         
-                    if not alerts_result.data:
-                        error_msg = f"No preferences or alerts found for user {user['email']}"
-                        print(f"⚠️ {error_msg}")
-                        self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
-                        continue
-                    
-                    alert = alerts_result.data[0]  # Use the first alert if multiple exist
+                        alert = alerts_result.data[0]  # Use the first alert if multiple exist
+                        print(f"✅ Using alert: {alert.get('name')}")
                     
                     # Get matching listings
+                    print(f"\n🔍 Finding matching listings...")
                     matching_listings = self.get_matching_listings(alert)
                     
                     if not matching_listings:
@@ -564,19 +583,23 @@ class NewsletterService:
                         self.db.update_newsletter_status(newsletter['id'], 'skipped', 'No matching listings')
                         continue
                     
+                    print(f"✅ Found {len(matching_listings)} matching listings")
+                    
                     # Send the newsletter
+                    print(f"\n📤 Sending newsletter to {user['email']}...")
                     email_id = self.send_newsletter(
                         user={'email': user['email'], 'alert': alert},
                         listings=matching_listings
                     )
                     
                     if email_id:
-                        print(f"✅ Scheduled newsletter sent successfully to {user['email']}!")
+                        print(f"✅ Newsletter sent successfully! (Email ID: {email_id})")
                         # Update last notification sent timestamp
                         self.db.client.table('alerts')\
                             .update({'last_notification_sent': datetime.now().isoformat()})\
                             .eq('id', alert['id'])\
                             .execute()
+                        print(f"✅ Updated last notification timestamp for alert")
                     else:
                         error_msg = f"Failed to send newsletter to {user['email']}"
                         print(f"❌ {error_msg}")
