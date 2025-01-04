@@ -110,15 +110,18 @@ export default function DealFlowPage() {
         return
       }
 
+      console.log('Fetching saved listings for user:', user.id)
       const { data: savedData, error: savedError } = await supabase
         .from('user_saved_listings')
         .select('listing_id')
         .eq('user_id', user.id)
 
       if (savedError) {
+        console.error('Error fetching saved listings:', savedError)
         throw savedError
       }
 
+      console.log('Saved listings data:', savedData)
       setSavedListings(new Set(savedData.map(item => item.listing_id)))
     } catch (err) {
       console.error('Error fetching saved listings:', err)
@@ -128,8 +131,10 @@ export default function DealFlowPage() {
   // Initial data loading
   useEffect(() => {
     fetchListings()
-    fetchSavedListings()
-  }, [])
+    if (user) {
+      fetchSavedListings()
+    }
+  }, [user])
 
   // Apply filters
   const filteredListings = useListingsFilter(listings, {
@@ -174,7 +179,12 @@ export default function DealFlowPage() {
         return
       }
 
+      console.log('Saving listing for user:', user.id)
+      console.log('Listing ID:', id)
+      console.log('Current saved listings:', savedListings)
+
       if (savedListings.has(id)) {
+        console.log('Removing listing from saved')
         // Remove from saved listings
         const { error: deleteError } = await supabase
           .from('user_saved_listings')
@@ -182,7 +192,10 @@ export default function DealFlowPage() {
           .eq('listing_id', id)
           .eq('user_id', user.id)
 
-        if (deleteError) throw deleteError
+        if (deleteError) {
+          console.error('Error deleting saved listing:', deleteError)
+          throw deleteError
+        }
 
         setSavedListings(prev => {
           const next = new Set(prev)
@@ -190,8 +203,9 @@ export default function DealFlowPage() {
           return next
         })
       } else {
+        console.log('Adding listing to saved')
         // Add to saved listings
-        const { error: insertError } = await supabase
+        const { data, error: insertError } = await supabase
           .from('user_saved_listings')
           .insert([
             {
@@ -200,9 +214,14 @@ export default function DealFlowPage() {
               saved_at: new Date().toISOString(),
             }
           ])
+          .select()
 
-        if (insertError) throw insertError
+        if (insertError) {
+          console.error('Error inserting saved listing:', insertError)
+          throw insertError
+        }
 
+        console.log('Insert response:', data)
         setSavedListings(prev => new Set([...prev, id]))
       }
     } catch (err) {
