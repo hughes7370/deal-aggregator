@@ -215,20 +215,27 @@ export default function DealFlowPage() {
 
   const handleSaveListing = async (id: string) => {
     try {
+      console.log('=== Save Listing Operation Started ===')
+      console.log('Listing ID:', id)
+      console.log('Current State:', {
+        savingListings: Array.from(savingListings),
+        savedListings: Array.from(savedListings)
+      })
+
       setSavingListings(prev => new Set([...prev, id]))
       
       if (!user) {
-        console.error('User not authenticated')
+        console.error('Error: User not authenticated')
         return
       }
 
-      console.log('Starting save listing operation')
-      console.log('User ID:', user.id)
-      console.log('Listing ID:', id)
-      console.log('Current saved listings:', Array.from(savedListings))
+      console.log('Authentication Check Passed')
+      console.log('User Details:', {
+        id: user.id
+      })
 
       if (savedListings.has(id)) {
-        console.log('Removing listing from saved')
+        console.log('Attempting to remove listing from saved')
         // Remove from saved listings
         const { data: deleteData, error: deleteError } = await supabase
           .from('user_saved_listings')
@@ -237,10 +244,24 @@ export default function DealFlowPage() {
           .eq('user_id', user.id)
           .select()
 
-        console.log('Delete response:', { data: deleteData, error: deleteError })
+        console.log('Delete Operation Result:', {
+          success: !deleteError,
+          data: deleteData,
+          error: deleteError ? {
+            message: deleteError.message,
+            code: deleteError.code,
+            details: deleteError.details
+          } : null
+        })
 
         if (deleteError) {
-          console.error('Error deleting saved listing:', deleteError)
+          console.error('Failed to delete saved listing:', {
+            error: deleteError,
+            context: {
+              listing_id: id,
+              user_id: user.id
+            }
+          })
           throw deleteError
         }
 
@@ -251,7 +272,7 @@ export default function DealFlowPage() {
           return next
         })
       } else {
-        console.log('Adding listing to saved')
+        console.log('Attempting to add listing to saved')
         // Add to saved listings
         const { data: insertData, error: insertError } = await supabase
           .from('user_saved_listings')
@@ -264,10 +285,25 @@ export default function DealFlowPage() {
           ])
           .select()
 
-        console.log('Insert response:', { data: insertData, error: insertError })
+        console.log('Insert Operation Result:', {
+          success: !insertError,
+          data: insertData,
+          error: insertError ? {
+            message: insertError.message,
+            code: insertError.code,
+            details: insertError.details
+          } : null
+        })
 
         if (insertError) {
-          console.error('Error inserting saved listing:', insertError)
+          console.error('Failed to insert saved listing:', {
+            error: insertError,
+            context: {
+              listing_id: id,
+              user_id: user.id,
+              saved_at: new Date().toISOString()
+            }
+          })
           throw insertError
         }
 
@@ -277,8 +313,15 @@ export default function DealFlowPage() {
           return next
         })
       }
+      console.log('=== Save Listing Operation Completed Successfully ===')
     } catch (err) {
-      console.error('Error saving listing:', err)
+      console.error('Save Listing Operation Failed:', {
+        error: err,
+        context: {
+          listing_id: id,
+          user_id: user?.id
+        }
+      })
       // TODO: Add error notification
     } finally {
       setSavingListings(prev => {
