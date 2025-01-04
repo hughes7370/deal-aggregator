@@ -27,6 +27,7 @@ export default function DealFlowPage() {
   const [error, setError] = useState<string | undefined>()
   const [listings, setListings] = useState<any[]>([])
   const [savedListings, setSavedListings] = useState<Set<string>>(new Set())
+  const [savingListings, setSavingListings] = useState<Set<string>>(new Set())
 
   // View state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -101,9 +102,16 @@ export default function DealFlowPage() {
   // Function to fetch saved listings
   const fetchSavedListings = async () => {
     try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        console.error('User not authenticated:', authError)
+        return
+      }
+
       const { data: savedData, error: savedError } = await supabase
         .from('user_saved_listings')
         .select('listing_id')
+        .eq('user_id', user.id)
 
       if (savedError) {
         throw savedError
@@ -157,12 +165,21 @@ export default function DealFlowPage() {
 
   const handleSaveListing = async (id: string) => {
     try {
+      setSavingListings(prev => new Set([...prev, id]))
+      
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError || !user) {
+        console.error('User not authenticated:', authError)
+        return
+      }
+
       if (savedListings.has(id)) {
         // Remove from saved listings
         const { error: deleteError } = await supabase
           .from('user_saved_listings')
           .delete()
           .eq('listing_id', id)
+          .eq('user_id', user.id)
 
         if (deleteError) throw deleteError
 
@@ -178,6 +195,7 @@ export default function DealFlowPage() {
           .insert([
             {
               listing_id: id,
+              user_id: user.id,
               saved_at: new Date().toISOString(),
             }
           ])
@@ -189,6 +207,12 @@ export default function DealFlowPage() {
     } catch (err) {
       console.error('Error saving listing:', err)
       // TODO: Add error notification
+    } finally {
+      setSavingListings(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
     }
   }
 
@@ -323,6 +347,7 @@ export default function DealFlowPage() {
                 viewMode={viewMode}
                 pageSize={pageSize}
                 savedListings={savedListings}
+                savingListings={savingListings}
               />
             </div>
           </div>
