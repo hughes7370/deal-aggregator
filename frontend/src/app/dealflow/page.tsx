@@ -237,6 +237,7 @@ export default function DealFlowPage() {
       const { data: savedData, error: savedError } = await client
         .from('user_saved_listings')
         .select('listing_id')
+        .eq('user_id', user.id)
         .eq('user_email', userEmail)
 
       if (savedError) {
@@ -334,6 +335,7 @@ export default function DealFlowPage() {
           .from('user_saved_listings')
           .delete()
           .eq('listing_id', id)
+          .eq('user_id', user.id)
           .eq('user_email', userEmail)
 
         if (deleteError) {
@@ -353,6 +355,7 @@ export default function DealFlowPage() {
           .insert([
             {
               listing_id: id,
+              user_id: user.id,
               user_email: userEmail,
               saved_at: new Date().toISOString(),
             }
