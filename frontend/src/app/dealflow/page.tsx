@@ -36,27 +36,22 @@ export default function DealFlowPage() {
       }
 
       try {
-        console.log('Setting up authenticated Supabase client...')
-        // Request token with specific claims needed by Supabase
-        const token = await getToken({
-          template: "supabase",
-          skipCache: true
-        })
+        // Get token with specific template
+        const token = await getToken({ template: "supabase" })
         
         if (!token) {
           console.error('Failed to get Clerk JWT token')
           return
         }
 
-        // Log token for debugging (remove in production)
-        console.log('Received token:', token.slice(0, 20) + '...')
-
         // Create a new Supabase client with the token
         const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false
+          },
           global: {
             headers: {
-              Authorization: `Bearer ${token}`,
-              apikey: supabaseAnonKey
+              Authorization: `Bearer ${token}`
             }
           }
         })
@@ -68,7 +63,6 @@ export default function DealFlowPage() {
         const { data: testData, error: testError } = await authenticatedClient
           .from('user_saved_listings')
           .select('count')
-          .limit(1)
           .single()
 
         if (testError) {
@@ -80,9 +74,6 @@ export default function DealFlowPage() {
 
       } catch (error) {
         console.error('Error in Supabase auth setup:', error)
-        if (error instanceof Error) {
-          console.error('Error details:', error.message)
-        }
       }
     }
 
@@ -279,9 +270,6 @@ export default function DealFlowPage() {
 
   const handleSaveListing = async (id: string) => {
     try {
-      console.log('=== Save Listing Operation Started ===')
-      console.log('Listing ID:', id)
-      
       if (!user) {
         console.error('Error: User not authenticated')
         return
@@ -290,25 +278,20 @@ export default function DealFlowPage() {
       // Set saving state immediately
       setSavingListings(prev => new Set([...prev, id]))
 
-      // Get a fresh token for this operation
-      const token = await getToken({
-        template: "supabase",
-        skipCache: true
-      })
-      
+      // Get fresh token
+      const token = await getToken({ template: "supabase" })
       if (!token) {
         throw new Error('Failed to get authentication token')
       }
 
-      // Log token for debugging (remove in production)
-      console.log('Using token for operation:', token.slice(0, 20) + '...')
-
-      // Create a fresh client with the new token
+      // Create fresh client
       const freshClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
         global: {
           headers: {
-            Authorization: `Bearer ${token}`,
-            apikey: supabaseAnonKey
+            Authorization: `Bearer ${token}`
           }
         }
       })
@@ -320,8 +303,6 @@ export default function DealFlowPage() {
           .delete()
           .eq('listing_id', id)
           .eq('user_id', user.id)
-          .select()
-          .single()
 
         if (deleteError) {
           console.error('Failed to delete saved listing:', deleteError)
@@ -333,7 +314,6 @@ export default function DealFlowPage() {
           next.delete(id)
           return next
         })
-        console.log('Successfully removed listing from saved')
       } else {
         console.log('Adding listing to saved...')
         const { error: insertError } = await freshClient
@@ -345,8 +325,6 @@ export default function DealFlowPage() {
               saved_at: new Date().toISOString(),
             }
           ])
-          .select()
-          .single()
 
         if (insertError) {
           console.error('Failed to save listing:', insertError)
@@ -354,7 +332,6 @@ export default function DealFlowPage() {
         }
 
         setSavedListings(prev => new Set([...prev, id]))
-        console.log('Successfully added listing to saved')
       }
     } catch (error) {
       console.error('Save listing operation failed:', error)
