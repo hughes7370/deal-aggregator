@@ -110,7 +110,9 @@ export default function DealFlowPage() {
         return
       }
 
-      console.log('Fetching saved listings for user:', user.id)
+      console.log('Fetching saved listings')
+      console.log('User ID:', user.id)
+      
       const { data: savedData, error: savedError } = await supabase
         .from('user_saved_listings')
         .select('listing_id')
@@ -121,8 +123,10 @@ export default function DealFlowPage() {
         throw savedError
       }
 
-      console.log('Saved listings data:', savedData)
-      setSavedListings(new Set(savedData.map(item => item.listing_id)))
+      console.log('Saved listings response:', savedData)
+      const savedIds = new Set(savedData.map(item => item.listing_id))
+      console.log('Setting saved listings to:', Array.from(savedIds))
+      setSavedListings(savedIds)
     } catch (err) {
       console.error('Error fetching saved listings:', err)
     }
@@ -179,18 +183,22 @@ export default function DealFlowPage() {
         return
       }
 
-      console.log('Saving listing for user:', user.id)
+      console.log('Starting save listing operation')
+      console.log('User ID:', user.id)
       console.log('Listing ID:', id)
-      console.log('Current saved listings:', savedListings)
+      console.log('Current saved listings:', Array.from(savedListings))
 
       if (savedListings.has(id)) {
         console.log('Removing listing from saved')
         // Remove from saved listings
-        const { error: deleteError } = await supabase
+        const { data: deleteData, error: deleteError } = await supabase
           .from('user_saved_listings')
           .delete()
           .eq('listing_id', id)
           .eq('user_id', user.id)
+          .select()
+
+        console.log('Delete response:', { data: deleteData, error: deleteError })
 
         if (deleteError) {
           console.error('Error deleting saved listing:', deleteError)
@@ -200,12 +208,13 @@ export default function DealFlowPage() {
         setSavedListings(prev => {
           const next = new Set(prev)
           next.delete(id)
+          console.log('Updated saved listings after delete:', Array.from(next))
           return next
         })
       } else {
         console.log('Adding listing to saved')
         // Add to saved listings
-        const { data, error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await supabase
           .from('user_saved_listings')
           .insert([
             {
@@ -216,13 +225,18 @@ export default function DealFlowPage() {
           ])
           .select()
 
+        console.log('Insert response:', { data: insertData, error: insertError })
+
         if (insertError) {
           console.error('Error inserting saved listing:', insertError)
           throw insertError
         }
 
-        console.log('Insert response:', data)
-        setSavedListings(prev => new Set([...prev, id]))
+        setSavedListings(prev => {
+          const next = new Set([...prev, id])
+          console.log('Updated saved listings after insert:', Array.from(next))
+          return next
+        })
       }
     } catch (err) {
       console.error('Error saving listing:', err)
