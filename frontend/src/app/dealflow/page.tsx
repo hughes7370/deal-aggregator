@@ -14,6 +14,7 @@ import { PageSizeSelector } from '@/components/dealflow/listings/PageSizeSelecto
 import { useListingsFilter } from '@/components/dealflow/hooks/useListingsFilter'
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { useUser } from "@clerk/nextjs"
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -22,6 +23,8 @@ const supabase = createClient(
 )
 
 export default function DealFlowPage() {
+  const { user } = useUser()
+  
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | undefined>()
@@ -102,9 +105,8 @@ export default function DealFlowPage() {
   // Function to fetch saved listings
   const fetchSavedListings = async () => {
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
-        console.error('User not authenticated:', authError)
+      if (!user) {
+        console.error('User not authenticated')
         return
       }
 
@@ -167,9 +169,8 @@ export default function DealFlowPage() {
     try {
       setSavingListings(prev => new Set([...prev, id]))
       
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
-        console.error('User not authenticated:', authError)
+      if (!user) {
+        console.error('User not authenticated')
         return
       }
 
