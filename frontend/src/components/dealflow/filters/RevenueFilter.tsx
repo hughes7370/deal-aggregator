@@ -4,6 +4,8 @@ import { useState } from 'react'
 interface RevenueFilterProps {
   value: [number, number]
   onChange: (value: [number, number]) => void
+  isAnnual: boolean
+  onIsAnnualChange: (isAnnual: boolean) => void
 }
 
 const formatRevenue = (value: number, isAnnual: boolean) => {
@@ -17,14 +19,9 @@ const formatRevenue = (value: number, isAnnual: boolean) => {
   return `$${displayValue}`
 }
 
-export function RevenueFilter({ value, onChange }: RevenueFilterProps) {
-  const [isAnnual, setIsAnnual] = useState(true)
-
+export function RevenueFilter({ value, onChange, isAnnual, onIsAnnualChange }: RevenueFilterProps) {
   const handleToggle = () => {
-    setIsAnnual(!isAnnual)
-    // Convert the values between annual and monthly
-    const multiplier = isAnnual ? 1/12 : 12
-    onChange([value[0] * multiplier, value[1] * multiplier])
+    onIsAnnualChange(!isAnnual)
   }
 
   return (

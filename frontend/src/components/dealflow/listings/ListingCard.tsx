@@ -85,7 +85,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide }: ListingCardPr
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Top Actions Bar - Always visible */}
-        <div className="absolute top-0 right-0 p-2 z-20 flex items-center space-x-1">
+        <div className="absolute top-0 right-0 p-2 z-10 flex items-center space-x-1">
           <button
             onClick={() => onSave(id)}
             className="text-gray-400 hover:text-indigo-600 p-1.5 rounded-full hover:bg-white/90 transition-colors"
