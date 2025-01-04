@@ -8,6 +8,7 @@ interface FilterState {
   sortBy: SortOption
   priceRange: [number, number]
   revenueRange: [number, number]
+  isAnnualRevenue: boolean
   multipleRange: [number, number]
   businessTypes: BusinessType[]
   sources: Source[]
@@ -28,8 +29,12 @@ export function useListingsFilter(listings: Listing[], filters: FilterState) {
         return false
       }
 
-      // Revenue filter
-      if (listing.monthlyRevenue < filters.revenueRange[0] / 12 || listing.monthlyRevenue > filters.revenueRange[1] / 12) {
+      // Revenue filter - compare in monthly terms
+      const monthlyRevenue = listing.monthlyRevenue
+      const filterMin = filters.isAnnualRevenue ? filters.revenueRange[0] / 12 : filters.revenueRange[0]
+      const filterMax = filters.isAnnualRevenue ? filters.revenueRange[1] / 12 : filters.revenueRange[1]
+      
+      if (monthlyRevenue < filterMin || monthlyRevenue > filterMax) {
         return false
       }
 
@@ -40,11 +45,19 @@ export function useListingsFilter(listings: Listing[], filters: FilterState) {
 
       // Business type filter
       if (filters.businessTypes.length > 0 && !filters.businessTypes.includes(listing.businessType)) {
+        console.log('Filtering out listing due to business type:', {
+          listingType: listing.businessType,
+          allowedTypes: filters.businessTypes
+        });
         return false
       }
 
       // Source filter
       if (filters.sources.length > 0 && !filters.sources.includes(listing.source)) {
+        console.log('Filtering out listing due to source:', {
+          listingSource: listing.source,
+          allowedSources: filters.sources
+        });
         return false
       }
 

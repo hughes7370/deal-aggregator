@@ -40,6 +40,7 @@ export default function DealFlowPage() {
   const [sortBy, setSortBy] = useState<SortOption>('newest')
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000])
   const [revenueRange, setRevenueRange] = useState<[number, number]>([0, 12000000])
+  const [isAnnualRevenue, setIsAnnualRevenue] = useState(true)
   const [multipleRange, setMultipleRange] = useState<[number, number]>([1, 10])
   const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([])
   const [sources, setSources] = useState<Source[]>([])
@@ -65,11 +66,48 @@ export default function DealFlowPage() {
 
       // Transform the data to match our expected format
       const transformedListings = data.map(listing => {
+        // Debug log
+        console.log('Raw listing data:', {
+          industry: listing.industry,
+          source_platform: listing.source_platform
+        });
+
         // Clean up location data - completely remove "00" values
         let cleanLocation = ''
         if (listing.location && listing.location !== '00') {
           cleanLocation = listing.location.trim()
           if (cleanLocation === '00') cleanLocation = ''
+        }
+
+        // Normalize source platform
+        const normalizeSource = (source: string): Source => {
+          const sourceMap: { [key: string]: Source } = {
+            'BusinessExits': 'business_exits',
+            'EmpireFlippers': 'empire_flippers',
+            'Flippa': 'flippa',
+            'Acquire': 'acquire',
+            'WebsiteClosers': 'website_closers',
+            'VikingMergers': 'viking_mergers',
+            'Latonas': 'latonas',
+            'BizBuySell': 'bizbuysell',
+            'QuietLight': 'quietlight',
+            'TransWorld': 'transworld',
+            'Sunbelt': 'sunbelt'
+          }
+          return sourceMap[source] || source.toLowerCase() as Source
+        }
+
+        // Normalize business type
+        const normalizeBusinessType = (type: string): BusinessType => {
+          const typeMap: { [key: string]: BusinessType } = {
+            'Ecommerce': 'ecommerce',
+            'E-commerce': 'ecommerce',
+            'SaaS': 'software',
+            'Software': 'software',
+            'Service': 'service',
+            'Services': 'service'
+          }
+          return typeMap[type] || 'other' as BusinessType
         }
 
         return {
@@ -81,8 +119,8 @@ export default function DealFlowPage() {
           monthlyProfit: listing.ebitda ? Math.round(listing.ebitda / 12) : 0,
           multiple: listing.selling_multiple || 0,
           ageYears: listing.business_age || 0,
-          businessType: listing.industry as BusinessType,
-          source: listing.source_platform as Source,
+          businessType: normalizeBusinessType(listing.industry),
+          source: normalizeSource(listing.source_platform),
           daysListed: Math.max(0, Math.floor((Date.now() - new Date(listing.first_seen_at).getTime()) / (1000 * 60 * 60 * 24))),
           profitMargin: listing.profit_margin || 0,
           growthRate: 0, // Placeholder for growth rate
@@ -145,6 +183,7 @@ export default function DealFlowPage() {
     sortBy,
     priceRange,
     revenueRange,
+    isAnnualRevenue,
     multipleRange,
     businessTypes,
     sources,
@@ -254,10 +293,17 @@ export default function DealFlowPage() {
     console.log('Hide listing:', id)
   }
 
+  const handleRevenueToggle = (newIsAnnual: boolean) => {
+    setIsAnnualRevenue(newIsAnnual)
+    // Convert the values between annual and monthly
+    const multiplier = isAnnualRevenue ? 1/12 : 12
+    setRevenueRange([revenueRange[0] * multiplier, revenueRange[1] * multiplier])
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-[1800px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
@@ -336,6 +382,8 @@ export default function DealFlowPage() {
                 <RevenueFilter
                   value={revenueRange}
                   onChange={setRevenueRange}
+                  isAnnual={isAnnualRevenue}
+                  onIsAnnualChange={handleRevenueToggle}
                 />
 
                 <BusinessTypeFilter

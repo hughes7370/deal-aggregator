@@ -8,6 +8,8 @@ export type Source =
   | 'latonas'
   | 'bizbuysell'
   | 'business_exits'
+  | 'transworld'
+  | 'sunbelt'
 
 const SOURCES: { value: Source; label: string }[] = [
   { value: 'quietlight', label: 'QuietLight' },
@@ -19,6 +21,8 @@ const SOURCES: { value: Source; label: string }[] = [
   { value: 'latonas', label: 'Latonas' },
   { value: 'bizbuysell', label: 'BizBuySell' },
   { value: 'business_exits', label: 'BusinessExits' },
+  { value: 'transworld', label: 'TransWorld' },
+  { value: 'sunbelt', label: 'Sunbelt' }
 ]
 
 interface SourceFilterProps {

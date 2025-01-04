@@ -87,7 +87,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Top Actions Bar - Always visible */}
-        <div className="absolute top-0 right-0 p-2 z-20 flex items-center space-x-1">
+        <div className="absolute top-0 right-0 p-2 z-10 flex items-center space-x-1">
           <button
             onClick={() => onSave(id)}
             disabled={isSaving}

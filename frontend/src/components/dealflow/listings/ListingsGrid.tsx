@@ -4,6 +4,7 @@ import { LoadingState } from './LoadingState'
 import { ErrorState } from './ErrorState'
 import { Pagination } from './Pagination'
 import { usePagination } from '../hooks/usePagination'
+import { useEffect } from 'react'
 
 interface ListingsGridProps {
   listings: Listing[]
@@ -39,7 +40,12 @@ export function ListingsGrid({
     hasPreviousPage,
     goToNextPage,
     goToPreviousPage,
+    setPageSize: updatePageSize,
   } = usePagination(listings, 1, pageSize)
+
+  useEffect(() => {
+    updatePageSize(pageSize)
+  }, [pageSize, updatePageSize])
 
   if (isLoading) {
     return <LoadingState />
