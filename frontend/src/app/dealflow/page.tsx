@@ -86,6 +86,8 @@ export default function DealFlowPage() {
   const [listings, setListings] = useState<any[]>([])
   const [savedListings, setSavedListings] = useState<Set<string>>(new Set())
   const [savingListings, setSavingListings] = useState<Set<string>>(new Set())
+  const [hiddenListings, setHiddenListings] = useState<Set<string>>(new Set())
+  const [hidingListings, setHidingListings] = useState<Set<string>>(new Set())
 
   // View state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -252,28 +254,79 @@ export default function DealFlowPage() {
     }
   }
 
+  // Function to fetch hidden listings
+  const fetchHiddenListings = async () => {
+    try {
+      if (!user) {
+        console.error('User not authenticated')
+        return
+      }
+
+      // Get fresh token and client for this operation
+      const token = await getToken({ template: "supabase" })
+      if (!token) {
+        throw new Error('Failed to get authentication token')
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      })
+
+      const userEmail = user.primaryEmailAddress?.emailAddress
+      if (!userEmail) {
+        throw new Error('No email address found for user')
+      }
+
+      const { data: hiddenData, error: hiddenError } = await client
+        .from('user_hidden_listings')
+        .select('listing_id')
+        .eq('user_email', userEmail)
+
+      if (hiddenError) {
+        console.error('Error fetching hidden listings:', hiddenError)
+        throw hiddenError
+      }
+
+      const hiddenIds = new Set(hiddenData.map(item => item.listing_id))
+      setHiddenListings(hiddenIds)
+    } catch (err) {
+      console.error('Error fetching hidden listings:', err)
+    }
+  }
+
   // Initial data loading
   useEffect(() => {
     fetchListings()
     if (user) {
       fetchSavedListings()
+      fetchHiddenListings()
     }
   }, [user])
 
-  // Apply filters
-  const filteredListings = useListingsFilter(listings, {
-    sortBy,
-    priceRange,
-    revenueRange,
-    isAnnualRevenue,
-    multipleRange,
-    businessTypes,
-    sources,
-    profitMargin,
-    growthRate,
-    teamSize,
-    location,
-  })
+  // Apply filters and exclude hidden listings
+  const filteredListings = useListingsFilter(
+    listings.filter(listing => !hiddenListings.has(listing.id)),
+    {
+      sortBy,
+      priceRange,
+      revenueRange,
+      isAnnualRevenue,
+      multipleRange,
+      businessTypes,
+      sources,
+      profitMargin,
+      growthRate,
+      teamSize,
+      location,
+    }
+  )
 
   const handleSaveSearch = () => {
     const searchConfig = {
@@ -389,8 +442,96 @@ export default function DealFlowPage() {
     }
   }
 
-  const handleHideListing = (id: string) => {
-    console.log('Hide listing:', id)
+  const handleHideListing = async (id: string) => {
+    try {
+      if (!user) {
+        console.error('Error: User not authenticated')
+        return
+      }
+
+      // Set hiding state immediately
+      setHidingListings(prev => new Set([...prev, id]))
+
+      // Get fresh token
+      const token = await getToken({ template: "supabase" })
+      if (!token) {
+        throw new Error('Failed to get authentication token')
+      }
+
+      // Get user email
+      const userEmail = user.primaryEmailAddress?.emailAddress
+      if (!userEmail) {
+        throw new Error('No email address found for user')
+      }
+
+      // Create fresh client
+      const freshClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      })
+
+      if (hiddenListings.has(id)) {
+        console.log('Unhiding listing...')
+        const { error: deleteError } = await freshClient
+          .from('user_hidden_listings')
+          .delete()
+          .eq('listing_id', id)
+          .eq('user_email', userEmail)
+
+        if (deleteError) {
+          console.error('Failed to unhide listing:', deleteError)
+          throw deleteError
+        }
+
+        setHiddenListings(prev => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      } else {
+        console.log('Hiding listing...')
+        const { error: insertError } = await freshClient
+          .from('user_hidden_listings')
+          .insert([
+            {
+              listing_id: id,
+              user_email: userEmail,
+              hidden_at: new Date().toISOString(),
+            }
+          ])
+
+        if (insertError) {
+          console.error('Failed to hide listing:', insertError)
+          throw insertError
+        }
+
+        setHiddenListings(prev => new Set([...prev, id]))
+      }
+    } catch (error) {
+      console.error('Hide listing operation failed:', error)
+      // Revert UI state on error
+      setHiddenListings(prev => {
+        const next = new Set(prev)
+        if (next.has(id)) {
+          next.delete(id)
+        } else {
+          next.add(id)
+        }
+        return next
+      })
+    } finally {
+      setHidingListings(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
   }
 
   const handleRevenueToggle = (newIsAnnual: boolean) => {
