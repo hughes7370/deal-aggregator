@@ -24,59 +24,60 @@ export default function DealFlowPage() {
   const { user } = useUser()
   const { getToken } = useAuth()
   const [supabaseClient, setSupabaseClient] = useState(() => 
-    createClient(supabaseUrl, supabaseAnonKey)
+    createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
   )
 
   // Set up authenticated Supabase client
   useEffect(() => {
     const setupSupabase = async () => {
       if (!user) {
-        console.log('No user found, skipping Supabase auth setup')
+        console.log('No user found, using anonymous Supabase client')
         return
       }
 
       try {
-        console.log('Attempting to get Clerk token...')
+        console.log('Setting up authenticated Supabase client...')
         const token = await getToken({ template: "supabase" })
-        console.log('Got Clerk token:', token ? 'Token received' : 'No token received')
         
         if (!token) {
-          console.error('No token received from Clerk')
+          console.error('Failed to get Clerk JWT token')
           return
         }
 
-        console.log('Creating authenticated Supabase client...')
+        // Create a new Supabase client with the token
         const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false
+          },
           global: {
             headers: {
               Authorization: `Bearer ${token}`
             }
-          },
-          auth: {
-            persistSession: false,
-            autoRefreshToken: false,
-            detectSessionInUrl: false
           }
         })
-        
+
+        console.log('Created authenticated Supabase client')
+        setSupabaseClient(authenticatedClient)
+
         // Test the authenticated client
         const { data: testData, error: testError } = await authenticatedClient
           .from('user_saved_listings')
           .select('count')
           .limit(1)
-        
-        console.log('Test query result:', {
-          success: !testError,
-          error: testError,
-          data: testData
-        })
 
         if (testError) {
-          console.error('Test query failed:', testError)
-        } else {
-          console.log('Authentication successful')
-          setSupabaseClient(authenticatedClient)
+          console.error('Authentication test failed:', testError)
+          throw testError
         }
+
+        console.log('Authentication test successful')
 
       } catch (error) {
         console.error('Error in Supabase auth setup:', error)
@@ -278,64 +279,57 @@ export default function DealFlowPage() {
     try {
       console.log('=== Save Listing Operation Started ===')
       console.log('Listing ID:', id)
-      console.log('Current State:', {
-        savingListings: Array.from(savingListings),
-        savedListings: Array.from(savedListings)
-      })
-
-      setSavingListings(prev => new Set([...prev, id]))
       
       if (!user) {
         console.error('Error: User not authenticated')
         return
       }
 
-      console.log('Authentication Check Passed')
-      console.log('User Details:', {
-        id: user.id
+      // Set saving state immediately
+      setSavingListings(prev => new Set([...prev, id]))
+
+      // Get a fresh token for this operation
+      const token = await getToken({ template: "supabase" })
+      if (!token) {
+        throw new Error('Failed to get authentication token')
+      }
+
+      // Create a fresh client with the new token
+      const freshClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       })
 
       if (savedListings.has(id)) {
-        console.log('Attempting to remove listing from saved')
-        // Remove from saved listings
-        const { data: deleteData, error: deleteError } = await supabaseClient
+        console.log('Removing listing from saved...')
+        const { error: deleteError } = await freshClient
           .from('user_saved_listings')
           .delete()
           .eq('listing_id', id)
           .eq('user_id', user.id)
-          .select()
-
-        console.log('Delete Operation Result:', {
-          success: !deleteError,
-          data: deleteData,
-          error: deleteError ? {
-            message: deleteError.message,
-            code: deleteError.code,
-            details: deleteError.details
-          } : null
-        })
 
         if (deleteError) {
-          console.error('Failed to delete saved listing:', {
-            error: deleteError,
-            context: {
-              listing_id: id,
-              user_id: user.id
-            }
-          })
+          console.error('Failed to delete saved listing:', deleteError)
           throw deleteError
         }
 
         setSavedListings(prev => {
           const next = new Set(prev)
           next.delete(id)
-          console.log('Updated saved listings after delete:', Array.from(next))
           return next
         })
+        console.log('Successfully removed listing from saved')
       } else {
-        console.log('Attempting to add listing to saved')
-        // Add to saved listings
-        const { data: insertData, error: insertError } = await supabaseClient
+        console.log('Adding listing to saved...')
+        const { error: insertError } = await freshClient
           .from('user_saved_listings')
           .insert([
             {
@@ -344,46 +338,27 @@ export default function DealFlowPage() {
               saved_at: new Date().toISOString(),
             }
           ])
-          .select()
-
-        console.log('Insert Operation Result:', {
-          success: !insertError,
-          data: insertData,
-          error: insertError ? {
-            message: insertError.message,
-            code: insertError.code,
-            details: insertError.details
-          } : null
-        })
 
         if (insertError) {
-          console.error('Failed to insert saved listing:', {
-            error: insertError,
-            context: {
-              listing_id: id,
-              user_id: user.id,
-              saved_at: new Date().toISOString()
-            }
-          })
+          console.error('Failed to save listing:', insertError)
           throw insertError
         }
 
-        setSavedListings(prev => {
-          const next = new Set([...prev, id])
-          console.log('Updated saved listings after insert:', Array.from(next))
-          return next
-        })
+        setSavedListings(prev => new Set([...prev, id]))
+        console.log('Successfully added listing to saved')
       }
-      console.log('=== Save Listing Operation Completed Successfully ===')
-    } catch (err) {
-      console.error('Save Listing Operation Failed:', {
-        error: err,
-        context: {
-          listing_id: id,
-          user_id: user?.id
+    } catch (error) {
+      console.error('Save listing operation failed:', error)
+      // Revert UI state on error
+      setSavedListings(prev => {
+        const next = new Set(prev)
+        if (next.has(id)) {
+          next.delete(id)
+        } else {
+          next.add(id)
         }
+        return next
       })
-      // TODO: Add error notification
     } finally {
       setSavingListings(prev => {
         const next = new Set(prev)
