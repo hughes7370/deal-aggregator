@@ -24,13 +24,7 @@ export default function DealFlowPage() {
   const { user } = useUser()
   const { getToken } = useAuth()
   const [supabaseClient, setSupabaseClient] = useState(() => 
-    createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
-      }
-    })
+    createClient(supabaseUrl, supabaseAnonKey)
   )
 
   // Set up authenticated Supabase client
@@ -52,23 +46,12 @@ export default function DealFlowPage() {
 
         // Create a new Supabase client with the token
         const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-            detectSessionInUrl: false
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
         })
-
-        // Set the auth token using Supabase's auth mechanism
-        const { error: authError } = await authenticatedClient.auth.setSession({
-          access_token: token,
-          refresh_token: token
-        })
-
-        if (authError) {
-          console.error('Failed to set auth session:', authError)
-          throw authError
-        }
 
         console.log('Created authenticated Supabase client')
         setSupabaseClient(authenticatedClient)
@@ -303,22 +286,12 @@ export default function DealFlowPage() {
 
       // Create a fresh client with the new token
       const freshClient = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-          detectSessionInUrl: false
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       })
-
-      // Set the auth token using Supabase's auth mechanism
-      const { error: authError } = await freshClient.auth.setSession({
-        access_token: token,
-        refresh_token: token
-      })
-
-      if (authError) {
-        throw new Error('Failed to authenticate with Supabase')
-      }
 
       if (savedListings.has(id)) {
         console.log('Removing listing from saved...')
