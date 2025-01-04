@@ -28,6 +28,17 @@ export default function Header() {
         Dashboard
       </Link>
       <Link 
+        href="/dealflow"
+        className={`block w-full px-4 py-2 text-base font-medium rounded-md ${
+          isActive('/dealflow')
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        Deal Flow
+      </Link>
+      <Link 
         href="/dashboard/preferences"
         className={`block w-full px-4 py-2 text-base font-medium rounded-md ${
           isActive('/dashboard/preferences')
@@ -52,6 +63,16 @@ export default function Header() {
         }`}
       >
         Dashboard
+      </Link>
+      <Link 
+        href="/dealflow"
+        className={`px-3 py-2 rounded-md text-sm font-medium ${
+          isActive('/dealflow')
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-500 hover:text-gray-900'
+        }`}
+      >
+        Deal Flow
       </Link>
       <Link 
         href="/dashboard/preferences"
