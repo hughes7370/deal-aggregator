@@ -2,6 +2,11 @@ import requests
 from typing import List, Dict, Optional
 import os
 from datetime import datetime, timedelta, UTC
+import sys
+
+# Add the project root to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 from backend.src.database.supabase_db import SupabaseClient
 import json
 import resend
@@ -135,7 +140,10 @@ class NewsletterService:
                 # Send email using Resend (synchronously since it doesn't support async)
                 response = resend.Emails.send(params)
                 
-                if response and response.get('id'):
+                # Debug print the response
+                print(f"Resend API Response: {response}")
+                
+                if response and isinstance(response, dict) and response.get('id'):
                     # Update newsletter log as sent
                     self.db.update_newsletter_status(log_id, 'sent')
                     
@@ -151,8 +159,10 @@ class NewsletterService:
                     
                     return response['id']
                 else:
-                    # Update newsletter log as failed
-                    self.db.update_newsletter_status(log_id, 'failed', 'No response ID from email service')
+                    # Update newsletter log as failed with response details
+                    error_msg = f"Invalid response from email service: {response}"
+                    self.db.update_newsletter_status(log_id, 'failed', error_msg)
+                    print(f"❌ {error_msg}")
                     return None
                     
             except Exception as e:
@@ -167,65 +177,146 @@ class NewsletterService:
             print(f"User data: {user}")
             return None
 
+    def normalize_industry(self, industry: str) -> str:
+        """Normalize industry name to match standard categories"""
+        industry = industry.lower().strip()
+        
+        # Software/SaaS/Technology variations
+        if any(term in industry for term in ['saas', 'software', 'tech', 'app', 'plugin', 'extension', 'mobile']):
+            return 'Software/SaaS'
+        
+        # Ecommerce variations
+        elif any(term in industry for term in ['ecommerce', 'e-commerce', 'amazon', 'shopify', 'fba', 'retail', 'commerce']):
+            return 'Ecommerce'
+        
+        # Content/Media variations
+        elif any(term in industry for term in ['content', 'blog', 'media', 'digital', 'youtube', 'social media', 'newsletter', 'advertising', 'entertainment']):
+            return 'Content/Media'
+        
+        # Service variations
+        elif any(term in industry for term in ['service', 'consulting', 'agency', 'services']):
+            return 'Service'
+        
+        # Manufacturing variations
+        elif any(term in industry for term in ['manufacturing', 'factory', 'production']):
+            return 'Manufacturing'
+        
+        # Wholesale/Distribution variations
+        elif any(term in industry for term in ['distribution', 'wholesale']):
+            return 'Wholesale/Distribution'
+        
+        # Education variations
+        elif any(term in industry for term in ['education', 'learning', 'teaching', 'edtech']):
+            return 'Education'
+        
+        # Healthcare variations
+        elif any(term in industry for term in ['health', 'healthcare', 'medical']):
+            return 'Healthcare Services'
+        
+        # Marketing variations
+        elif any(term in industry for term in ['marketing', 'seo', 'ppc', 'advertising']):
+            return 'Marketing'
+        
+        # Renewable Energy variations
+        elif any(term in industry for term in ['renewable', 'energy', 'solar', 'wind']):
+            return 'Renewable Energy'
+        
+        else:
+            return 'Other'
+
     def get_matching_listings(self, preferences: Dict) -> List[Dict]:
         """Get listings that match user preferences"""
         try:
             query = self.db.client.table('listings').select('*')
             
+            print("\nBuilding query with filters:")
+            
             # Basic Filters
             # Filter by price range if specified
             if preferences.get('min_price'):
                 query = query.gte('asking_price', preferences['min_price'])
+                print(f"- Min price: {preferences['min_price']}")
             if preferences.get('max_price'):
                 query = query.lte('asking_price', preferences['max_price'])
+                print(f"- Max price: {preferences['max_price']}")
                 
             # Filter by industries if specified
             if preferences.get('industries'):
-                industries = preferences['industries'] if isinstance(preferences['industries'], list) else preferences['industries'].split(',')
+                user_industries = []
+                for ind in preferences['industries']:
+                    normalized = self.normalize_industry(ind.strip())
+                    print(f"Normalized industry '{ind}' to '{normalized}'")
+                    # Special case: if user selected "SaaS", also match "Technology" and vice versa
+                    if normalized == 'Software/SaaS':
+                        user_industries.extend(['Software/SaaS', 'Technology'])
+                    elif normalized == 'Technology':
+                        user_industries.extend(['Software/SaaS', 'Technology'])
+                    else:
+                        user_industries.append(normalized)
+                
+                # Remove duplicates
+                user_industries = list(set(user_industries))
+                print(f"Final normalized industries: {user_industries}")
+                
                 # If industries is empty or None, don't apply any industry filter (select all)
-                if industries and len(industries) > 0:
-                    query = query.in_('industry', industries)
-
+                if user_industries and len(user_industries) > 0:
+                    # Get listings where the normalized industry matches any of the user's normalized industries
+                    query = query.in_('industry', user_industries)
+                    print(f"- Industry filter: IN {user_industries}")
+            
             # Advanced Filters
             # Business Age
             if preferences.get('min_business_age') is not None:
                 query = query.gte('business_age', preferences['min_business_age'])
+                print(f"- Min business age: {preferences['min_business_age']}")
             if preferences.get('max_business_age') is not None:
                 query = query.lte('business_age', preferences['max_business_age'])
+                print(f"- Max business age: {preferences['max_business_age']}")
 
             # Number of Employees
             if preferences.get('min_employees') is not None:
                 query = query.gte('number_of_employees', preferences['min_employees'])
+                print(f"- Min employees: {preferences['min_employees']}")
             if preferences.get('max_employees') is not None:
                 query = query.lte('number_of_employees', preferences['max_employees'])
+                print(f"- Max employees: {preferences['max_employees']}")
 
             # Business Models
             if preferences.get('preferred_business_models') and len(preferences['preferred_business_models']) > 0:
-                query = query.in_('business_model', preferences['preferred_business_models'])
+                # Business model filtering is disabled since we don't have this field in listings yet
+                print(f"- Business models (disabled): {preferences['preferred_business_models']}")
 
             # Profit Margin
             if preferences.get('min_profit_margin') is not None:
                 query = query.gte('profit_margin', preferences['min_profit_margin'])
+                print(f"- Min profit margin: {preferences['min_profit_margin']}")
             if preferences.get('max_profit_margin') is not None:
                 query = query.lte('profit_margin', preferences['max_profit_margin'])
+                print(f"- Max profit margin: {preferences['max_profit_margin']}")
 
             # Selling Multiple
             if preferences.get('min_selling_multiple') is not None:
                 query = query.gte('selling_multiple', preferences['min_selling_multiple'])
+                print(f"- Min selling multiple: {preferences['min_selling_multiple']}")
             if preferences.get('max_selling_multiple') is not None:
                 query = query.lte('selling_multiple', preferences['max_selling_multiple'])
+                print(f"- Max selling multiple: {preferences['max_selling_multiple']}")
 
             # EBITDA
             if preferences.get('min_ebitda') is not None:
                 query = query.gte('ebitda', preferences['min_ebitda'])
+                print(f"- Min EBITDA: {preferences['min_ebitda']}")
             if preferences.get('max_ebitda') is not None:
                 query = query.lte('ebitda', preferences['max_ebitda'])
+                print(f"- Max EBITDA: {preferences['max_ebitda']}")
 
             # Annual Revenue
             if preferences.get('min_annual_revenue') is not None:
                 query = query.gte('revenue', preferences['min_annual_revenue'])
+                print(f"- Min annual revenue: {preferences['min_annual_revenue']}")
             if preferences.get('max_annual_revenue') is not None:
                 query = query.lte('revenue', preferences['max_annual_revenue'])
+                print(f"- Max annual revenue: {preferences['max_annual_revenue']}")
             
             # Filter by time based on newsletter frequency
             frequency = preferences.get('newsletter_frequency', 'daily')
@@ -233,40 +324,54 @@ class NewsletterService:
             
             if last_sent:
                 last_sent = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
+                print(f"- Last notification sent: {last_sent}")
                 
                 if frequency == 'instantly':
                     # For instant notifications, only get listings newer than last notification
                     query = query.gt('created_at', last_sent.isoformat())
+                    print(f"- Time filter: created_at > {last_sent.isoformat()} (instant)")
                 elif frequency == 'daily':
                     # For daily, get listings from the past 24 hours
                     cutoff = datetime.now(UTC) - timedelta(days=1)
                     query = query.gt('created_at', cutoff.isoformat())
+                    print(f"- Time filter: created_at > {cutoff.isoformat()} (daily)")
                 elif frequency == 'weekly':
                     # For weekly, get listings from the past 7 days
                     cutoff = datetime.now(UTC) - timedelta(days=7)
                     query = query.gt('created_at', cutoff.isoformat())
+                    print(f"- Time filter: created_at > {cutoff.isoformat()} (weekly)")
                 else:  # monthly
                     # For monthly, get listings from the past 30 days
                     cutoff = datetime.now(UTC) - timedelta(days=30)
                     query = query.gt('created_at', cutoff.isoformat())
+                    print(f"- Time filter: created_at > {cutoff.isoformat()} (monthly)")
             else:
-                # If no last_sent, use frequency-based cutoff
-                if frequency == 'daily':
-                    cutoff = datetime.now(UTC) - timedelta(days=1)
-                elif frequency == 'weekly':
-                    cutoff = datetime.now(UTC) - timedelta(days=7)
-                else:  # monthly
-                    cutoff = datetime.now(UTC) - timedelta(days=30)
+                # If no last_sent, use a more lenient cutoff for testing
+                cutoff = datetime.now(UTC) - timedelta(days=30)  # Show last 30 days of listings
                 query = query.gt('created_at', cutoff.isoformat())
-
-            # Order by newest first and limit to reasonable number
-            query = query.order('created_at', desc=True).limit(10)
+                print(f"- Time filter: created_at > {cutoff.isoformat()} (default 30 days)")
             
+            # Execute query and get results
+            print("\nExecuting query...")
             result = query.execute()
-            return result.data if result.data else []
+            
+            if not result.data:
+                print("No listings found matching the query")
+                return []
+            
+            # Sort by newest first and limit to 10 listings
+            listings = sorted(result.data, key=lambda x: x.get('created_at', ''), reverse=True)[:10]
+            
+            # Debug: print industries of matched listings
+            if listings:
+                print("\nMatched listings industries:")
+                for listing in listings:
+                    print(f"- {listing.get('title')}: {listing.get('industry')}")
+            
+            return listings
             
         except Exception as e:
-            print(f"Error fetching matching listings: {e}")
+            print(f"Error getting matching listings: {str(e)}")
             return []
 
     def format_currency(self, amount: int) -> str:
