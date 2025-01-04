@@ -27,7 +27,8 @@ export default function DealFlowPage() {
     createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: false,
-        persistSession: false
+        persistSession: false,
+        detectSessionInUrl: false
       }
     })
   )
@@ -55,13 +56,19 @@ export default function DealFlowPage() {
             autoRefreshToken: false,
             persistSession: false,
             detectSessionInUrl: false
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
           }
         })
+
+        // Set the auth token using Supabase's auth mechanism
+        const { error: authError } = await authenticatedClient.auth.setSession({
+          access_token: token,
+          refresh_token: token
+        })
+
+        if (authError) {
+          console.error('Failed to set auth session:', authError)
+          throw authError
+        }
 
         console.log('Created authenticated Supabase client')
         setSupabaseClient(authenticatedClient)
@@ -300,13 +307,18 @@ export default function DealFlowPage() {
           autoRefreshToken: false,
           persistSession: false,
           detectSessionInUrl: false
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
         }
       })
+
+      // Set the auth token using Supabase's auth mechanism
+      const { error: authError } = await freshClient.auth.setSession({
+        access_token: token,
+        refresh_token: token
+      })
+
+      if (authError) {
+        throw new Error('Failed to authenticate with Supabase')
+      }
 
       if (savedListings.has(id)) {
         console.log('Removing listing from saved...')
