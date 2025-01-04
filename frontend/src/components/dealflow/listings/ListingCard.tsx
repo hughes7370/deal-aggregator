@@ -24,6 +24,7 @@ interface ListingCardProps {
   viewMode: ViewMode
   onSave: (id: string) => void
   onHide: (id: string) => void
+  isSaved: boolean
 }
 
 const getBusinessTypeIcon = (title: string, type: string): typeof QuestionMarkCircleIcon => {
@@ -53,7 +54,7 @@ const BUSINESS_TYPE_ICONS = {
   'other': BriefcaseIcon
 }
 
-export function ListingCard({ listing, viewMode, onSave, onHide }: ListingCardProps) {
+export function ListingCard({ listing, viewMode, onSave, onHide, isSaved }: ListingCardProps) {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
 
@@ -88,9 +89,11 @@ export function ListingCard({ listing, viewMode, onSave, onHide }: ListingCardPr
         <div className="absolute top-0 right-0 p-2 z-20 flex items-center space-x-1">
           <button
             onClick={() => onSave(id)}
-            className="text-gray-400 hover:text-indigo-600 p-1.5 rounded-full hover:bg-white/90 transition-colors"
+            className={`p-1.5 rounded-full hover:bg-white/90 transition-colors ${
+              isSaved ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-600'
+            }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
             </svg>
           </button>
@@ -188,6 +191,8 @@ export function ListingCard({ listing, viewMode, onSave, onHide }: ListingCardPr
         listing={listing}
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
+        onSave={() => onSave(id)}
+        isSaved={isSaved}
       />
     </>
   )

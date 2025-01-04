@@ -26,6 +26,7 @@ export default function DealFlowPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | undefined>()
   const [listings, setListings] = useState<any[]>([])
+  const [savedListings, setSavedListings] = useState<Set<string>>(new Set())
 
   // View state
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -97,9 +98,27 @@ export default function DealFlowPage() {
     }
   }
 
+  // Function to fetch saved listings
+  const fetchSavedListings = async () => {
+    try {
+      const { data: savedData, error: savedError } = await supabase
+        .from('user_saved_listings')
+        .select('listing_id')
+
+      if (savedError) {
+        throw savedError
+      }
+
+      setSavedListings(new Set(savedData.map(item => item.listing_id)))
+    } catch (err) {
+      console.error('Error fetching saved listings:', err)
+    }
+  }
+
   // Initial data loading
   useEffect(() => {
     fetchListings()
+    fetchSavedListings()
   }, [])
 
   // Apply filters
@@ -136,8 +155,41 @@ export default function DealFlowPage() {
     await fetchListings()
   }
 
-  const handleSaveListing = (id: string) => {
-    console.log('Save listing:', id)
+  const handleSaveListing = async (id: string) => {
+    try {
+      if (savedListings.has(id)) {
+        // Remove from saved listings
+        const { error: deleteError } = await supabase
+          .from('user_saved_listings')
+          .delete()
+          .eq('listing_id', id)
+
+        if (deleteError) throw deleteError
+
+        setSavedListings(prev => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+      } else {
+        // Add to saved listings
+        const { error: insertError } = await supabase
+          .from('user_saved_listings')
+          .insert([
+            {
+              listing_id: id,
+              saved_at: new Date().toISOString(),
+            }
+          ])
+
+        if (insertError) throw insertError
+
+        setSavedListings(prev => new Set([...prev, id]))
+      }
+    } catch (err) {
+      console.error('Error saving listing:', err)
+      // TODO: Add error notification
+    }
   }
 
   const handleHideListing = (id: string) => {
@@ -270,6 +322,7 @@ export default function DealFlowPage() {
                 onHideListing={handleHideListing}
                 viewMode={viewMode}
                 pageSize={pageSize}
+                savedListings={savedListings}
               />
             </div>
           </div>

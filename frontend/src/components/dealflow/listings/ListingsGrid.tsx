@@ -14,6 +14,7 @@ interface ListingsGridProps {
   onHideListing: (id: string) => void
   viewMode: ViewMode
   pageSize: number
+  savedListings: Set<string>
 }
 
 export function ListingsGrid({
@@ -25,6 +26,7 @@ export function ListingsGrid({
   onHideListing,
   viewMode,
   pageSize,
+  savedListings,
 }: ListingsGridProps) {
   const {
     currentPage,
@@ -82,6 +84,7 @@ export function ListingsGrid({
             viewMode={viewMode}
             onSave={onSaveListing}
             onHide={onHideListing}
+            isSaved={savedListings.has(listing.id)}
           />
         ))}
       </div>

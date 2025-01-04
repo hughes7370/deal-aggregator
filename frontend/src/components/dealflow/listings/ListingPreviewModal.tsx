@@ -6,9 +6,11 @@ interface ListingPreviewModalProps {
   listing: Listing
   isOpen: boolean
   onClose: () => void
+  onSave: () => void
+  isSaved: boolean
 }
 
-export function ListingPreviewModal({ listing, isOpen, onClose }: ListingPreviewModalProps) {
+export function ListingPreviewModal({ listing, isOpen, onClose, onSave, isSaved }: ListingPreviewModalProps) {
   if (!isOpen) return null
 
   const {
@@ -126,8 +128,15 @@ export function ListingPreviewModal({ listing, isOpen, onClose }: ListingPreview
                 <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                   View Full Listing
                 </button>
-                <button className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                  Save for Later
+                <button
+                  onClick={onSave}
+                  className={`inline-flex items-center px-4 py-2 border text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
+                    isSaved
+                      ? 'border-indigo-600 text-indigo-600 hover:bg-indigo-50'
+                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  {isSaved ? 'Saved' : 'Save for Later'}
                 </button>
               </div>
               <div className="text-sm text-gray-500">
