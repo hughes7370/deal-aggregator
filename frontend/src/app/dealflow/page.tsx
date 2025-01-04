@@ -37,18 +37,26 @@ export default function DealFlowPage() {
 
       try {
         console.log('Setting up authenticated Supabase client...')
-        const token = await getToken({ template: "supabase" })
+        // Request token with specific claims needed by Supabase
+        const token = await getToken({
+          template: "supabase",
+          skipCache: true
+        })
         
         if (!token) {
           console.error('Failed to get Clerk JWT token')
           return
         }
 
+        // Log token for debugging (remove in production)
+        console.log('Received token:', token.slice(0, 20) + '...')
+
         // Create a new Supabase client with the token
         const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
           global: {
             headers: {
-              Authorization: `Bearer ${token}`
+              Authorization: `Bearer ${token}`,
+              apikey: supabaseAnonKey
             }
           }
         })
@@ -61,16 +69,20 @@ export default function DealFlowPage() {
           .from('user_saved_listings')
           .select('count')
           .limit(1)
+          .single()
 
         if (testError) {
           console.error('Authentication test failed:', testError)
           throw testError
         }
 
-        console.log('Authentication test successful')
+        console.log('Authentication test successful:', testData)
 
       } catch (error) {
         console.error('Error in Supabase auth setup:', error)
+        if (error instanceof Error) {
+          console.error('Error details:', error.message)
+        }
       }
     }
 
@@ -279,16 +291,24 @@ export default function DealFlowPage() {
       setSavingListings(prev => new Set([...prev, id]))
 
       // Get a fresh token for this operation
-      const token = await getToken({ template: "supabase" })
+      const token = await getToken({
+        template: "supabase",
+        skipCache: true
+      })
+      
       if (!token) {
         throw new Error('Failed to get authentication token')
       }
+
+      // Log token for debugging (remove in production)
+      console.log('Using token for operation:', token.slice(0, 20) + '...')
 
       // Create a fresh client with the new token
       const freshClient = createClient(supabaseUrl, supabaseAnonKey, {
         global: {
           headers: {
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${token}`,
+            apikey: supabaseAnonKey
           }
         }
       })
@@ -300,6 +320,8 @@ export default function DealFlowPage() {
           .delete()
           .eq('listing_id', id)
           .eq('user_id', user.id)
+          .select()
+          .single()
 
         if (deleteError) {
           console.error('Failed to delete saved listing:', deleteError)
@@ -323,6 +345,8 @@ export default function DealFlowPage() {
               saved_at: new Date().toISOString(),
             }
           ])
+          .select()
+          .single()
 
         if (insertError) {
           console.error('Failed to save listing:', insertError)
