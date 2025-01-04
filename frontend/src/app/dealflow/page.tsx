@@ -14,17 +14,46 @@ import { PageSizeSelector } from '@/components/dealflow/listings/PageSizeSelecto
 import { useListingsFilter } from '@/components/dealflow/hooks/useListingsFilter'
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useUser } from "@clerk/nextjs"
+import { useUser, useAuth } from "@clerk/nextjs"
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Initialize Supabase client with auth configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export default function DealFlowPage() {
   const { user } = useUser()
-  
+  const { getToken } = useAuth()
+  const [supabaseClient, setSupabaseClient] = useState(() => 
+    createClient(supabaseUrl, supabaseAnonKey)
+  )
+
+  // Set up authenticated Supabase client
+  useEffect(() => {
+    const setupSupabase = async () => {
+      if (!user) return
+
+      try {
+        const token = await getToken({ template: "supabase" })
+        console.log('Got Clerk token for Supabase authentication')
+        
+        const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        })
+        
+        setSupabaseClient(authenticatedClient)
+        console.log('Supabase client updated with authentication')
+      } catch (error) {
+        console.error('Error setting up authenticated Supabase client:', error)
+      }
+    }
+
+    setupSupabase()
+  }, [user, getToken])
+
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | undefined>()
@@ -55,7 +84,7 @@ export default function DealFlowPage() {
   const fetchListings = async () => {
     try {
       setIsLoading(true)
-      const { data, error: supabaseError } = await supabase
+      const { data, error: supabaseError } = await supabaseClient
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false })
@@ -151,7 +180,7 @@ export default function DealFlowPage() {
       console.log('Fetching saved listings')
       console.log('User ID:', user.id)
       
-      const { data: savedData, error: savedError } = await supabase
+      const { data: savedData, error: savedError } = await supabaseClient
         .from('user_saved_listings')
         .select('listing_id')
         .eq('user_id', user.id)
@@ -237,7 +266,7 @@ export default function DealFlowPage() {
       if (savedListings.has(id)) {
         console.log('Attempting to remove listing from saved')
         // Remove from saved listings
-        const { data: deleteData, error: deleteError } = await supabase
+        const { data: deleteData, error: deleteError } = await supabaseClient
           .from('user_saved_listings')
           .delete()
           .eq('listing_id', id)
@@ -274,7 +303,7 @@ export default function DealFlowPage() {
       } else {
         console.log('Attempting to add listing to saved')
         // Add to saved listings
-        const { data: insertData, error: insertError } = await supabase
+        const { data: insertData, error: insertError } = await supabaseClient
           .from('user_saved_listings')
           .insert([
             {
