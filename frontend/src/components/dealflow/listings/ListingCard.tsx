@@ -145,6 +145,13 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
             <p className="text-sm text-gray-600 line-clamp-2 ml-7">{description}</p>
           </div>
 
+          {/* Source Platform */}
+          <div className="flex justify-end mb-2">
+            <span className="text-xs text-gray-400 capitalize">
+              {source.replace(/_/g, ' ')}
+            </span>
+          </div>
+
           {/* Key Metrics */}
           <div className={`grid gap-x-6 gap-y-4 pt-4 border-t border-gray-100 ${
             viewMode === 'list' ? 'w-96 grid-cols-4 pt-0 border-0' : 'grid-cols-2'
