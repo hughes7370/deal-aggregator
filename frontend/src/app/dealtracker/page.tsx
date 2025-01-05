@@ -56,8 +56,31 @@ export default function DealTracker() {
   const fetchSavedListings = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) return;
+      console.log('Current user:', user);
+      if (!user?.email) {
+        console.log('No user email found');
+        return;
+      }
 
+      // First check if we have any saved listings
+      const { data: savedListingsCheck, error: checkError } = await supabase
+        .from('user_saved_listings')
+        .select('id, user_email')
+        .eq('user_email', user.email);
+
+      if (checkError) {
+        console.error('Error checking saved listings:', checkError);
+        return;
+      }
+
+      console.log('Saved listings check:', savedListingsCheck);
+
+      if (!savedListingsCheck || savedListingsCheck.length === 0) {
+        console.log('No saved listings found for user');
+        return;
+      }
+
+      // Now fetch full data with joins
       const { data, error } = await supabase
         .from('user_saved_listings')
         .select(`
@@ -70,7 +93,7 @@ export default function DealTracker() {
             asking_price,
             business_type
           ),
-          deal_tracker!left(
+          deal_tracker(
             id,
             status,
             next_steps,
@@ -83,10 +106,23 @@ export default function DealTracker() {
         .order('created_at', { ascending: false })
         .returns<SavedListing[]>();
 
-      if (error) throw error;
+      console.log('Full data fetch result:', { data, error });
+
+      if (error) {
+        console.error('Error fetching full data:', error);
+        throw error;
+      }
+      
+      if (!data || data.length === 0) {
+        console.log('No data returned from full fetch');
+      } else {
+        console.log('Number of listings found:', data.length);
+        console.log('First listing:', data[0]);
+      }
+
       setSavedListings(data || []);
     } catch (error) {
-      console.error('Error fetching saved listings:', error);
+      console.error('Error in fetchSavedListings:', error);
     } finally {
       setIsLoading(false);
     }
