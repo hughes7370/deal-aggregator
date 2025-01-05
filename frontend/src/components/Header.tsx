@@ -39,6 +39,17 @@ export default function Header() {
         Deal Flow
       </Link>
       <Link 
+        href="/dealtracker"
+        className={`block w-full px-4 py-2 text-base font-medium rounded-md ${
+          isActive('/dealtracker')
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        Deal Tracker
+      </Link>
+      <Link 
         href="/dashboard/preferences"
         className={`block w-full px-4 py-2 text-base font-medium rounded-md ${
           isActive('/dashboard/preferences')
@@ -73,6 +84,16 @@ export default function Header() {
         }`}
       >
         Deal Flow
+      </Link>
+      <Link 
+        href="/dealtracker"
+        className={`px-3 py-2 rounded-md text-sm font-medium ${
+          isActive('/dealtracker')
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-500 hover:text-gray-900'
+        }`}
+      >
+        Deal Tracker
       </Link>
       <Link 
         href="/dashboard/preferences"
