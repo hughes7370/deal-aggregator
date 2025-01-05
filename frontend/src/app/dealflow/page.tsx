@@ -98,7 +98,7 @@ export default function DealFlowPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000])
   const [revenueRange, setRevenueRange] = useState<[number, number]>([0, 12000000])
   const [isAnnualRevenue, setIsAnnualRevenue] = useState(true)
-  const [multipleRange, setMultipleRange] = useState<[number, number]>([1, 10])
+  const [multipleRange, setMultipleRange] = useState<[number, number]>([0, 10])
   const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([])
   const [sources, setSources] = useState<Source[]>([])
 
@@ -184,6 +184,7 @@ export default function DealFlowPage() {
           teamSize: listing.number_of_employees || 0,
           location: cleanLocation,
           originalListingUrl: listing.original_listing_url || '',
+          created_at: listing.created_at,
         }
       })
 

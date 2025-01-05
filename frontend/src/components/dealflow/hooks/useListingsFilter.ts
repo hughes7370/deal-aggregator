@@ -24,23 +24,31 @@ export function useListingsFilter(listings: Listing[], filters: FilterState) {
 
     // Apply filters
     filteredListings = filteredListings.filter((listing) => {
-      // Price filter
-      if (listing.price < filters.priceRange[0] || listing.price > filters.priceRange[1]) {
-        return false
+      // Price filter - include 0 if the range starts at 0
+      if (filters.priceRange[0] === 0) {
+        if (listing.price === 0) return true;
+        if (listing.price > filters.priceRange[1]) return false;
+      } else {
+        if (listing.price < filters.priceRange[0] || listing.price > filters.priceRange[1]) return false;
       }
 
-      // Revenue filter - compare in monthly terms
+      // Revenue filter - compare in monthly terms and include 0 if the range starts at 0
       const monthlyRevenue = listing.monthlyRevenue
       const filterMin = filters.isAnnualRevenue ? filters.revenueRange[0] / 12 : filters.revenueRange[0]
       const filterMax = filters.isAnnualRevenue ? filters.revenueRange[1] / 12 : filters.revenueRange[1]
       
-      if (monthlyRevenue < filterMin || monthlyRevenue > filterMax) {
-        return false
+      if (filterMin === 0) {
+        if (monthlyRevenue > filterMax) return false;
+      } else {
+        if (monthlyRevenue < filterMin || monthlyRevenue > filterMax) return false;
       }
 
-      // Multiple filter
-      if (listing.multiple < filters.multipleRange[0] || listing.multiple > filters.multipleRange[1]) {
-        return false
+      // Multiple filter - include 0 if the range starts at 0
+      if (filters.multipleRange[0] === 0) {
+        if (listing.multiple === 0) return true;
+        if (listing.multiple > filters.multipleRange[1]) return false;
+      } else {
+        if (listing.multiple < filters.multipleRange[0] || listing.multiple > filters.multipleRange[1]) return false;
       }
 
       // Business type filter
@@ -96,7 +104,7 @@ export function useListingsFilter(listings: Listing[], filters: FilterState) {
     filteredListings.sort((a, b) => {
       switch (filters.sortBy) {
         case 'newest':
-          return a.daysListed - b.daysListed
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         case 'price_high_low':
           return b.price - a.price
         case 'price_low_high':

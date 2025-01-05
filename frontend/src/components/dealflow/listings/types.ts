@@ -18,6 +18,7 @@ export interface Listing {
   location?: string
   profitMargin?: number
   originalListingUrl?: string
+  created_at: string
 }
 
 export type ViewMode = 'list' | 'grid' 
