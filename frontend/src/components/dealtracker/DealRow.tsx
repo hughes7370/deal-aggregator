@@ -6,9 +6,9 @@ import SelectField from './SelectField';
 interface DealRowProps {
   listing: {
     id: string;
-    business_name: string;
+    title: string;
     asking_price: number;
-    business_type: string;
+    business_model: string;
   };
   dealTracker?: {
     id: string;
@@ -62,13 +62,13 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
         />
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-        {listing.business_name}
+        {listing.title}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         ${listing.asking_price.toLocaleString()}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {getBusinessType(listing.business_type)}
+        {getBusinessType(listing.business_model)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>

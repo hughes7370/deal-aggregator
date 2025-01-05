@@ -22,11 +22,11 @@ interface SavedListing {
   id: string;
   user_email: string;
   listing_id: string;
-  listing: {
+  listings: {
     id: string;
-    business_name: string;
+    title: string;
     asking_price: number;
-    business_type: string;
+    business_model: string;
   };
   deal_tracker?: {
     id: string;
@@ -138,13 +138,13 @@ export default function DealTracker() {
           id,
           user_email,
           listing_id,
-          listing:listings(
+          listings!inner(
             id,
-            business_name,
+            title,
             asking_price,
-            business_type
+            business_model
           ),
-          deal_tracker:deal_tracker!left(
+          deal_tracker(
             id,
             status,
             next_steps,
@@ -184,7 +184,7 @@ export default function DealTracker() {
       if (!user?.emailAddresses?.[0]?.emailAddress) return;
       const userEmail = user.emailAddresses[0].emailAddress;
 
-      const savedListing = savedListings.find(sl => sl.listing.id === listingId);
+      const savedListing = savedListings.find(sl => sl.listings.id === listingId);
       if (!savedListing?.deal_tracker) {
         const { data: newDealTracker, error: createError } = await supabaseClient
           .from('deal_tracker')
@@ -203,7 +203,7 @@ export default function DealTracker() {
         if (createError) throw createError;
         
         setSavedListings(prev => prev.map(sl => 
-          sl.listing.id === listingId 
+          sl.listings.id === listingId 
             ? { ...sl, deal_tracker: newDealTracker }
             : sl
         ));
@@ -219,7 +219,7 @@ export default function DealTracker() {
         if (updateError) throw updateError;
 
         setSavedListings(prev => prev.map(sl => 
-          sl.listing.id === listingId 
+          sl.listings.id === listingId 
             ? { 
                 ...sl, 
                 deal_tracker: {
@@ -265,7 +265,7 @@ export default function DealTracker() {
 
       // Update local state
       setSavedListings(prev => prev.map(sl => 
-        selectedItems.has(sl.listing.id)
+        selectedItems.has(sl.listings.id)
           ? { 
               ...sl, 
               deal_tracker: {
@@ -287,9 +287,9 @@ export default function DealTracker() {
   const handleExportCSV = () => {
     const headers = ['Business Name', 'Price', 'Type', 'Status', 'Next Steps', 'Priority', 'Notes', 'Last Updated'];
     const rows = filteredListings.map(sl => [
-      sl.listing.business_name,
-      sl.listing.asking_price,
-      sl.listing.business_type,
+      sl.listings.title,
+      sl.listings.asking_price,
+      sl.listings.business_model,
       sl.deal_tracker?.status || 'Interested',
       sl.deal_tracker?.next_steps || 'Review Listing',
       sl.deal_tracker?.priority || 'Medium',
@@ -341,7 +341,7 @@ export default function DealTracker() {
       result = result.filter(sl => filters.priority?.includes(sl.deal_tracker?.priority || 'Medium'));
     }
     if (filters.type?.length) {
-      result = result.filter(sl => filters.type?.includes(sl.listing.business_type));
+      result = result.filter(sl => filters.type?.includes(sl.listings.business_model));
     }
     if (filters.next_steps?.length) {
       result = result.filter(sl => filters.next_steps?.includes(sl.deal_tracker?.next_steps || 'Review Listing'));
@@ -353,16 +353,16 @@ export default function DealTracker() {
       
       switch (sortConfig.field) {
         case 'business_name':
-          aValue = a.listing.business_name;
-          bValue = b.listing.business_name;
+          aValue = a.listings.title;
+          bValue = b.listings.title;
           break;
         case 'asking_price':
-          aValue = a.listing.asking_price;
-          bValue = b.listing.asking_price;
+          aValue = a.listings.asking_price;
+          bValue = b.listings.asking_price;
           break;
         case 'business_type':
-          aValue = a.listing.business_type;
-          bValue = b.listing.business_type;
+          aValue = a.listings.business_model;
+          bValue = b.listings.business_model;
           break;
         case 'status':
           aValue = a.deal_tracker?.status || 'Interested';
@@ -396,7 +396,7 @@ export default function DealTracker() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedItems(new Set(filteredListings.map(sl => sl.listing.id)));
+      setSelectedItems(new Set(filteredListings.map(sl => sl.listings.id)));
     } else {
       setSelectedItems(new Set());
     }
@@ -517,12 +517,12 @@ export default function DealTracker() {
             ) : (
               filteredListings.map((savedListing) => (
                 <DealRow
-                  key={savedListing.listing.id}
-                  listing={savedListing.listing}
+                  key={savedListing.listings.id}
+                  listing={savedListing.listings}
                   dealTracker={savedListing.deal_tracker}
                   onUpdate={handleUpdateDeal}
-                  isSelected={selectedItems.has(savedListing.listing.id)}
-                  onSelect={(checked) => handleSelectItem(savedListing.listing.id, checked)}
+                  isSelected={selectedItems.has(savedListing.listings.id)}
+                  onSelect={(checked) => handleSelectItem(savedListing.listings.id, checked)}
                   statusColor={getStatusColor(savedListing.deal_tracker?.status)}
                 />
               ))
