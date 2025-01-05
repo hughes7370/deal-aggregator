@@ -138,13 +138,13 @@ export default function DealTracker() {
           id,
           user_email,
           listing_id,
-          listing:listings!inner(
+          listing:listings(
             id,
             business_name,
             asking_price,
             business_type
           ),
-          deal_tracker(
+          deal_tracker!left(
             id,
             status,
             next_steps,
