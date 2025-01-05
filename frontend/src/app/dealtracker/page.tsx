@@ -264,19 +264,38 @@ export default function DealTracker() {
 
   const handleBulkAction = async (action: string) => {
     if (selectedItems.size === 0) return;
+    if (!user?.emailAddresses?.[0]?.emailAddress) return;
+    const userEmail = user.emailAddresses[0].emailAddress;
 
     try {
-      const updates = Array.from(selectedItems).map(id => ({
-        id,
-        status: action,
-        last_updated: new Date().toISOString()
-      }));
-
-      const { error } = await supabaseClient
-        .from('deal_tracker')
-        .upsert(updates);
-
-      if (error) throw error;
+      // Get the selected listings with their listing_ids
+      const selectedListings = savedListings.filter(sl => selectedItems.has(sl.listings.id));
+      
+      for (const listing of selectedListings) {
+        if (!listing.deal_tracker) {
+          // Create new deal tracker entry
+          await supabaseClient
+            .from('deal_tracker')
+            .insert({
+              user_email: userEmail,
+              listing_id: listing.listing_id,
+              status: action,
+              next_steps: 'Review Listing',
+              priority: 'Medium',
+              last_updated: new Date().toISOString(),
+            });
+        } else {
+          // Update existing deal tracker entry
+          await supabaseClient
+            .from('deal_tracker')
+            .update({
+              status: action,
+              last_updated: new Date().toISOString(),
+            })
+            .eq('listing_id', listing.listing_id)
+            .eq('user_email', userEmail);
+        }
+      }
 
       // Update local state
       setSavedListings(prev => prev.map(sl => 
@@ -284,9 +303,12 @@ export default function DealTracker() {
           ? { 
               ...sl, 
               deal_tracker: {
-                ...sl.deal_tracker!,
+                id: sl.deal_tracker?.id || sl.listing_id, // Use listing_id as fallback for id
                 status: action,
-                last_updated: new Date().toISOString()
+                next_steps: sl.deal_tracker?.next_steps || 'Review Listing',
+                priority: sl.deal_tracker?.priority || 'Medium',
+                notes: sl.deal_tracker?.notes || '',
+                last_updated: new Date().toISOString(),
               }
             }
           : sl
