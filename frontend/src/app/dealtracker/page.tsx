@@ -27,6 +27,7 @@ interface SavedListing {
     title: string;
     asking_price: number;
     business_model: string;
+    source_platform: string;
   };
   deal_tracker?: {
     id: string;
@@ -35,6 +36,7 @@ interface SavedListing {
     priority: string;
     notes: string;
     last_updated: string;
+    created_at: string;
   } | null;
   selected?: boolean;
 }
@@ -142,7 +144,8 @@ export default function DealTracker() {
             id,
             title,
             asking_price,
-            business_model
+            business_model,
+            source_platform
           ),
           deal_tracker(
             id,
@@ -150,7 +153,8 @@ export default function DealTracker() {
             next_steps,
             priority,
             notes,
-            last_updated
+            last_updated,
+            created_at
           )
         `)
         .eq('user_email', userEmail)
@@ -303,12 +307,13 @@ export default function DealTracker() {
           ? { 
               ...sl, 
               deal_tracker: {
-                id: sl.deal_tracker?.id || sl.listing_id, // Use listing_id as fallback for id
+                id: sl.deal_tracker?.id || sl.listing_id,
                 status: action,
                 next_steps: sl.deal_tracker?.next_steps || 'Review Listing',
                 priority: sl.deal_tracker?.priority || 'Medium',
                 notes: sl.deal_tracker?.notes || '',
                 last_updated: new Date().toISOString(),
+                created_at: sl.deal_tracker?.created_at || new Date().toISOString(),
               }
             }
           : sl
@@ -518,6 +523,8 @@ export default function DealTracker() {
                 { key: 'priority', label: 'Priority' },
                 { key: 'notes', label: 'Notes' },
                 { key: 'last_updated', label: 'Last Updated' },
+                { key: 'source_platform', label: 'Source' },
+                { key: 'created_at', label: 'Date Added' },
               ].map(({ key, label }) => (
                 <th
                   key={key}

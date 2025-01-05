@@ -9,6 +9,7 @@ interface DealRowProps {
     title: string;
     asking_price: number;
     business_model: string;
+    source_platform: string;
   };
   dealTracker?: {
     id: string;
@@ -17,6 +18,7 @@ interface DealRowProps {
     priority: string;
     notes: string;
     last_updated: string;
+    created_at: string;
   };
   onUpdate: (listingId: string, field: string, value: string | number) => void;
   isSelected: boolean;
@@ -114,6 +116,12 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {dealTracker?.last_updated ? new Date(dealTracker.last_updated).toLocaleDateString() : '-'}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {listing.source_platform || '-'}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {dealTracker?.created_at ? new Date(dealTracker.created_at).toLocaleDateString() : '-'}
       </td>
     </tr>
   );
