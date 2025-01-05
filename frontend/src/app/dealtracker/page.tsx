@@ -5,6 +5,8 @@ import { FunnelIcon, ArrowsUpDownIcon, ArrowDownTrayIcon, CheckIcon } from '@her
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import DealRow from '@/components/dealtracker/DealRow';
 import FilterControls from '@/components/dealtracker/controls/FilterControls';
+import { useUser, useAuth } from "@clerk/nextjs";
+import { createClient } from '@supabase/supabase-js';
 
 type SortField = 'business_name' | 'asking_price' | 'business_type' | 'status' | 'next_steps' | 'priority' | 'last_updated';
 type SortDirection = 'asc' | 'desc';
@@ -37,7 +39,16 @@ interface SavedListing {
   selected?: boolean;
 }
 
+// Initialize Supabase client with auth configuration
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
 export default function DealTracker() {
+  const { user } = useUser();
+  const { getToken } = useAuth();
+  const [supabaseClient, setSupabaseClient] = useState(() => 
+    createClient(supabaseUrl, supabaseAnonKey)
+  );
   const [savedListings, setSavedListings] = useState<SavedListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
@@ -47,26 +58,66 @@ export default function DealTracker() {
   const [filters, setFilters] = useState<Filters>({});
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const supabase = createClientComponentClient();
+
+  // Set up authenticated Supabase client
+  useEffect(() => {
+    const setupSupabase = async () => {
+      if (!user) {
+        console.log('No user found, using anonymous Supabase client');
+        return;
+      }
+
+      try {
+        // Get token with specific template
+        const token = await getToken({ template: "supabase" });
+        
+        if (!token) {
+          console.error('Failed to get Clerk JWT token');
+          return;
+        }
+
+        // Create a new Supabase client with the token
+        const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        });
+
+        console.log('Created authenticated Supabase client');
+        setSupabaseClient(authenticatedClient);
+
+      } catch (error) {
+        console.error('Error in Supabase auth setup:', error);
+      }
+    };
+
+    setupSupabase();
+  }, [user, getToken]);
 
   useEffect(() => {
     fetchSavedListings();
-  }, []);
+  }, [supabaseClient]);
 
   const fetchSavedListings = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user);
-      if (!user?.email) {
+      if (!user?.emailAddresses?.[0]?.emailAddress) {
         console.log('No user email found');
         return;
       }
 
+      const userEmail = user.emailAddresses[0].emailAddress;
+      console.log('Fetching listings for email:', userEmail);
+
       // First check if we have any saved listings
-      const { data: savedListingsCheck, error: checkError } = await supabase
+      const { data: savedListingsCheck, error: checkError } = await supabaseClient
         .from('user_saved_listings')
         .select('id, user_email')
-        .eq('user_email', user.email);
+        .eq('user_email', userEmail);
 
       if (checkError) {
         console.error('Error checking saved listings:', checkError);
@@ -81,7 +132,7 @@ export default function DealTracker() {
       }
 
       // Now fetch full data with joins
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('user_saved_listings')
         .select(`
           id,
@@ -102,7 +153,7 @@ export default function DealTracker() {
             last_updated
           )
         `)
-        .eq('user_email', user.email)
+        .eq('user_email', userEmail)
         .order('created_at', { ascending: false })
         .returns<SavedListing[]>();
 
@@ -130,15 +181,15 @@ export default function DealTracker() {
 
   const handleUpdateDeal = async (listingId: string, field: string, value: string | number) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) return;
+      if (!user?.emailAddresses?.[0]?.emailAddress) return;
+      const userEmail = user.emailAddresses[0].emailAddress;
 
       const savedListing = savedListings.find(sl => sl.listing.id === listingId);
       if (!savedListing?.deal_tracker) {
-        const { data: newDealTracker, error: createError } = await supabase
+        const { data: newDealTracker, error: createError } = await supabaseClient
           .from('deal_tracker')
           .insert({
-            user_email: user.email,
+            user_email: userEmail,
             listing_id: listingId,
             [field]: value,
             status: 'Interested',
@@ -157,7 +208,7 @@ export default function DealTracker() {
             : sl
         ));
       } else {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await supabaseClient
           .from('deal_tracker')
           .update({
             [field]: value,
@@ -206,7 +257,7 @@ export default function DealTracker() {
         last_updated: new Date().toISOString()
       }));
 
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('deal_tracker')
         .upsert(updates);
 
