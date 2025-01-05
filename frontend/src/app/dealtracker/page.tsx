@@ -184,13 +184,20 @@ export default function DealTracker() {
       if (!user?.emailAddresses?.[0]?.emailAddress) return;
       const userEmail = user.emailAddresses[0].emailAddress;
 
+      // Find the saved listing that matches this listing ID
       const savedListing = savedListings.find(sl => sl.listings.id === listingId);
+      if (!savedListing) {
+        console.error('Could not find saved listing with ID:', listingId);
+        return;
+      }
+
       if (!savedListing?.deal_tracker) {
+        // Create new deal tracker entry
         const { data: newDealTracker, error: createError } = await supabaseClient
           .from('deal_tracker')
           .insert({
             user_email: userEmail,
-            listing_id: listingId,
+            listing_id: savedListing.listing_id, // Use the listing_id from user_saved_listings
             [field]: value,
             status: 'Interested',
             next_steps: 'Review Listing',
@@ -200,7 +207,10 @@ export default function DealTracker() {
           .select()
           .single();
 
-        if (createError) throw createError;
+        if (createError) {
+          console.error('Error creating deal tracker:', createError);
+          throw createError;
+        }
         
         setSavedListings(prev => prev.map(sl => 
           sl.listings.id === listingId 
@@ -208,15 +218,20 @@ export default function DealTracker() {
             : sl
         ));
       } else {
+        // Update existing deal tracker entry
         const { error: updateError } = await supabaseClient
           .from('deal_tracker')
           .update({
             [field]: value,
             last_updated: new Date().toISOString(),
           })
-          .eq('id', savedListing.deal_tracker.id);
+          .eq('listing_id', savedListing.listing_id) // Use listing_id instead of id
+          .eq('user_email', userEmail);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Error updating deal tracker:', updateError);
+          throw updateError;
+        }
 
         setSavedListings(prev => prev.map(sl => 
           sl.listings.id === listingId 
