@@ -40,7 +40,10 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
     }
   };
 
-  const getBusinessType = (type: string) => {
+  const getBusinessType = (type: string | null | undefined) => {
+    // If type is null or undefined, return 'Other'
+    if (!type) return 'Other';
+    
     // Map the business type from the listing to our options
     const typeMap: { [key: string]: string } = {
       'saas': 'SaaS',
