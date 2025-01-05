@@ -218,7 +218,12 @@ class FlippaScraper(BaseScraper):
             
             # Calculate annual profit
             monthly_profit = self._parse_price(business_details.get('monthly_profit', listing_data.get('monthly_profit', '0')))
+            print(f"\nEBITDA Calculation Debug:")
+            print(f"Raw monthly_profit from business_details: {business_details.get('monthly_profit')}")
+            print(f"Raw monthly_profit from listing_data: {listing_data.get('monthly_profit')}")
+            print(f"Parsed monthly_profit: ${monthly_profit:,}")
             annual_profit = monthly_profit * 12
+            print(f"Calculated annual_profit (EBITDA): ${annual_profit:,}")
             
             formatted_listing = {
                 'title': listing_data.get('title', ''),
@@ -260,7 +265,12 @@ class FlippaScraper(BaseScraper):
 
     def _parse_price(self, price_str: str) -> int:
         try:
-            price_str = str(price_str).replace('$', '').replace(',', '').strip().lower()
+            # Convert to string and clean up basic formatting
+            price_str = str(price_str).strip().lower()
+            
+            # Remove currency indicators and other text
+            price_str = price_str.replace('usd', '').replace('$', '').replace('/mo', '')
+            price_str = price_str.replace('p/mo', '').replace(',', '').strip()
             
             if 'm' in price_str:
                 return int(float(price_str.replace('m', '')) * 1000000)
@@ -268,7 +278,8 @@ class FlippaScraper(BaseScraper):
                 return int(float(price_str.replace('k', '')) * 1000)
             else:
                 return int(float(price_str))
-        except:
+        except Exception as e:
+            print(f"Error parsing price '{price_str}': {str(e)}")
             return 0
 
     def _extract_industry(self, business_type: str) -> str:
