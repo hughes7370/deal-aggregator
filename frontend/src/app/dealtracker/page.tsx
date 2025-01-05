@@ -144,7 +144,7 @@ export default function DealTracker() {
             asking_price,
             business_type
           ),
-          deal_tracker!left(
+          deal_tracker:deal_tracker!left(
             id,
             status,
             next_steps,
