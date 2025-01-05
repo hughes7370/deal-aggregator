@@ -33,7 +33,7 @@ interface SavedListing {
     priority: string;
     notes: string;
     last_updated: string;
-  };
+  } | null;
   selected?: boolean;
 }
 
@@ -61,8 +61,10 @@ export default function DealTracker() {
       const { data, error } = await supabase
         .from('user_saved_listings')
         .select(`
-          *,
-          listing:listings(
+          id,
+          user_id,
+          listing_id,
+          listing:listings!inner(
             id,
             business_name,
             asking_price,
@@ -78,7 +80,8 @@ export default function DealTracker() {
           )
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .returns<SavedListing[]>();
 
       if (error) throw error;
       setSavedListings(data || []);
