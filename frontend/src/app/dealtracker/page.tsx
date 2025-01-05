@@ -154,7 +154,7 @@ export default function DealTracker() {
           )
         `)
         .eq('user_email', userEmail)
-        .order('created_at', { ascending: false })
+        .order('saved_at', { ascending: false })
         .returns<SavedListing[]>();
 
       console.log('Full data fetch result:', { data, error });
