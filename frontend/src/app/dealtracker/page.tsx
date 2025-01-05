@@ -18,7 +18,7 @@ interface Filters {
 
 interface SavedListing {
   id: string;
-  user_id: string;
+  user_email: string;
   listing_id: string;
   listing: {
     id: string;
@@ -56,13 +56,13 @@ export default function DealTracker() {
   const fetchSavedListings = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user?.email) return;
 
       const { data, error } = await supabase
         .from('user_saved_listings')
         .select(`
           id,
-          user_id,
+          user_email,
           listing_id,
           listing:listings!inner(
             id,
@@ -70,7 +70,7 @@ export default function DealTracker() {
             asking_price,
             business_type
           ),
-          deal_tracker(
+          deal_tracker!left(
             id,
             status,
             next_steps,
@@ -79,7 +79,7 @@ export default function DealTracker() {
             last_updated
           )
         `)
-        .eq('user_id', user.id)
+        .eq('user_email', user.email)
         .order('created_at', { ascending: false })
         .returns<SavedListing[]>();
 
@@ -95,14 +95,14 @@ export default function DealTracker() {
   const handleUpdateDeal = async (listingId: string, field: string, value: string | number) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user?.email) return;
 
       const savedListing = savedListings.find(sl => sl.listing.id === listingId);
       if (!savedListing?.deal_tracker) {
         const { data: newDealTracker, error: createError } = await supabase
           .from('deal_tracker')
           .insert({
-            user_id: user.id,
+            user_email: user.email,
             listing_id: listingId,
             [field]: value,
             status: 'Interested',
