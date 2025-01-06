@@ -225,129 +225,84 @@ class NewsletterService:
             return 'Other'
 
     def get_matching_listings(self, preferences: Dict) -> List[Dict]:
-        """Get listings that match user preferences"""
+        """Get listings matching the user's preferences"""
         try:
+            print("\nBuilding query with filters:")
             query = self.db.client.table('listings').select('*')
             
-            print("\nBuilding query with filters:")
-            
-            # Basic Filters
-            # Filter by price range if specified
-            if preferences.get('min_price'):
-                query = query.gte('asking_price', preferences['min_price'])
-                print(f"- Min price: {preferences['min_price']}")
+            # Apply price filters if set
             if preferences.get('max_price'):
-                query = query.lte('asking_price', preferences['max_price'])
                 print(f"- Max price: {preferences['max_price']}")
-                
-            # Filter by industries if specified
+                query = query.lte('asking_price', preferences['max_price'])
+            if preferences.get('min_price'):
+                print(f"- Min price: {preferences['min_price']}")
+                query = query.gte('asking_price', preferences['min_price'])
+            
+            # Apply industry filters
             if preferences.get('industries'):
-                user_industries = []
-                for ind in preferences['industries']:
-                    normalized = self.normalize_industry(ind.strip())
-                    print(f"Normalized industry '{ind}' to '{normalized}'")
-                    # Special case: if user selected "SaaS", also match "Technology" and vice versa
-                    if normalized == 'Software/SaaS':
-                        user_industries.extend(['Software/SaaS', 'Technology'])
-                    elif normalized == 'Technology':
-                        user_industries.extend(['Software/SaaS', 'Technology'])
+                # Normalize industries
+                normalized_industries = []
+                for industry in preferences['industries']:
+                    if industry == 'SaaS':
+                        print(f"Normalized industry '{industry}' to 'Software/SaaS'")
+                        normalized_industries.extend(['Software/SaaS', 'Technology'])
+                    elif industry == 'E-commerce':
+                        print(f"Normalized industry '{industry}' to 'Ecommerce'")
+                        normalized_industries.append('Ecommerce')
+                    elif industry in ['Digital Products', 'Content', 'Advertising']:
+                        print(f"Normalized industry '{industry}' to 'Content/Media'")
+                        normalized_industries.append('Content/Media')
+                    elif industry == 'Services':
+                        print(f"Normalized industry '{industry}' to 'Service'")
+                        normalized_industries.append('Service')
+                    elif industry == 'Mobile Apps':
+                        print(f"Normalized industry '{industry}' to 'Software/SaaS'")
+                        normalized_industries.extend(['Software/SaaS', 'Technology'])
                     else:
-                        user_industries.append(normalized)
+                        normalized_industries.append(industry)
                 
-                # Remove duplicates
-                user_industries = list(set(user_industries))
-                print(f"Final normalized industries: {user_industries}")
+                # Remove duplicates while preserving order
+                normalized_industries = list(dict.fromkeys(normalized_industries))
+                print(f"Final normalized industries: {normalized_industries}")
                 
-                # If industries is empty or None, don't apply any industry filter (select all)
-                if user_industries and len(user_industries) > 0:
-                    # Get listings where the normalized industry matches any of the user's normalized industries
-                    query = query.in_('industry', user_industries)
-                    print(f"- Industry filter: IN {user_industries}")
+                # Apply industry filter
+                query = query.in_('industry', normalized_industries)
+                print(f"- Industry filter: IN {normalized_industries}")
             
-            # Advanced Filters
-            # Business Age
-            if preferences.get('min_business_age') is not None:
-                query = query.gte('business_age', preferences['min_business_age'])
-                print(f"- Min business age: {preferences['min_business_age']}")
-            if preferences.get('max_business_age') is not None:
-                query = query.lte('business_age', preferences['max_business_age'])
-                print(f"- Max business age: {preferences['max_business_age']}")
-
-            # Number of Employees
-            if preferences.get('min_employees') is not None:
-                query = query.gte('number_of_employees', preferences['min_employees'])
-                print(f"- Min employees: {preferences['min_employees']}")
-            if preferences.get('max_employees') is not None:
-                query = query.lte('number_of_employees', preferences['max_employees'])
-                print(f"- Max employees: {preferences['max_employees']}")
-
-            # Business Models
-            if preferences.get('preferred_business_models') and len(preferences['preferred_business_models']) > 0:
-                # Business model filtering is disabled since we don't have this field in listings yet
+            # Apply business model filters
+            if preferences.get('preferred_business_models'):
                 print(f"- Business models (disabled): {preferences['preferred_business_models']}")
-
-            # Profit Margin
-            if preferences.get('min_profit_margin') is not None:
-                query = query.gte('profit_margin', preferences['min_profit_margin'])
-                print(f"- Min profit margin: {preferences['min_profit_margin']}")
-            if preferences.get('max_profit_margin') is not None:
-                query = query.lte('profit_margin', preferences['max_profit_margin'])
-                print(f"- Max profit margin: {preferences['max_profit_margin']}")
-
-            # Selling Multiple
-            if preferences.get('min_selling_multiple') is not None:
-                query = query.gte('selling_multiple', preferences['min_selling_multiple'])
-                print(f"- Min selling multiple: {preferences['min_selling_multiple']}")
-            if preferences.get('max_selling_multiple') is not None:
-                query = query.lte('selling_multiple', preferences['max_selling_multiple'])
-                print(f"- Max selling multiple: {preferences['max_selling_multiple']}")
-
-            # EBITDA
-            if preferences.get('min_ebitda') is not None:
-                query = query.gte('ebitda', preferences['min_ebitda'])
-                print(f"- Min EBITDA: {preferences['min_ebitda']}")
-            if preferences.get('max_ebitda') is not None:
-                query = query.lte('ebitda', preferences['max_ebitda'])
-                print(f"- Max EBITDA: {preferences['max_ebitda']}")
-
-            # Annual Revenue
-            if preferences.get('min_annual_revenue') is not None:
-                query = query.gte('revenue', preferences['min_annual_revenue'])
-                print(f"- Min annual revenue: {preferences['min_annual_revenue']}")
-            if preferences.get('max_annual_revenue') is not None:
-                query = query.lte('revenue', preferences['max_annual_revenue'])
-                print(f"- Max annual revenue: {preferences['max_annual_revenue']}")
             
-            # Filter by time based on newsletter frequency
-            frequency = preferences.get('newsletter_frequency', 'daily')
+            # Apply time filter based on frequency and last notification
             last_sent = preferences.get('last_notification_sent')
+            frequency = preferences.get('newsletter_frequency', 'daily')
+            now = datetime.now(UTC)
             
             if last_sent:
-                last_sent = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
-                print(f"- Last notification sent: {last_sent}")
+                last_sent_dt = datetime.fromisoformat(last_sent.replace('Z', '+00:00'))
+                print(f"- Last notification sent: {last_sent_dt}")
                 
-                if frequency == 'instantly':
-                    # For instant notifications, only get listings newer than last notification
-                    query = query.gt('created_at', last_sent.isoformat())
-                    print(f"- Time filter: created_at > {last_sent.isoformat()} (instant)")
-                elif frequency == 'daily':
-                    # For daily, get listings from the past 24 hours
-                    cutoff = datetime.now(UTC) - timedelta(days=1)
-                    query = query.gt('created_at', cutoff.isoformat())
-                    print(f"- Time filter: created_at > {cutoff.isoformat()} (daily)")
+                # Calculate the time filter based on frequency
+                if frequency == 'daily':
+                    # For daily, use either 24 hours ago or last notification time, whichever is more recent
+                    twenty_four_hours_ago = now - timedelta(hours=24)
+                    cutoff = max(twenty_four_hours_ago, last_sent_dt)
+                    print(f"- Time filter: created_at > {cutoff.isoformat()} (daily - using max of 24h ago or last notification)")
                 elif frequency == 'weekly':
-                    # For weekly, get listings from the past 7 days
-                    cutoff = datetime.now(UTC) - timedelta(days=7)
-                    query = query.gt('created_at', cutoff.isoformat())
+                    # For weekly, use either 7 days ago or last notification time, whichever is more recent
+                    seven_days_ago = now - timedelta(days=7)
+                    cutoff = max(seven_days_ago, last_sent_dt)
                     print(f"- Time filter: created_at > {cutoff.isoformat()} (weekly)")
                 else:  # monthly
-                    # For monthly, get listings from the past 30 days
-                    cutoff = datetime.now(UTC) - timedelta(days=30)
-                    query = query.gt('created_at', cutoff.isoformat())
+                    # For monthly, use either 30 days ago or last notification time, whichever is more recent
+                    thirty_days_ago = now - timedelta(days=30)
+                    cutoff = max(thirty_days_ago, last_sent_dt)
                     print(f"- Time filter: created_at > {cutoff.isoformat()} (monthly)")
+                
+                query = query.gt('created_at', cutoff.isoformat())
             else:
                 # If no last_sent, use a more lenient cutoff for testing
-                cutoff = datetime.now(UTC) - timedelta(days=30)  # Show last 30 days of listings
+                cutoff = now - timedelta(days=30)  # Show last 30 days of listings
                 query = query.gt('created_at', cutoff.isoformat())
                 print(f"- Time filter: created_at > {cutoff.isoformat()} (default 30 days)")
             
@@ -537,9 +492,16 @@ class NewsletterService:
                         if alert_result.data:
                             alert = alert_result.data
                             print(f"✅ Found alert: {alert.get('name')}")
+                            print(f"Alert details:")
+                            print(f"- Frequency: {alert.get('newsletter_frequency', 'daily')}")
+                            print(f"- Last sent: {alert.get('last_notification_sent', 'Never')}")
+                            print(f"- Industries: {alert.get('industries', [])}")
                         else:
-                            print(f"⚠️ Alert not found for ID: {newsletter['alert_id']}")
-                    
+                            error_msg = f"Alert not found for ID: {newsletter['alert_id']}"
+                            print(f"❌ {error_msg}")
+                            self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
+                            continue
+
                     # Get user data
                     print(f"🔍 Fetching user data...")
                     user_result = self.db.client.table('users')\
@@ -573,14 +535,19 @@ class NewsletterService:
                         
                         alert = alerts_result.data[0]  # Use the first alert if multiple exist
                         print(f"✅ Using alert: {alert.get('name')}")
-                    
+                        print(f"Alert details:")
+                        print(f"- Frequency: {alert.get('newsletter_frequency', 'daily')}")
+                        print(f"- Last sent: {alert.get('last_notification_sent', 'Never')}")
+                        print(f"- Industries: {alert.get('industries', [])}")
+
                     # Get matching listings
                     print(f"\n🔍 Finding matching listings...")
                     matching_listings = self.get_matching_listings(alert)
                     
                     if not matching_listings:
-                        print(f"ℹ️ No matching listings for alert '{alert['name']}'")
-                        self.db.update_newsletter_status(newsletter['id'], 'skipped', 'No matching listings')
+                        skip_msg = f"No matching listings found for alert '{alert['name']}' since last notification at {alert.get('last_notification_sent', 'Never')}"
+                        print(f"ℹ️ {skip_msg}")
+                        self.db.update_newsletter_status(newsletter['id'], 'skipped', skip_msg)
                         continue
                     
                     print(f"✅ Found {len(matching_listings)} matching listings")
@@ -596,7 +563,7 @@ class NewsletterService:
                         print(f"✅ Newsletter sent successfully! (Email ID: {email_id})")
                         # Update last notification sent timestamp
                         self.db.client.table('alerts')\
-                            .update({'last_notification_sent': datetime.now().isoformat()})\
+                            .update({'last_notification_sent': datetime.now(UTC).isoformat()})\
                             .eq('id', alert['id'])\
                             .execute()
                         print(f"✅ Updated last notification timestamp for alert")
@@ -604,7 +571,7 @@ class NewsletterService:
                         error_msg = f"Failed to send newsletter to {user['email']}"
                         print(f"❌ {error_msg}")
                         self.db.update_newsletter_status(newsletter['id'], 'failed', error_msg)
-                    
+
                 except Exception as e:
                     error_msg = f"Error processing scheduled newsletter {newsletter['id']}: {str(e)}"
                     print(f"❌ {error_msg}")
