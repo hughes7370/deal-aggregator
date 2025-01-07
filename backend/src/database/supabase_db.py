@@ -134,21 +134,39 @@ class SupabaseClient:
             # 2. Either:
             #    a. scheduled_for is not null and due (scheduled_for <= now)
             #    b. scheduled_for is null (legacy entries)
-            result = self.client.table('newsletter_logs')\
+            
+            # First get newsletters with scheduled_for <= now
+            result1 = self.client.table('newsletter_logs')\
                 .select('*')\
                 .eq('status', 'pending')\
-                .or_(f'scheduled_for.lte.{now_str},scheduled_for.is.null')\
-                .order('created_at')\
+                .lte('scheduled_for', now_str)\
+                .execute()
+                
+            # Then get newsletters with scheduled_for is null
+            result2 = self.client.table('newsletter_logs')\
+                .select('*')\
+                .eq('status', 'pending')\
+                .is_('scheduled_for', 'null')\
                 .execute()
             
-            if result.data:
-                print(f"Found {len(result.data)} pending newsletters")
-                for newsletter in result.data:
+            # Combine and sort results
+            all_newsletters = []
+            if result1.data:
+                all_newsletters.extend(result1.data)
+            if result2.data:
+                all_newsletters.extend(result2.data)
+            
+            # Sort by created_at
+            all_newsletters.sort(key=lambda x: x.get('created_at', ''))
+            
+            if all_newsletters:
+                print(f"Found {len(all_newsletters)} pending newsletters")
+                for newsletter in all_newsletters:
                     print(f"Newsletter {newsletter['id']}: scheduled_for={newsletter.get('scheduled_for')}")
             else:
                 print("No pending newsletters found")
             
-            return result.data if result.data else []
+            return all_newsletters
             
         except Exception as e:
             print(f"Error getting pending newsletters: {str(e)}")

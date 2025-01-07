@@ -154,7 +154,16 @@ class SchedulerService:
                             print(f"Alert settings:")
                             print(f"- Frequency: {alert.get('newsletter_frequency', 'daily')}")
                             print(f"- Industries: {alert.get('industries', [])}")
-                            print(f"- Price range: ${alert.get('min_price', 0):,} - ${alert.get('max_price', 'unlimited')}")
+                            
+                            # Format price range
+                            try:
+                                min_price = int(alert.get('min_price', 0))
+                                max_price = alert.get('max_price')
+                                max_price_str = f"${int(max_price):,}" if max_price is not None else "unlimited"
+                                print(f"- Price range: ${min_price:,} - {max_price_str}")
+                            except (TypeError, ValueError):
+                                print("- Price range: Not specified")
+                            
                             print(f"- Last sent: {alert.get('last_notification_sent', 'Never')}")
                             
                             # Check if we should send based on frequency and last sent time
