@@ -13,6 +13,7 @@ export interface Listing {
   businessType: BusinessType
   source: Source
   daysListed: number
+  hoursListed: number
   growthRate?: number
   teamSize?: number
   location?: string

@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import KeyMetrics from '@/components/dashboard/KeyMetrics';
 import { RecentListings } from '@/components/dashboard/RecentListings';
-import { MarketSnapshot } from '@/components/dashboard/MarketSnapshot';
+import MarketSnapshot from '@/components/dashboard/MarketSnapshot';
 import ActiveDeals from '@/components/dashboard/ActiveDeals';
 import { getUserAlerts } from '@/hooks/useUserAlerts';
 import { ChartBarIcon } from '@heroicons/react/24/outline';

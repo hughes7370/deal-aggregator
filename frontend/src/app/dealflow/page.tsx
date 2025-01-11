@@ -146,6 +146,11 @@ export default function DealFlowPage() {
           if (cleanLocation === '00') cleanLocation = ''
         }
 
+        // Calculate time listed
+        const timeDiff = Date.now() - new Date(listing.first_seen_at).getTime();
+        const hoursListed = Math.floor(timeDiff / (1000 * 60 * 60));
+        const daysListed = Math.floor(hoursListed / 24);
+
         // Normalize source platform
         const normalizeSource = (source: string): Source => {
           const sourceMap: { [key: string]: Source } = {
@@ -188,7 +193,8 @@ export default function DealFlowPage() {
           ageYears: listing.business_age || 0,
           businessType: normalizeBusinessType(listing.industry),
           source: normalizeSource(listing.source_platform),
-          daysListed: Math.max(0, Math.floor((Date.now() - new Date(listing.first_seen_at).getTime()) / (1000 * 60 * 60 * 24))),
+          daysListed,
+          hoursListed,
           profitMargin: listing.profit_margin || 0,
           growthRate: 0, // Placeholder for growth rate
           teamSize: listing.number_of_employees || 0,

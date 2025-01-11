@@ -148,12 +148,40 @@ export function RecentListings({ userId }: RecentListingsProps) {
   if (!listings || listings.length === 0) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Latest Deals Matching Your Filters</h2>
-          <a href="/dealflow" className="text-sm font-medium text-blue-600 hover:text-blue-500">View All</a>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <h2 className="text-lg font-semibold text-gray-900">Latest Deals Matching Your Filters</h2>
+            <span className="text-sm text-gray-500 bg-gray-100 rounded-full px-2 py-0.5">
+              0
+            </span>
+          </div>
+          <a href="/dealflow" className="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center">
+            View All
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
         </div>
-        <div className="text-center py-6 text-gray-500">
-          No matching listings found
+        <div className="bg-white rounded-lg border border-gray-200 p-8">
+          <div className="text-center">
+            <div className="mx-auto h-12 w-12 text-gray-400 mb-4">
+              <svg className="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-1">No matching listings found</h3>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto">
+              Try adjusting your filters or check back later for new listings that match your criteria.
+            </p>
+            <div className="mt-6">
+              <a
+                href="/dealflow"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                View All Listings
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -4,12 +4,16 @@ interface MarketStats {
   businessType: string;
   avgMultiple: number;
   avgMonthlyRevenue: number;
+  avgAskingPrice: number;
+  avgProfitMargin: number;
 }
 
 interface MarketStatsRow {
   business_type: string;
   avg_multiple: number;
   avg_monthly_revenue: number;
+  avg_asking_price: number;
+  avg_profit_margin: number;
 }
 
 export async function getMarketStats(): Promise<MarketStats[]> {
@@ -20,8 +24,8 @@ export async function getMarketStats(): Promise<MarketStats[]> {
 
     const { data, error } = await supabase
       .from('market_statistics')
-      .select('business_type, avg_multiple, avg_monthly_revenue')
-      .gte('created_at', thirtyDaysAgo.toISOString())
+      .select('business_type, avg_multiple, avg_monthly_revenue, avg_asking_price, avg_profit_margin')
+      .eq('time_period', 'last_30_days')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -33,12 +37,21 @@ export async function getMarketStats(): Promise<MarketStats[]> {
       return [];
     }
 
-    // Format the statistics
-    return (data as MarketStatsRow[]).map(stat => ({
-      businessType: stat.business_type || 'Unknown',
-      avgMultiple: stat.avg_multiple || 0,
-      avgMonthlyRevenue: stat.avg_monthly_revenue || 0
-    }));
+    // Format the statistics and remove duplicates by business type
+    const uniqueStats = new Map();
+    (data as MarketStatsRow[]).forEach(stat => {
+      if (!uniqueStats.has(stat.business_type)) {
+        uniqueStats.set(stat.business_type, {
+          businessType: stat.business_type || 'Unknown',
+          avgMultiple: stat.avg_multiple || 0,
+          avgMonthlyRevenue: stat.avg_monthly_revenue || 0,
+          avgAskingPrice: stat.avg_asking_price || 0,
+          avgProfitMargin: stat.avg_profit_margin || 0
+        });
+      }
+    });
+
+    return Array.from(uniqueStats.values());
   } catch (error) {
     console.error('Error in getMarketStats:', error);
     return [];

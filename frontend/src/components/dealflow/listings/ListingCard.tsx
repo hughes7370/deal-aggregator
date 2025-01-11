@@ -68,6 +68,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
     monthlyProfit,
     multiple,
     daysListed,
+    hoursListed,
     businessType,
     source,
     location,
@@ -75,7 +76,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
   } = listing
 
   const BusinessTypeIcon = getBusinessTypeIcon(title, businessType)
-  const isNew = daysListed <= 2 // 48 hours or less
+  const isNew = daysListed === 0 && hoursListed <= 48 // 48 hours or less
 
   return (
     <>
@@ -117,7 +118,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
         </div>
 
         <div className={`p-5 flex flex-col h-full ${viewMode === 'list' ? 'flex-row items-center space-x-6' : ''}`}>
-          {/* Header with days listed */}
+          {/* Header with days/hours listed */}
           <div className={`flex items-start ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'mb-4'}`}>
             <div className="flex items-center space-x-2">
               {isNew && (
@@ -126,7 +127,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
                 </span>
               )}
               <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
-                {daysListed}d
+                {daysListed > 0 ? `${daysListed}d` : `${hoursListed}h`}
               </span>
             </div>
           </div>
