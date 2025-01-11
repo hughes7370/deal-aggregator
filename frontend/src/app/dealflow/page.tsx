@@ -5,6 +5,7 @@ import { ResultsCount } from '@/components/dealflow/header/ResultsCount'
 import { ActionButtons } from '@/components/dealflow/header/ActionButtons'
 import { PriceRangeFilter } from '@/components/dealflow/filters/PriceRangeFilter'
 import { RevenueFilter } from '@/components/dealflow/filters/RevenueFilter'
+import { ProfitFilter } from '@/components/dealflow/filters/ProfitFilter'
 import { BusinessTypeFilter, type BusinessType } from '@/components/dealflow/filters/BusinessTypeFilter'
 import { MultipleFilter } from '@/components/dealflow/filters/MultipleFilter'
 import { SourceFilter, type Source } from '@/components/dealflow/filters/SourceFilter'
@@ -95,18 +96,22 @@ export default function DealFlowPage() {
 
   // State for filters
   const [sortBy, setSortBy] = useState<SortOption>('newest')
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000])
-  const [revenueRange, setRevenueRange] = useState<[number, number]>([0, 12000000])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000000]) // $10M
+  const [revenueRange, setRevenueRange] = useState<[number, number]>([0, 5000000]) // $5M
   const [isAnnualRevenue, setIsAnnualRevenue] = useState(true)
-  const [multipleRange, setMultipleRange] = useState<[number, number]>([0, 10])
+  const [multipleRange, setMultipleRange] = useState<[number, number]>([0, 10]) // 10.0x
   const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([])
   const [sources, setSources] = useState<Source[]>([])
 
   // Advanced filters state
-  const [profitMargin, setProfitMargin] = useState<[number, number]>([0, 100])
-  const [growthRate, setGrowthRate] = useState<[number, number]>([-50, 200])
-  const [teamSize, setTeamSize] = useState<[number, number]>([0, 100])
+  const [profitMargin, setProfitMargin] = useState<[number, number]>([-100, 100]) // -100% to 100%
+  const [growthRate, setGrowthRate] = useState<[number, number]>([-100, 1000]) // -100% to >1000%
+  const [teamSize, setTeamSize] = useState<[number, number]>([0, 1000]) // 0 to >1000 people
   const [location, setLocation] = useState('')
+
+  // Profit filter state
+  const [profitRange, setProfitRange] = useState<[number, number]>([0, 5000000])
+  const [isAnnualProfit, setIsAnnualProfit] = useState(true)
 
   // Function to fetch listings from Supabase
   const fetchListings = async () => {
@@ -319,6 +324,8 @@ export default function DealFlowPage() {
       priceRange,
       revenueRange,
       isAnnualRevenue,
+      profitRange,
+      isAnnualProfit,
       multipleRange,
       businessTypes,
       sources,
@@ -542,6 +549,13 @@ export default function DealFlowPage() {
     setRevenueRange([revenueRange[0] * multiplier, revenueRange[1] * multiplier])
   }
 
+  const handleProfitToggle = (newIsAnnual: boolean) => {
+    setIsAnnualProfit(newIsAnnual)
+    // Convert the values between annual and monthly
+    const multiplier = isAnnualProfit ? 1/12 : 12
+    setProfitRange([profitRange[0] * multiplier, profitRange[1] * multiplier])
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -626,6 +640,13 @@ export default function DealFlowPage() {
                   onChange={setRevenueRange}
                   isAnnual={isAnnualRevenue}
                   onIsAnnualChange={handleRevenueToggle}
+                />
+
+                <ProfitFilter
+                  value={profitRange}
+                  onChange={setProfitRange}
+                  isAnnual={isAnnualProfit}
+                  onIsAnnualChange={handleProfitToggle}
                 />
 
                 <BusinessTypeFilter

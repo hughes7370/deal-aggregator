@@ -1,11 +1,11 @@
 import { RangeSlider } from './RangeSlider'
 import { useState } from 'react'
 
-const REVENUE_THRESHOLD = 5000000 // $5M
+const PROFIT_THRESHOLD = 5000000 // $5M
 
-const formatRevenue = (value: number, isAnnual: boolean) => {
+const formatProfit = (value: number, isAnnual: boolean) => {
   // Show ">" symbol for the threshold value
-  if (value === REVENUE_THRESHOLD) {
+  if (value === PROFIT_THRESHOLD) {
     return `> $5M${isAnnual ? '/yr' : '/mo'}`
   }
   
@@ -18,18 +18,18 @@ const formatRevenue = (value: number, isAnnual: boolean) => {
   return `${displayValue}${isAnnual ? '/yr' : '/mo'}`
 }
 
-interface RevenueFilterProps {
+interface ProfitFilterProps {
   value: [number, number]
   onChange: (value: [number, number]) => void
   isAnnual: boolean
   onIsAnnualChange: (isAnnual: boolean) => void
 }
 
-export function RevenueFilter({ value, onChange, isAnnual, onIsAnnualChange }: RevenueFilterProps) {
+export function ProfitFilter({ value, onChange, isAnnual, onIsAnnualChange }: ProfitFilterProps) {
   return (
     <div className="py-2 space-y-3">
       <div className="flex justify-between items-center">
-        <label className="block text-sm font-medium text-gray-700">Revenue Range</label>
+        <label className="block text-sm font-medium text-gray-700">Profit Range</label>
         <button
           onClick={() => onIsAnnualChange(!isAnnual)}
           className="text-sm text-indigo-600 hover:text-indigo-500"
@@ -40,11 +40,11 @@ export function RevenueFilter({ value, onChange, isAnnual, onIsAnnualChange }: R
       <RangeSlider
         label=""
         min={0}
-        max={REVENUE_THRESHOLD}
+        max={PROFIT_THRESHOLD}
         step={50000}
         value={value}
         onChange={onChange}
-        formatValue={(val) => formatRevenue(val, isAnnual)}
+        formatValue={(val) => formatProfit(val, isAnnual)}
       />
     </div>
   )

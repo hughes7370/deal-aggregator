@@ -1,5 +1,27 @@
-import { useState } from 'react'
 import { RangeSlider } from './RangeSlider'
+import { useState } from 'react'
+
+// Threshold constants
+const PROFIT_MARGIN_DISPLAY = 100 // Display up to 100%
+const PROFIT_MARGIN_MAX = 200 // Include up to 200% in search for data errors
+const GROWTH_RATE_THRESHOLD = 1000 // >1000%
+const TEAM_SIZE_THRESHOLD = 1000 // >1000 people
+
+const formatPercentage = (value: number, threshold?: number) => {
+  // Only show ">" for growth rate at max threshold
+  if (threshold && value === threshold) {
+    return `> ${value}%`
+  }
+  // Regular percentage display for all other cases
+  return `${value}%`
+}
+
+const formatTeamSize = (value: number) => {
+  if (value === TEAM_SIZE_THRESHOLD) {
+    return `> ${value} people`
+  }
+  return `${value} people`
+}
 
 interface AdvancedFiltersProps {
   profitMargin: [number, number]
@@ -11,8 +33,6 @@ interface AdvancedFiltersProps {
   location: string
   onLocationChange: (value: string) => void
 }
-
-const formatPercentage = (value: number) => `${value}%`
 
 export function AdvancedFilters({
   profitMargin,
@@ -26,74 +46,94 @@ export function AdvancedFilters({
 }: AdvancedFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
+  // Handler to ensure profit margin display matches our requirements
+  const handleProfitMarginChange = (value: [number, number]) => {
+    // If they try to set it above 100%, cap the display at 100%
+    const displayValue: [number, number] = [
+      value[0],
+      Math.min(value[1], PROFIT_MARGIN_DISPLAY)
+    ]
+    onProfitMarginChange(displayValue)
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-700">Advanced Filters</h3>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <h3 className="text-sm font-medium text-gray-700">Advanced Filters</h3>
+          <div className="relative group">
+            <svg 
+              className="w-4 h-4 text-gray-400 hover:text-gray-500" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
+              />
+            </svg>
+            <div className="absolute left-0 bottom-full mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              We recommend not using advanced filters. It may hide relevant listings when brokers haven't included this specific information.
+              <div className="absolute left-0 bottom-0 transform translate-y-full">
+                <div className="w-2 h-2 bg-gray-800 transform rotate-45 translate-y-[-50%] translate-x-[8px]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-xs text-indigo-600 hover:text-indigo-500 flex items-center"
+          className="text-sm text-indigo-600 hover:text-indigo-500"
         >
-          {isExpanded ? (
-            <>
-              <span>Show Less</span>
-              <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-              </svg>
-            </>
-          ) : (
-            <>
-              <span>Show More</span>
-              <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </>
-          )}
+          {isExpanded ? 'Show Less' : 'Show More'}
         </button>
       </div>
 
       {isExpanded && (
-        <div className="space-y-4 pt-2">
+        <div className="space-y-6">
           <RangeSlider
             label="Profit Margin"
-            min={0}
-            max={100}
-            step={1}
+            min={-100}
+            max={PROFIT_MARGIN_DISPLAY}
+            step={5}
             value={profitMargin}
-            onChange={onProfitMarginChange}
-            formatValue={formatPercentage}
+            onChange={handleProfitMarginChange}
+            formatValue={(val) => formatPercentage(val)}
           />
 
           <RangeSlider
             label="Growth Rate"
-            min={-50}
-            max={200}
-            step={5}
+            min={-100}
+            max={GROWTH_RATE_THRESHOLD}
+            step={10}
             value={growthRate}
             onChange={onGrowthRateChange}
-            formatValue={formatPercentage}
+            formatValue={(val) => formatPercentage(val, GROWTH_RATE_THRESHOLD)}
           />
 
           <RangeSlider
             label="Team Size"
             min={0}
-            max={100}
-            step={1}
+            max={TEAM_SIZE_THRESHOLD}
+            step={5}
             value={teamSize}
             onChange={onTeamSizeChange}
-            formatValue={(val) => `${val} people`}
+            formatValue={formatTeamSize}
           />
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700">
               Location
             </label>
             <input
               type="text"
+              id="location"
+              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Enter location..."
               value={location}
               onChange={(e) => onLocationChange(e.target.value)}
-              placeholder="Enter location..."
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
         </div>

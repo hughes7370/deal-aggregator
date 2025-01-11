@@ -9,6 +9,8 @@ interface FilterState {
   priceRange: [number, number]
   revenueRange: [number, number]
   isAnnualRevenue: boolean
+  profitRange: [number, number]
+  isAnnualProfit: boolean
   multipleRange: [number, number]
   businessTypes: BusinessType[]
   sources: Source[]
@@ -21,84 +23,139 @@ interface FilterState {
 export function useListingsFilter(listings: Listing[], filters: FilterState) {
   return useMemo(() => {
     let filteredListings = [...listings]
+    const totalListings = filteredListings.length
+    let filterCounts = {
+      price: 0,
+      revenue: 0,
+      profit: 0,
+      multiple: 0,
+      businessType: 0,
+      source: 0,
+      profitMargin: 0,
+      growthRate: 0,
+      teamSize: 0,
+      location: 0
+    }
+
+    // Threshold values that indicate "greater than"
+    const PRICE_THRESHOLD = 10000000 // > $10M
+    const REVENUE_THRESHOLD = 5000000 // > $5M
+    const PROFIT_THRESHOLD = 5000000 // > $5M
+    const MULTIPLE_THRESHOLD = 10 // > 10.0x
 
     // Apply filters
     filteredListings = filteredListings.filter((listing) => {
-      // Price filter - include 0 if the range starts at 0
-      if (filters.priceRange[0] === 0) {
-        if (listing.price === 0) return true;
-        if (listing.price > filters.priceRange[1]) return false;
-      } else {
-        if (listing.price < filters.priceRange[0] || listing.price > filters.priceRange[1]) return false;
+      let shouldInclude = true
+
+      // Price filter
+      if (listing.price !== undefined && listing.price !== null) {
+        if (filters.priceRange[0] === 0) {
+          if (listing.price !== 0 && listing.price > filters.priceRange[1] && filters.priceRange[1] !== PRICE_THRESHOLD) {
+            filterCounts.price++;
+            shouldInclude = false;
+          }
+        } else {
+          if (listing.price < filters.priceRange[0] || (listing.price > filters.priceRange[1] && filters.priceRange[1] !== PRICE_THRESHOLD)) {
+            filterCounts.price++;
+            shouldInclude = false;
+          }
+        }
       }
 
-      // Revenue filter - compare in monthly terms and include 0 if the range starts at 0
+      // Revenue filter - compare in monthly terms
       const monthlyRevenue = listing.monthlyRevenue
-      const filterMin = filters.isAnnualRevenue ? filters.revenueRange[0] / 12 : filters.revenueRange[0]
-      const filterMax = filters.isAnnualRevenue ? filters.revenueRange[1] / 12 : filters.revenueRange[1]
-      
-      if (filterMin === 0) {
-        if (monthlyRevenue > filterMax) return false;
-      } else {
-        if (monthlyRevenue < filterMin || monthlyRevenue > filterMax) return false;
+      if (monthlyRevenue !== undefined && monthlyRevenue !== null) {
+        const filterMin = filters.isAnnualRevenue ? filters.revenueRange[0] / 12 : filters.revenueRange[0]
+        const filterMax = filters.isAnnualRevenue ? filters.revenueRange[1] / 12 : filters.revenueRange[1]
+        const thresholdMonthly = filters.isAnnualRevenue ? REVENUE_THRESHOLD / 12 : REVENUE_THRESHOLD
+
+        if (monthlyRevenue < filterMin || (monthlyRevenue > filterMax && filterMax !== thresholdMonthly)) {
+          filterCounts.revenue++;
+          shouldInclude = false;
+        }
       }
 
-      // Multiple filter - include 0 if the range starts at 0
-      if (filters.multipleRange[0] === 0) {
-        if (listing.multiple === 0) return true;
-        if (listing.multiple > filters.multipleRange[1]) return false;
-      } else {
-        if (listing.multiple < filters.multipleRange[0] || listing.multiple > filters.multipleRange[1]) return false;
+      // Profit filter - compare in monthly terms
+      const monthlyProfit = listing.monthlyProfit
+      if (monthlyProfit !== undefined && monthlyProfit !== null) {
+        const filterMin = filters.isAnnualProfit ? filters.profitRange[0] / 12 : filters.profitRange[0]
+        const filterMax = filters.isAnnualProfit ? filters.profitRange[1] / 12 : filters.profitRange[1]
+        const thresholdMonthly = filters.isAnnualProfit ? PROFIT_THRESHOLD / 12 : PROFIT_THRESHOLD
+
+        if (monthlyProfit < filterMin || (monthlyProfit > filterMax && filterMax !== thresholdMonthly)) {
+          filterCounts.profit++;
+          shouldInclude = false;
+        }
+      }
+
+      // Multiple filter
+      if (listing.multiple !== undefined && listing.multiple !== null) {
+        if (listing.multiple < filters.multipleRange[0] || (listing.multiple > filters.multipleRange[1] && filters.multipleRange[1] !== MULTIPLE_THRESHOLD)) {
+          filterCounts.multiple++;
+          shouldInclude = false;
+        }
       }
 
       // Business type filter
-      if (filters.businessTypes.length > 0 && !filters.businessTypes.includes(listing.businessType)) {
-        console.log('Filtering out listing due to business type:', {
-          listingType: listing.businessType,
-          allowedTypes: filters.businessTypes
-        });
-        return false
+      if (filters.businessTypes.length > 0 && listing.businessType) {
+        const isOtherSelected = filters.businessTypes.includes('other' as BusinessType);
+        const isKnownType = ['ecommerce', 'software', 'service'].includes(listing.businessType);
+        
+        if (!filters.businessTypes.includes(listing.businessType) && !(isOtherSelected && !isKnownType)) {
+          filterCounts.businessType++;
+          shouldInclude = false;
+        }
       }
 
       // Source filter
-      if (filters.sources.length > 0 && !filters.sources.includes(listing.source)) {
-        console.log('Filtering out listing due to source:', {
-          listingSource: listing.source,
-          allowedSources: filters.sources
-        });
-        return false
+      if (filters.sources.length > 0 && listing.source) {
+        if (!filters.sources.includes(listing.source)) {
+          filterCounts.source++;
+          shouldInclude = false;
+        }
       }
 
       // Profit margin filter
-      if (listing.profitMargin !== undefined) {
-        if (listing.profitMargin < filters.profitMargin[0] || listing.profitMargin > filters.profitMargin[1]) {
-          return false
+      if (listing.profitMargin !== undefined && listing.profitMargin !== null) {
+        if (listing.profitMargin < filters.profitMargin[0] || (listing.profitMargin > filters.profitMargin[1] && filters.profitMargin[1] !== 100)) {
+          filterCounts.profitMargin++;
+          shouldInclude = false;
         }
       }
 
       // Growth rate filter
-      if (listing.growthRate !== undefined) {
+      if (listing.growthRate !== undefined && listing.growthRate !== null) {
         if (listing.growthRate < filters.growthRate[0] || listing.growthRate > filters.growthRate[1]) {
-          return false
+          filterCounts.growthRate++;
+          shouldInclude = false;
         }
       }
 
       // Team size filter
-      if (listing.teamSize !== undefined) {
+      if (listing.teamSize !== undefined && listing.teamSize !== null) {
         if (listing.teamSize < filters.teamSize[0] || listing.teamSize > filters.teamSize[1]) {
-          return false
+          filterCounts.teamSize++;
+          shouldInclude = false;
         }
       }
 
       // Location filter
       if (filters.location && listing.location) {
         if (!listing.location.toLowerCase().includes(filters.location.toLowerCase())) {
-          return false
+          filterCounts.location++;
+          shouldInclude = false;
         }
       }
 
-      return true
+      return shouldInclude;
     })
+
+    // Log filter statistics
+    console.log('Filter Statistics:', {
+      totalListings,
+      remainingListings: filteredListings.length,
+      filterCounts
+    });
 
     // Apply sorting
     filteredListings.sort((a, b) => {

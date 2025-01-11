@@ -5,7 +5,13 @@ interface PriceRangeFilterProps {
   onChange: (value: [number, number]) => void
 }
 
+const PRICE_THRESHOLD = 10000000 // $10M
+
 const formatPrice = (value: number) => {
+  // Show ">" symbol for the threshold value
+  if (value === PRICE_THRESHOLD) {
+    return `> $10M`
+  }
   if (value >= 1000000) {
     return `$${(value / 1000000).toFixed(1)}M`
   }
@@ -21,7 +27,7 @@ export function PriceRangeFilter({ value, onChange }: PriceRangeFilterProps) {
       <RangeSlider
         label="Price Range"
         min={0}
-        max={10000000} // $10M
+        max={PRICE_THRESHOLD}
         step={50000} // $50K steps
         value={value}
         onChange={onChange}
