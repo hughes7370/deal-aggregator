@@ -13,9 +13,9 @@ export default function Logo({ className = '' }: LogoProps) {
       <Image
         src="/images/branding/DealSightLogo.png"
         alt="DealSight Logo"
-        width={150}
-        height={40}
-        className="h-10 w-auto"
+        width={120}
+        height={32}
+        className="h-8 w-auto"
         priority
       />
     </Link>
