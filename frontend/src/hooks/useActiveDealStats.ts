@@ -8,6 +8,44 @@ interface DealStats {
     count: number;
     color: string;
   }[];
+  dealsByStage: {
+    stage: string;
+    count: number;
+    color: string;
+  }[];
+  averageDealSize: number;
+  topBusinessTypes: {
+    type: string;
+    count: number;
+  }[];
+  recentActivity: {
+    id: string;
+    title: string;
+    action: string;
+    timestamp: string;
+  }[];
+}
+
+interface Listing {
+  id: string;
+  title: string;
+  asking_price: number;
+  business_model: string;
+}
+
+interface DealTracker {
+  id: string;
+  status: string;
+  stage: string;
+  last_updated: string;
+}
+
+interface SavedListing {
+  id: string;
+  listing_id: string;
+  saved_at: string;
+  listings: Listing;
+  deal_tracker: DealTracker | null;
 }
 
 const STATUS_COLORS = {
@@ -19,36 +57,84 @@ const STATUS_COLORS = {
   'Closed': 'text-gray-500'
 };
 
+const STAGE_COLORS = {
+  'Initial Review': 'text-blue-500',
+  'Research': 'text-purple-500',
+  'Contact': 'text-yellow-500',
+  'Negotiation': 'text-orange-500',
+  'Due Diligence': 'text-green-500',
+  'Closed': 'text-gray-500'
+};
+
 export async function getActiveDealStats(userId: string): Promise<DealStats> {
   try {
     const supabase = createClientComponentClient();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get total saved deals
-    const { count: totalSaved } = await supabase
-      .from('saved_deals')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-
-    // Get recently added deals
-    const { count: recentlyAdded } = await supabase
-      .from('saved_deals')
-      .select('*', { count: 'exact', head: true })
+    // Get aggregated metrics first
+    const { data: metrics } = await supabase
+      .from('deal_metrics')
+      .select('*')
       .eq('user_id', userId)
-      .gt('created_at', thirtyDaysAgo.toISOString());
+      .single();
 
-    // Get deals by status
-    const { data: statusData } = await supabase
-      .from('saved_deals')
-      .select('status')
-      .eq('user_id', userId);
+    // Get deals with their status and business types for detailed stats
+    const { data: dealsData } = await supabase
+      .from('user_saved_listings')
+      .select(`
+        id,
+        listing_id,
+        saved_at,
+        listings!inner(
+          id,
+          title,
+          asking_price,
+          business_model
+        ),
+        deal_tracker(
+          id,
+          status,
+          stage,
+          last_updated
+        )
+      `)
+      .eq('user_id', userId)
+      .order('saved_at', { ascending: false })
+      .returns<SavedListing[]>();
 
     // Count deals by status
     const statusCounts = new Map<string, number>();
-    statusData?.forEach(({ status }) => {
-      if (status) {
-        statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+    const stagesCounts = new Map<string, number>();
+    const businessTypeCounts = new Map<string, number>();
+    const recentActivityList: Array<{
+      id: string;
+      title: string;
+      action: string;
+      timestamp: string;
+    }> = [];
+
+    dealsData?.forEach((deal) => {
+      // Status counts
+      const status = deal.deal_tracker?.status || 'Watching';
+      statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+
+      // Stage counts
+      const stage = deal.deal_tracker?.stage || 'Initial Review';
+      stagesCounts.set(stage, (stagesCounts.get(stage) || 0) + 1);
+
+      // Business type counts
+      const businessType = deal.listings.business_model;
+      if (businessType) {
+        businessTypeCounts.set(businessType, (businessTypeCounts.get(businessType) || 0) + 1);
+      }
+
+      // Recent activity
+      if (deal.deal_tracker?.last_updated) {
+        recentActivityList.push({
+          id: deal.listing_id,
+          title: deal.listings.title,
+          action: deal.deal_tracker.status,
+          timestamp: deal.deal_tracker.last_updated
+        });
       }
     });
 
@@ -61,17 +147,48 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
       }))
       .sort((a, b) => b.count - a.count);
 
+    // Format stages counts with colors
+    const formattedStagesCounts = Array.from(stagesCounts.entries())
+      .map(([stage, count]) => ({
+        stage,
+        count,
+        color: STAGE_COLORS[stage as keyof typeof STAGE_COLORS] || 'text-gray-500'
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    // Format business type counts
+    const formattedBusinessTypes = Array.from(businessTypeCounts.entries())
+      .map(([type, count]) => ({
+        type,
+        count
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5); // Top 5 business types
+
+    // Sort recent activity by timestamp
+    const sortedRecentActivity = recentActivityList
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 5); // Last 5 activities
+
     return {
-      totalSaved: totalSaved || 0,
-      recentlyAdded: recentlyAdded || 0,
-      statusCounts: formattedStatusCounts
+      totalSaved: metrics?.total_deals || 0,
+      recentlyAdded: metrics?.recent_deals || 0,
+      statusCounts: formattedStatusCounts,
+      dealsByStage: formattedStagesCounts,
+      averageDealSize: Math.round(metrics?.avg_deal_size || 0),
+      topBusinessTypes: formattedBusinessTypes,
+      recentActivity: sortedRecentActivity
     };
   } catch (error) {
     console.error('Error fetching active deal stats:', error);
     return {
       totalSaved: 0,
       recentlyAdded: 0,
-      statusCounts: []
+      statusCounts: [],
+      dealsByStage: [],
+      averageDealSize: 0,
+      topBusinessTypes: [],
+      recentActivity: []
     };
   }
 } 
