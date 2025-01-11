@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { KeyMetrics } from '@/components/dashboard/KeyMetrics';
+import KeyMetrics from '@/components/dashboard/KeyMetrics';
 import { RecentListings } from '@/components/dashboard/RecentListings';
 import { MarketSnapshot } from '@/components/dashboard/MarketSnapshot';
 import { ActiveDeals } from '@/components/dashboard/ActiveDeals';
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           }>
-            <KeyMetrics />
+            <KeyMetrics userId={userId} />
           </Suspense>
         </section>
 
