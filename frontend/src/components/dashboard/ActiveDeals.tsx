@@ -13,7 +13,7 @@ import {
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import { formatMoney } from '@/utils/formatters';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -110,6 +110,10 @@ export function ActiveDeals({ userId }: { userId: string }) {
     });
   };
 
+  useEffect(() => {
+    refreshData();
+  }, [userId]);
+
   if (error) {
     return <ErrorState onRetry={refreshData} />;
   }
@@ -147,7 +151,7 @@ export function ActiveDeals({ userId }: { userId: string }) {
 
       {/* Quick Jump Navigation */}
       <nav className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-        {['Metrics', 'Stages', 'Types', 'Activity'].map(section => (
+        {['Metrics', 'Stages', 'Status', 'Activity'].map(section => (
           <button
             key={section}
             onClick={() => document.getElementById(section.toLowerCase())?.scrollIntoView({ behavior: 'smooth' })}
@@ -159,15 +163,15 @@ export function ActiveDeals({ userId }: { userId: string }) {
       </nav>
 
       {isPending ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
             <LoadingCard key={i} />
           ))}
         </div>
       ) : (
         <>
           {/* Key Metrics Grid */}
-          <div id="metrics" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div id="metrics" className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Total Saved */}
             <motion.div
               whileHover={{ scale: 1.02 }}
@@ -224,25 +228,6 @@ export function ActiveDeals({ userId }: { userId: string }) {
                 </div>
               </div>
             </motion.div>
-
-            {/* Top Business Type */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 cursor-pointer hover:border-orange-200 transition-colors"
-              onClick={() => router.push('/dealtracker?filter=type')}
-            >
-              <div className="flex items-center">
-                <div className="p-2 bg-orange-50 rounded-lg">
-                  <BuildingOfficeIcon className="h-6 w-6 text-orange-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Top Business Type</p>
-                  <p className="text-lg font-semibold text-gray-900 truncate">
-                    {dealStats?.topBusinessTypes[0]?.type || 'N/A'}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
           </div>
 
           {/* Deals by Stage */}
@@ -272,65 +257,67 @@ export function ActiveDeals({ userId }: { userId: string }) {
             </Section>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Top Business Types */}
-            {dealStats?.topBusinessTypes.length > 0 && (
-              <Section
-                title="Top Business Types"
-                isCollapsed={collapsedSections['types']}
-                onToggle={() => toggleSection('types')}
-              >
-                <div id="types" className="divide-y divide-gray-200">
-                  {dealStats.topBusinessTypes.map((type) => (
-                    <motion.div
-                      key={type.type}
-                      whileHover={{ backgroundColor: '#F9FAFB' }}
-                      className="px-6 py-3 flex justify-between items-center cursor-pointer"
-                      onClick={() => router.push(`/dealtracker?type=${type.type}`)}
-                    >
-                      <span className="text-sm text-gray-900">{type.type}</span>
-                      <span className="text-sm font-medium text-gray-600">{type.count} deals</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </Section>
-            )}
+          {/* Status Distribution */}
+          {dealStats?.statusCounts.length > 0 && (
+            <Section
+              title="Status Distribution"
+              isCollapsed={collapsedSections['status']}
+              onToggle={() => toggleSection('status')}
+            >
+              <div id="status" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-gray-200">
+                {dealStats.statusCounts.map((status) => (
+                  <motion.div
+                    key={status.status}
+                    whileHover={{ backgroundColor: '#F9FAFB' }}
+                    className="p-4 cursor-pointer"
+                    onClick={() => router.push(`/dealtracker?status=${status.status}`)}
+                  >
+                    <p className={`text-sm font-medium ${status.color}`}>
+                      {status.status}
+                    </p>
+                    <p className="text-2xl font-semibold text-gray-900 mt-1">
+                      {status.count}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </Section>
+          )}
 
-            {/* Recent Activity */}
-            {dealStats?.recentActivity.length > 0 && (
-              <Section
-                title="Recent Activity"
-                isCollapsed={collapsedSections['activity']}
-                onToggle={() => toggleSection('activity')}
-              >
-                <div id="activity" className="divide-y divide-gray-200">
-                  {dealStats.recentActivity.map((activity) => (
-                    <motion.div
-                      key={`${activity.id}-${activity.timestamp}`}
-                      whileHover={{ backgroundColor: '#F9FAFB' }}
-                      className="px-6 py-3 flex items-center space-x-4 cursor-pointer"
-                      onClick={() => router.push(`/listings/${activity.id}`)}
-                    >
-                      <div className="p-2 bg-gray-50 rounded-lg">
-                        <ClockIcon className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {activity.title}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Status changed to {activity.action}
-                        </p>
-                      </div>
-                      <time className="text-sm text-gray-500 whitespace-nowrap">
-                        {new Date(activity.timestamp).toLocaleDateString()}
-                      </time>
-                    </motion.div>
-                  ))}
-                </div>
-              </Section>
-            )}
-          </div>
+          {/* Recent Activity */}
+          {dealStats?.recentActivity.length > 0 && (
+            <Section
+              title="Recent Activity"
+              isCollapsed={collapsedSections['activity']}
+              onToggle={() => toggleSection('activity')}
+            >
+              <div id="activity" className="divide-y divide-gray-200">
+                {dealStats.recentActivity.map((activity) => (
+                  <motion.div
+                    key={`${activity.id}-${activity.timestamp}`}
+                    whileHover={{ backgroundColor: '#F9FAFB' }}
+                    className="px-6 py-3 flex items-center space-x-4 cursor-pointer"
+                    onClick={() => router.push(`/listings/${activity.id}`)}
+                  >
+                    <div className="p-2 bg-gray-50 rounded-lg">
+                      <ClockIcon className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {activity.title}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Status changed to {activity.action}
+                      </p>
+                    </div>
+                    <time className="text-sm text-gray-500 whitespace-nowrap">
+                      {new Date(activity.timestamp).toLocaleDateString()}
+                    </time>
+                  </motion.div>
+                ))}
+              </div>
+            </Section>
+          )}
         </>
       )}
     </div>

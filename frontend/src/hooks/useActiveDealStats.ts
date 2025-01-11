@@ -16,10 +16,6 @@ interface DealStats {
     color: string;
   }[];
   averageDealSize: number;
-  topBusinessTypes: {
-    type: string;
-    count: number;
-  }[];
   recentActivity: {
     id: string;
     title: string;
@@ -32,7 +28,6 @@ interface Listing {
   id: string;
   title: string;
   asking_price: number;
-  business_model: string;
 }
 
 interface DealTracker {
@@ -71,15 +66,10 @@ const STAGE_COLORS = {
 export async function getActiveDealStats(userId: string): Promise<DealStats> {
   try {
     const supabase = createClientComponentClient();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get aggregated metrics first
-    const { data: metrics } = await supabase
-      .from('deal_metrics')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    // Get deals with their status and business types for detailed stats
+    // Get deals with their status and stages
     const { data: dealsData } = await supabase
       .from('user_saved_listings')
       .select(`
@@ -89,8 +79,7 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
         listings!inner(
           id,
           title,
-          asking_price,
-          business_model
+          asking_price
         ),
         deal_tracker(
           id,
@@ -103,10 +92,14 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
       .order('saved_at', { ascending: false })
       .returns<SavedListing[]>();
 
-    // Count deals by status
+    if (!dealsData) {
+      throw new Error('No deals data found');
+    }
+
+    // Count deals by status and stage
     const statusCounts = new Map<string, number>();
     const stagesCounts = new Map<string, number>();
-    const businessTypeCounts = new Map<string, number>();
+    let totalAskingPrice = 0;
     const recentActivityList: Array<{
       id: string;
       title: string;
@@ -114,7 +107,7 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
       timestamp: string;
     }> = [];
 
-    dealsData?.forEach((deal) => {
+    dealsData.forEach((deal) => {
       // Status counts
       const status = deal.deal_tracker?.status || 'Watching';
       statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
@@ -123,11 +116,8 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
       const stage = deal.deal_tracker?.stage || 'Initial Review';
       stagesCounts.set(stage, (stagesCounts.get(stage) || 0) + 1);
 
-      // Business type counts
-      const businessType = deal.listings.business_model;
-      if (businessType) {
-        businessTypeCounts.set(businessType, (businessTypeCounts.get(businessType) || 0) + 1);
-      }
+      // Sum asking prices for average
+      totalAskingPrice += deal.listings.asking_price || 0;
 
       // Recent activity
       if (deal.deal_tracker?.last_updated) {
@@ -139,6 +129,11 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
         });
       }
     });
+
+    // Calculate recently added count
+    const recentlyAdded = dealsData.filter(deal => 
+      new Date(deal.saved_at) > thirtyDaysAgo
+    ).length;
 
     // Format status counts with colors
     const formattedStatusCounts = Array.from(statusCounts.entries())
@@ -158,27 +153,17 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
       }))
       .sort((a, b) => b.count - a.count);
 
-    // Format business type counts
-    const formattedBusinessTypes = Array.from(businessTypeCounts.entries())
-      .map(([type, count]) => ({
-        type,
-        count
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5); // Top 5 business types
-
     // Sort recent activity by timestamp
     const sortedRecentActivity = recentActivityList
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 5); // Last 5 activities
 
     return {
-      totalSaved: metrics?.total_deals || 0,
-      recentlyAdded: metrics?.recent_deals || 0,
+      totalSaved: dealsData.length,
+      recentlyAdded,
       statusCounts: formattedStatusCounts,
       dealsByStage: formattedStagesCounts,
-      averageDealSize: Math.round(metrics?.avg_deal_size || 0),
-      topBusinessTypes: formattedBusinessTypes,
+      averageDealSize: dealsData.length > 0 ? Math.round(totalAskingPrice / dealsData.length) : 0,
       recentActivity: sortedRecentActivity
     };
   } catch (error) {
@@ -189,7 +174,6 @@ export async function getActiveDealStats(userId: string): Promise<DealStats> {
       statusCounts: [],
       dealsByStage: [],
       averageDealSize: 0,
-      topBusinessTypes: [],
       recentActivity: []
     };
   }
