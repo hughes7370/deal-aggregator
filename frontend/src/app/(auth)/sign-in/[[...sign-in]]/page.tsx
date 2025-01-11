@@ -4,8 +4,8 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <SignIn 
-        afterSignInUrl="/dashboard/preferences"
-        redirectUrl="/dashboard/preferences"
+        afterSignInUrl="/alert-management"
+        redirectUrl="/alert-management"
         signUpUrl="/sign-up"
       />
     </div>
