@@ -7,7 +7,7 @@ import sys
 # Add the project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from backend.src.database.supabase_db import SupabaseClient
+from src.database.supabase_db import SupabaseClient
 import json
 import resend
 
@@ -224,8 +224,8 @@ class NewsletterService:
         else:
             return 'Other'
 
-    def get_matching_listings(self, preferences: Dict) -> List[Dict]:
-        """Get listings matching the user's preferences"""
+    def get_matching_listings(self, preferences: Dict) -> Dict[str, List[Dict]]:
+        """Get listings matching the user's preferences, separated into exact matches and other matches"""
         try:
             print("\nBuilding query with filters:")
             query = self.db.client.table('listings').select('*')
@@ -360,10 +360,13 @@ class NewsletterService:
             
             if not result.data:
                 print("No listings found matching the query")
-                return []
+                return {'exact_matches': [], 'other_matches': []}
 
             # Apply keyword search filters (post-query filtering)
             listings = result.data
+            exact_matches = []
+            other_matches = []
+
             if preferences.get('search_keywords'):
                 search_keywords = preferences['search_keywords']
                 search_match_type = preferences.get('search_match_type', 'any')
@@ -377,7 +380,7 @@ class NewsletterService:
                 print(f"- Exclude: {exclude_keywords}")
                 
                 # Calculate search scores for each listing
-                scored_listings = []
+                scored_exact_matches = []
                 for listing in listings:
                     score = 0
                     matched_keywords = set()
@@ -429,142 +432,241 @@ class NewsletterService:
                             score += 3  # Bonus for exact phrase match
                     
                     if include_listing:
-                        scored_listings.append((listing, score))
+                        scored_exact_matches.append((listing, score))
+                    else:
+                        other_matches.append(listing)
                 
-                # Sort by score (highest first) and extract listings
-                scored_listings.sort(key=lambda x: x[1], reverse=True)
-                listings = [item[0] for item in scored_listings]
+                # Sort exact matches by score (highest first)
+                scored_exact_matches.sort(key=lambda x: x[1], reverse=True)
+                exact_matches = [item[0] for item in scored_exact_matches]
                 
-                print(f"Found {len(listings)} listings after keyword filtering")
+                print(f"Found {len(exact_matches)} exact matches and {len(other_matches)} other matches after keyword filtering")
+            else:
+                # If no keywords specified, all matches go to other_matches
+                other_matches = listings
 
-            # Sort by newest first and limit to 10 listings
-            listings = sorted(listings, key=lambda x: x.get('created_at', ''), reverse=True)[:10]
+            # Sort both lists by newest first and limit each to 10 listings
+            exact_matches = sorted(exact_matches, key=lambda x: x.get('created_at', ''), reverse=True)[:10]
+            other_matches = sorted(other_matches, key=lambda x: x.get('created_at', ''), reverse=True)[:10]
             
             # Debug: print industries of matched listings
-            if listings:
-                print("\nMatched listings industries:")
-                for listing in listings:
+            if exact_matches:
+                print("\nExact matches industries:")
+                for listing in exact_matches:
+                    print(f"- {listing.get('title')}: {listing.get('industry')}")
+            if other_matches:
+                print("\nOther matches industries:")
+                for listing in other_matches:
                     print(f"- {listing.get('title')}: {listing.get('industry')}")
             
-            return listings
+            return {'exact_matches': exact_matches, 'other_matches': other_matches}
             
         except Exception as e:
             print(f"Error getting matching listings: {str(e)}")
-            return []
+            return {'exact_matches': [], 'other_matches': []}
 
     def format_currency(self, amount: int) -> str:
         """Format amount as currency string"""
         return "${:,.0f}".format(amount) if amount else "N/A"
     
-    def generate_html_content(self, user: Dict, listings: List[Dict]) -> str:
+    def generate_listing_html(self, listing: Dict) -> str:
+        # Calculate metrics if not already present
+        profit_margin = listing.get('profit_margin')
+        if profit_margin is None:
+            revenue = listing.get('revenue')
+            ebitda = listing.get('ebitda')
+            if revenue and ebitda and revenue != 0:
+                profit_margin = (ebitda / revenue) * 100
+
+        selling_multiple = listing.get('selling_multiple')
+        if selling_multiple is None:
+            asking_price = listing.get('asking_price')
+            ebitda = listing.get('ebitda')
+            if asking_price and ebitda and ebitda != 0:
+                selling_multiple = asking_price / ebitda
+
+        # Build table rows for metrics that have values
+        metric_rows = []
+        if listing.get('asking_price'):
+            metric_rows.append(f"""
+                <tr>
+                    <td style="padding: 8px 16px 8px 0; color: #6b7280; font-size: 14px; white-space: nowrap;">Price</td>
+                    <td style="padding: 8px 24px 8px 0; font-weight: 600; color: #111827; font-size: 15px;">{self.format_currency(listing.get('asking_price'))}</td>
+                </tr>
+            """)
+        if listing.get('revenue'):
+            metric_rows.append(f"""
+                <tr>
+                    <td style="padding: 8px 16px 8px 0; color: #6b7280; font-size: 14px; white-space: nowrap;">Revenue</td>
+                    <td style="padding: 8px 24px 8px 0; font-weight: 600; color: #111827; font-size: 15px;">{self.format_currency(listing.get('revenue'))}</td>
+                </tr>
+            """)
+        if listing.get('ebitda'):
+            metric_rows.append(f"""
+                <tr>
+                    <td style="padding: 8px 16px 8px 0; color: #6b7280; font-size: 14px; white-space: nowrap;">EBITDA</td>
+                    <td style="padding: 8px 24px 8px 0; font-weight: 600; color: #111827; font-size: 15px;">{self.format_currency(listing.get('ebitda'))}</td>
+                </tr>
+            """)
+        if profit_margin is not None:
+            metric_rows.append(f"""
+                <tr>
+                    <td style="padding: 8px 16px 8px 0; color: #6b7280; font-size: 14px; white-space: nowrap;">Margin</td>
+                    <td style="padding: 8px 24px 8px 0; font-weight: 600; color: #111827; font-size: 15px;">{profit_margin:.1f}%</td>
+                </tr>
+            """)
+        if selling_multiple is not None:
+            metric_rows.append(f"""
+                <tr>
+                    <td style="padding: 8px 16px 8px 0; color: #6b7280; font-size: 14px; white-space: nowrap;">Multiple</td>
+                    <td style="padding: 8px 24px 8px 0; font-weight: 600; color: #111827; font-size: 15px;">{selling_multiple:.1f}x</td>
+                </tr>
+            """)
+
+        return f"""
+            <div style="margin-bottom: 24px; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <h3 style="margin: 0; color: #111827; font-size: 18px; font-weight: 600; line-height: 1.4; flex: 1;">
+                        {listing.get('title', 'Untitled Listing')}
+                    </h3>
+                    <a href="{listing.get('listing_url', '#')}" 
+                       style="display: inline-flex; align-items: center; padding: 8px 16px; background-color: #2563eb; 
+                              color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;
+                              transition: all 0.2s; border: 1px solid #2563eb; white-space: nowrap; margin-left: 16px;">
+                        View Details →
+                    </a>
+                </div>
+                
+                <div style="display: flex; gap: 32px;">
+                    <table style="border-collapse: collapse; min-width: 300px;">
+                        <tbody>
+                            {''.join(metric_rows)}
+                        </tbody>
+                    </table>
+                    
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 8px 12px; background-color: #f9fafb; border-radius: 6px;">
+                            <div style="color: #4b5563; font-size: 14px;">
+                                <span style="color: #6b7280;">🏢</span> {listing.get('industry', 'Not specified')}
+                            </div>
+                            <div style="margin: 0 12px; color: #d1d5db;">|</div>
+                            <div style="color: #4b5563; font-size: 14px;">
+                                <span style="color: #6b7280;">🤝</span> {listing.get('source_platform', 'Not specified')}
+                            </div>
+                        </div>
+                        
+                        <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.6;">
+                            {(listing.get('description') or '')[:200]}...
+                        </p>
+                    </div>
+                </div>
+            </div>
+        """
+
+    def generate_html_content(self, user: Dict, listings: Dict[str, List[Dict]]) -> str:
         """Generate personalized HTML email content"""
-        if not listings:
+        exact_matches = listings.get('exact_matches', [])
+        other_matches = listings.get('other_matches', [])
+        
+        if not exact_matches and not other_matches:
             return f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h1 style="color: #333; padding: 20px 0;">No New Matches Today</h1>
-                    <p style="color: #666;">There are no new listings matching your criteria today. We'll keep looking!</p>
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+                            max-width: 600px; margin: 0 auto; padding: 24px;">
+                    <h1 style="color: #111827; font-size: 24px; margin-bottom: 16px;">No New Matches Today</h1>
+                    <p style="color: #4b5563; font-size: 16px;">There are no new listings matching your criteria today. We'll keep looking!</p>
                 </div>
             """
             
-        listings_html = ""
-        for listing in listings:
-            # Calculate metrics if not already present
-            profit_margin = listing.get('profit_margin')
-            if profit_margin is None:
-                revenue = listing.get('revenue')
-                ebitda = listing.get('ebitda')
-                if revenue and ebitda and revenue != 0:
-                    profit_margin = (ebitda / revenue) * 100
-
-            selling_multiple = listing.get('selling_multiple')
-            if selling_multiple is None:
-                asking_price = listing.get('asking_price')
-                ebitda = listing.get('ebitda')
-                if asking_price and ebitda and ebitda != 0:
-                    selling_multiple = asking_price / ebitda
-
-            listings_html += f"""
-                <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
-                    <h3 style="margin: 0 0 10px 0;">{listing.get('title', 'Untitled Listing')}</h3>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
-                        <div>
-                            <strong>💰 Asking Price:</strong> {self.format_currency(listing.get('asking_price'))}
-                            <br>
-                            <strong>📈 Revenue:</strong> {self.format_currency(listing.get('revenue'))}
-                            <br>
-                            <strong>💵 EBITDA:</strong> {self.format_currency(listing.get('ebitda'))}
-                            <br>
-                            <strong>🏢 Industry:</strong> {listing.get('industry', 'Not specified')}
-                            <br>
-                            <strong>🤝 Listing Broker:</strong> {listing.get('source_platform', 'Not specified')}
-                        </div>
-                        <div>
-                            <strong>📊 Profit Margin:</strong> {f"{profit_margin:.1f}%" if profit_margin is not None else "Not available"}
-                            <br>
-                            <strong>📈 Selling Multiple:</strong> {f"{selling_multiple:.1f}x" if selling_multiple is not None else "Not available"}
-                            <br>
-                            <strong>⏳ Business Age:</strong> {f"{listing.get('business_age')} years" if listing.get('business_age') is not None else "Not specified"}
-                            <br>
-                            <strong>👥 Team Size:</strong> {f"{listing.get('number_of_employees')} employees" if listing.get('number_of_employees') is not None else "Not specified"}
-                        </div>
-                    </div>
-
-                    <div style="margin: 10px 0;">
-                        <strong>💼 Business Model:</strong> {listing.get('business_model', 'Not specified')}
-                    </div>
-
-                    <p style="margin: 10px 0;">{(listing.get('description') or '')[:200]}...</p>
-                    <a href="{listing.get('listing_url', '#')}" 
-                       style="display: inline-block; padding: 8px 15px; background-color: #007bff; 
-                              color: white; text-decoration: none; border-radius: 3px;">
-                        View Listing Details
-                    </a>
-                </div>
-            """
-
         # Add the alert criteria to the search criteria section
         alert = user['alert']
-        advanced_criteria_html = ""
+        criteria_items = []
+        
+        # Basic criteria
+        if alert.get('min_price') is not None or alert.get('max_price') is not None:
+            criteria_items.append(f"Price Range: {self.format_currency(alert.get('min_price', 0))} - {self.format_currency(alert.get('max_price', 'Any'))}")
+        if alert.get('industries'):
+            criteria_items.append(f"Industries: {', '.join(alert.get('industries', []))}")
+            
+        # Advanced criteria
+        advanced_items = []
         if alert.get('preferred_business_models') and len(alert.get('preferred_business_models', [])) > 0:
-            advanced_criteria_html += f"Business Models: {', '.join(alert.get('preferred_business_models', []))}<br>"
+            advanced_items.append(f"Business Models: {', '.join(alert.get('preferred_business_models', []))}")
         if alert.get('min_business_age') is not None or alert.get('max_business_age') is not None:
-            advanced_criteria_html += f"Business Age: {alert.get('min_business_age', '0')} - {alert.get('max_business_age', 'Any')} years<br>"
+            advanced_items.append(f"Business Age: {alert.get('min_business_age', '0')} - {alert.get('max_business_age', 'Any')} years")
         if alert.get('min_employees') is not None or alert.get('max_employees') is not None:
-            advanced_criteria_html += f"Team Size: {alert.get('min_employees', '0')} - {alert.get('max_employees', 'Any')} employees<br>"
+            advanced_items.append(f"Team Size: {alert.get('min_employees', '0')} - {alert.get('max_employees', 'Any')} employees")
         if alert.get('min_profit_margin') is not None or alert.get('max_profit_margin') is not None:
-            advanced_criteria_html += f"Profit Margin: {alert.get('min_profit_margin', '0')}% - {alert.get('max_profit_margin', 'Any')}%<br>"
+            advanced_items.append(f"Profit Margin: {alert.get('min_profit_margin', '0')}% - {alert.get('max_profit_margin', 'Any')}%")
         if alert.get('min_selling_multiple') is not None or alert.get('max_selling_multiple') is not None:
-            advanced_criteria_html += f"Selling Multiple: {alert.get('min_selling_multiple', '0')}x - {alert.get('max_selling_multiple', 'Any')}x<br>"
+            advanced_items.append(f"Selling Multiple: {alert.get('min_selling_multiple', '0')}x - {alert.get('max_selling_multiple', 'Any')}x")
         if alert.get('min_ebitda') is not None or alert.get('max_ebitda') is not None:
-            advanced_criteria_html += f"EBITDA: {self.format_currency(alert.get('min_ebitda', 0))} - {self.format_currency(alert.get('max_ebitda', 'Any'))}<br>"
+            advanced_items.append(f"EBITDA: {self.format_currency(alert.get('min_ebitda', 0))} - {self.format_currency(alert.get('max_ebitda', 'Any'))}")
         if alert.get('min_annual_revenue') is not None or alert.get('max_annual_revenue') is not None:
-            advanced_criteria_html += f"Annual Revenue: {self.format_currency(alert.get('min_annual_revenue', 0))} - {self.format_currency(alert.get('max_annual_revenue', 'Any'))}<br>"
+            advanced_items.append(f"Annual Revenue: {self.format_currency(alert.get('min_annual_revenue', 0))} - {self.format_currency(alert.get('max_annual_revenue', 'Any'))}")
 
         search_criteria_html = f"""
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                <h3 style="margin: 0 0 10px 0;">Alert Criteria{f": {alert.get('name')}" if alert.get('name') else ''}</h3>
-                <div style="margin: 5px 0;">
-                    <strong>Basic Criteria:</strong><br>
-                    Price Range: {self.format_currency(alert.get('min_price', 0))} - 
-                               {self.format_currency(alert.get('max_price', 0))}<br>
-                    Industries: {', '.join(alert.get('industries', ['All']))}<br>
+            <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin-bottom: 32px;">
+                <h3 style="margin: 0 0 12px 0; color: #111827; font-size: 16px;">Alert Criteria{f": {alert.get('name')}" if alert.get('name') else ''}</h3>
+                <div style="color: #4b5563; font-size: 14px; line-height: 1.6;">
+                    <div style="margin-bottom: 8px;">
+                        <strong>Basic Criteria:</strong><br>
+                        {' • '.join(criteria_items)}
+                    </div>
+                    {f'<div style="margin-top: 8px;"><strong>Advanced Criteria:</strong><br>{" • ".join(advanced_items)}</div>' if advanced_items else ''}
                 </div>
-                {f'<div style="margin-top: 10px;"><strong>Advanced Criteria:</strong><br>{advanced_criteria_html}</div>' if advanced_criteria_html else ''}
             </div>
         """
         
+        # Generate HTML for exact matches
+        exact_matches_html = ""
+        if exact_matches:
+            exact_matches_html = f"""
+                <div style="margin-top: 32px;">
+                    <h2 style="color: #111827; font-size: 20px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #2563eb;">
+                        🎯 Exact Matches ({len(exact_matches)})
+                    </h2>
+                    <p style="color: #4b5563; font-size: 14px; margin-bottom: 16px;">
+                        These listings exactly match your search keywords:
+                    </p>
+                    {''.join(self.generate_listing_html(listing) for listing in exact_matches)}
+                </div>
+            """
+            
+        # Generate HTML for other matches
+        other_matches_html = ""
+        if other_matches:
+            other_matches_html = f"""
+                <div style="margin-top: 32px;">
+                    <h2 style="color: #111827; font-size: 20px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #6b7280;">
+                        📋 Other Matches ({len(other_matches)})
+                    </h2>
+                    <p style="color: #4b5563; font-size: 14px; margin-bottom: 16px;">
+                        These listings match your industry and filter criteria:
+                    </p>
+                    {''.join(self.generate_listing_html(listing) for listing in other_matches)}
+                </div>
+            """
+        
         return f"""
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h1 style="color: #333; padding: 20px 0;">{alert.get('name', 'Your')} - Deal Alert</h1>
-                <p style="color: #666;">Here are new listings matching your criteria:</p>
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+                        max-width: 600px; margin: 0 auto; padding: 24px; background-color: #f3f4f6;">
+                <h1 style="color: #111827; font-size: 24px; margin-bottom: 24px;">
+                    {alert.get('name', 'Your')} - Deal Alert
+                </h1>
                 
                 {search_criteria_html}
+                {exact_matches_html}
+                {other_matches_html}
                 
-                {listings_html}
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666;">
-                    <p>To update your preferences or unsubscribe, please visit your <a href="https://dealsight.co/dashboard/preferences" style="color: #007bff; text-decoration: none;">dashboard</a>.</p>
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #d1d5db; color: #6b7280; font-size: 14px; text-align: center;">
+                    <p style="margin-bottom: 12px;">
+                        To update your preferences or unsubscribe, visit your 
+                        <a href="https://dealsight.co/dashboard/preferences" 
+                           style="color: #2563eb; text-decoration: none;">dashboard</a>.
+                    </p>
+                    <p style="color: #9ca3af; font-size: 12px;">
+                        © 2024 DealSight. All rights reserved.
+                    </p>
                 </div>
             </div>
         """
