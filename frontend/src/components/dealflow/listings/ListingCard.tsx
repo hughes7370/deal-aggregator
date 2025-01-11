@@ -153,23 +153,23 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
           </div>
 
           {/* Key Metrics */}
-          <div className={`grid gap-x-6 gap-y-4 pt-4 border-t border-gray-100 ${
+          <div className={`grid gap-4 pt-4 border-t border-gray-100 ${
             viewMode === 'list' ? 'w-96 grid-cols-4 pt-0 border-0' : 'grid-cols-2'
           }`}>
-            <div>
-              <div className="text-xs font-medium text-gray-500 mb-1">Price</div>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="text-xs font-medium text-blue-600 mb-1">Price</div>
               <div className="text-sm font-semibold text-gray-900">{formatPrice(price)}</div>
             </div>
-            <div>
-              <div className="text-xs font-medium text-gray-500 mb-1">Revenue</div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <div className="text-xs font-medium text-green-600 mb-1">Revenue</div>
               <div className="text-sm font-semibold text-gray-900">{formatMetric(monthlyRevenue)}/mo</div>
             </div>
-            <div>
-              <div className="text-xs font-medium text-gray-500 mb-1">Profit</div>
+            <div className="bg-purple-50 p-3 rounded-lg">
+              <div className="text-xs font-medium text-purple-600 mb-1">Profit</div>
               <div className="text-sm font-semibold text-gray-900">{formatMetric(monthlyProfit)}/mo</div>
             </div>
-            <div>
-              <div className="text-xs font-medium text-gray-500 mb-1">Multiple</div>
+            <div className="bg-indigo-50 p-3 rounded-lg">
+              <div className="text-xs font-medium text-indigo-600 mb-1">Multiple</div>
               <div className="text-sm font-semibold text-gray-900">{multiple.toFixed(1)}x</div>
             </div>
           </div>
