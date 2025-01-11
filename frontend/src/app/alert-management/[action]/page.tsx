@@ -3,14 +3,17 @@ import { redirect } from "next/navigation";
 
 interface PageProps {
   params: {
-    action: string;
+    action: 'create' | 'edit';
   };
   searchParams: {
-    id?: string;
+    [key: string]: string | string[] | undefined;
   };
 }
 
-export default async function AlertActionPage({ params, searchParams }: PageProps) {
+export default async function AlertActionPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -18,7 +21,7 @@ export default async function AlertActionPage({ params, searchParams }: PageProp
   }
 
   const { action } = params;
-  const { id } = searchParams;
+  const id = searchParams.id as string | undefined;
 
   if (action === 'create') {
     return (
