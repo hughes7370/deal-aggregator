@@ -80,7 +80,7 @@ export default async function DashboardPage() {
                 ))}
               </div>
             }>
-              <RecentListings />
+              <RecentListings userId={userId} />
             </Suspense>
           </section>
 
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
               </div>
             </div>
           }>
-            <ActiveDeals />
+            <ActiveDeals userId={userId} />
           </Suspense>
         </section>
       </div>
