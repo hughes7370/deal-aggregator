@@ -76,16 +76,19 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
         {getBusinessType(listing.business_model)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>
-          {dealTracker?.status || 'Interested'}
-        </span>
+        <SelectField
+          value={dealTracker?.status || 'Interested'}
+          onChange={(value) => onUpdate(listing.id, 'status', value)}
+          options={STATUS_OPTIONS}
+          className={`min-w-[140px] ${statusColor} rounded-lg border-0 font-medium`}
+        />
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         <SelectField
           value={dealTracker?.next_steps || 'Review Listing'}
           onChange={(value) => onUpdate(listing.id, 'next_steps', value)}
           options={NEXT_STEPS_OPTIONS}
-          className="min-w-[140px]"
+          className="min-w-[140px] bg-gray-50 rounded-lg"
         />
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -93,7 +96,13 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
           value={dealTracker?.priority || 'Medium'}
           onChange={(value) => onUpdate(listing.id, 'priority', value)}
           options={PRIORITY_OPTIONS}
-          className="min-w-[100px]"
+          className={`min-w-[100px] rounded-lg ${
+            dealTracker?.priority === 'High' 
+              ? 'bg-red-50 text-red-700' 
+              : dealTracker?.priority === 'Medium'
+              ? 'bg-yellow-50 text-yellow-700'
+              : 'bg-green-50 text-green-700'
+          }`}
         />
       </td>
       <td className="px-6 py-4 text-sm text-gray-500">
