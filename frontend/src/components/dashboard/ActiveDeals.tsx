@@ -1,325 +1,158 @@
 'use client';
 
-import { getActiveDealStats } from '@/hooks/useActiveDealStats';
-import { 
-  BookmarkIcon, 
-  ChartBarIcon, 
-  CurrencyDollarIcon, 
+import { useEffect, useState } from 'react';
+import { useActiveDealStats } from '@/hooks/useActiveDealStats';
+import { DealStage } from '@/types/dealMetrics';
+import { formatMoney } from '../../lib/utils';
+import {
+  ChartBarIcon,
+  ArrowTrendingUpIcon,
   ClockIcon,
-  BuildingOfficeIcon,
-  ArrowPathIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
-import { formatMoney } from '@/utils/formatters';
-import { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 
-interface SectionProps {
-  title: string;
-  isCollapsed: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
+interface ActiveDealsProps {
+  userId: string;
 }
 
-const Section = ({ title, isCollapsed, onToggle, children }: SectionProps) => (
-  <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-    <div 
-      className="px-6 py-4 border-b border-gray-200 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-      onClick={onToggle}
-    >
-      <h3 className="text-sm font-medium text-gray-900">{title}</h3>
-      {isCollapsed ? (
-        <ChevronDownIcon className="h-5 w-5 text-gray-400" />
-      ) : (
-        <ChevronUpIcon className="h-5 w-5 text-gray-400" />
-      )}
-    </div>
-    <AnimatePresence>
-      {!isCollapsed && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          {children}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-);
-
-const LoadingCard = () => (
-  <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 animate-pulse">
-    <div className="flex items-center">
-      <div className="p-2 bg-gray-100 rounded-lg">
-        <div className="h-6 w-6 bg-gray-200 rounded" />
-      </div>
-      <div className="ml-4 space-y-2 flex-1">
-        <div className="h-4 bg-gray-200 rounded w-24" />
-        <div className="h-6 bg-gray-200 rounded w-32" />
-      </div>
-    </div>
-  </div>
-);
-
-const ErrorState = ({ onRetry }: { onRetry: () => void }) => (
-  <div className="bg-red-50 rounded-lg p-6 text-center">
-    <ExclamationCircleIcon className="h-12 w-12 text-red-400 mx-auto mb-4" />
-    <h3 className="text-lg font-medium text-red-800 mb-2">Unable to load deals</h3>
-    <p className="text-sm text-red-600 mb-4">There was an error loading your active deals. Please try again.</p>
-    <button
-      onClick={onRetry}
-      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-    >
-      <ArrowPathIcon className="h-4 w-4 mr-2" />
-      Retry
-    </button>
-  </div>
-);
-
-export function ActiveDeals({ userId }: { userId: string }) {
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<Error | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
-  const router = useRouter();
-
-  const [dealStats, setDealStats] = useState<Awaited<ReturnType<typeof getActiveDealStats>> | null>(null);
-
-  const toggleSection = (section: string) => {
-    setCollapsedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const refreshData = () => {
-    startTransition(async () => {
-      try {
-        const stats = await getActiveDealStats(userId);
-        setDealStats(stats);
-        setLastUpdated(new Date());
-        setError(null);
-      } catch (err) {
-        setError(err as Error);
-      }
-    });
-  };
+export default function ActiveDeals({ userId }: ActiveDealsProps) {
+  const { getActiveDealStats } = useActiveDealStats();
+  const [stats, setStats] = useState<{
+    totalDeals: number;
+    recentDeals: number;
+    stages: DealStage[];
+    avgDealSize: number;
+    lastUpdated: string;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    refreshData();
-  }, [userId]);
+    async function fetchStats() {
+      try {
+        setIsLoading(true);
+        const data = await getActiveDealStats(userId);
+        setStats(data);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load deal statistics');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, [getActiveDealStats, userId]);
+
+  if (isLoading) {
+    return <div className="animate-pulse">Loading deal statistics...</div>;
+  }
 
   if (error) {
-    return <ErrorState onRetry={refreshData} />;
+    return <div className="text-red-500">{error}</div>;
+  }
+
+  if (!stats) {
+    return <div>No active deals found.</div>;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Refresh */}
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="rounded-lg bg-white shadow">
+      <div className="p-6">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Active Deals</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Last updated {lastUpdated.toLocaleTimeString()}
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={refreshData}
-            disabled={isPending}
-            className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
-              isPending ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            <ArrowPathIcon className={`h-5 w-5 text-gray-600 ${
-              isPending ? 'animate-spin' : ''
-            }`} />
-          </button>
           <a
             href="/dealtracker"
             className="text-sm font-medium text-blue-600 hover:text-blue-500"
           >
-            View All
+            View all
           </a>
         </div>
-      </div>
 
-      {/* Quick Jump Navigation */}
-      <nav className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-        {['Metrics', 'Stages', 'Status', 'Activity'].map(section => (
-          <button
-            key={section}
-            onClick={() => document.getElementById(section.toLowerCase())?.scrollIntoView({ behavior: 'smooth' })}
-            className="text-sm text-gray-600 hover:text-gray-900 whitespace-nowrap px-3 py-1 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            {section}
-          </button>
-        ))}
-      </nav>
-
-      {isPending ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <LoadingCard key={i} />
-          ))}
-        </div>
-      ) : (
-        <>
-          {/* Key Metrics Grid */}
-          <div id="metrics" className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Total Saved */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 cursor-pointer hover:border-blue-200 transition-colors"
-              onClick={() => router.push('/dealtracker?filter=all')}
-            >
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <BookmarkIcon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Saved</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {dealStats?.totalSaved}
-                  </p>
-                </div>
+        <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Total Active Deals */}
+          <div className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+            <dt>
+              <div className="absolute rounded-md bg-blue-500 p-3">
+                <ChartBarIcon className="h-6 w-6 text-white" aria-hidden="true" />
               </div>
-            </motion.div>
-
-            {/* Average Deal Size */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 cursor-pointer hover:border-green-200 transition-colors"
-              onClick={() => router.push('/dealtracker?sort=price')}
-            >
-              <div className="flex items-center">
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <CurrencyDollarIcon className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Average Deal Size</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {formatMoney(dealStats?.averageDealSize || 0)}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Recently Added */}
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 cursor-pointer hover:border-purple-200 transition-colors"
-              onClick={() => router.push('/dealtracker?sort=recent')}
-            >
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <ArrowPathIcon className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Recently Added</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {dealStats?.recentlyAdded}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
+              <p className="ml-16 truncate text-sm font-medium text-gray-500">
+                Total Active Deals
+              </p>
+            </dt>
+            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.totalDeals}
+              </p>
+            </dd>
           </div>
 
-          {/* Deals by Stage */}
-          {dealStats?.dealsByStage.length > 0 && (
-            <Section
-              title="Deals by Stage"
-              isCollapsed={collapsedSections['stages']}
-              onToggle={() => toggleSection('stages')}
-            >
-              <div id="stages" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-gray-200">
-                {dealStats.dealsByStage.map((stage) => (
-                  <motion.div
-                    key={stage.stage}
-                    whileHover={{ backgroundColor: '#F9FAFB' }}
-                    className="p-4 cursor-pointer"
-                    onClick={() => router.push(`/dealtracker?stage=${stage.stage}`)}
-                  >
-                    <p className={`text-sm font-medium ${stage.color}`}>
-                      {stage.stage}
-                    </p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">
-                      {stage.count}
-                    </p>
-                  </motion.div>
-                ))}
+          {/* Average Deal Size */}
+          <div className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+            <dt>
+              <div className="absolute rounded-md bg-green-500 p-3">
+                <ArrowTrendingUpIcon
+                  className="h-6 w-6 text-white"
+                  aria-hidden="true"
+                />
               </div>
-            </Section>
-          )}
+              <p className="ml-16 truncate text-sm font-medium text-gray-500">
+                Average Deal Size
+              </p>
+            </dt>
+            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
+              <p className="text-2xl font-semibold text-gray-900">
+                {formatMoney(stats.avgDealSize)}
+              </p>
+            </dd>
+          </div>
 
-          {/* Status Distribution */}
-          {dealStats?.statusCounts.length > 0 && (
-            <Section
-              title="Status Distribution"
-              isCollapsed={collapsedSections['status']}
-              onToggle={() => toggleSection('status')}
-            >
-              <div id="status" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-gray-200">
-                {dealStats.statusCounts.map((status) => (
-                  <motion.div
-                    key={status.status}
-                    whileHover={{ backgroundColor: '#F9FAFB' }}
-                    className="p-4 cursor-pointer"
-                    onClick={() => router.push(`/dealtracker?status=${status.status}`)}
-                  >
-                    <p className={`text-sm font-medium ${status.color}`}>
-                      {status.status}
-                    </p>
-                    <p className="text-2xl font-semibold text-gray-900 mt-1">
-                      {status.count}
-                    </p>
-                  </motion.div>
-                ))}
+          {/* Recently Added */}
+          <div className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6">
+            <dt>
+              <div className="absolute rounded-md bg-purple-500 p-3">
+                <ClockIcon className="h-6 w-6 text-white" aria-hidden="true" />
               </div>
-            </Section>
-          )}
+              <p className="ml-16 truncate text-sm font-medium text-gray-500">
+                Recently Added (30d)
+              </p>
+            </dt>
+            <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.recentDeals}
+              </p>
+            </dd>
+          </div>
+        </dl>
 
-          {/* Recent Activity */}
-          {dealStats?.recentActivity.length > 0 && (
-            <Section
-              title="Recent Activity"
-              isCollapsed={collapsedSections['activity']}
-              onToggle={() => toggleSection('activity')}
-            >
-              <div id="activity" className="divide-y divide-gray-200">
-                {dealStats.recentActivity.map((activity) => (
-                  <motion.div
-                    key={`${activity.id}-${activity.timestamp}`}
-                    whileHover={{ backgroundColor: '#F9FAFB' }}
-                    className="px-6 py-3 flex items-center space-x-4 cursor-pointer"
-                    onClick={() => router.push(`/listings/${activity.id}`)}
-                  >
-                    <div className="p-2 bg-gray-50 rounded-lg">
-                      <ClockIcon className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {activity.title}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Status changed to {activity.action}
-                      </p>
-                    </div>
-                    <time className="text-sm text-gray-500 whitespace-nowrap">
-                      {new Date(activity.timestamp).toLocaleDateString()}
-                    </time>
-                  </motion.div>
-                ))}
+        {/* Deals by Stage */}
+        <div className="mt-6">
+          <h3 className="text-sm font-medium text-gray-500">Deals by Stage</h3>
+          <div className="mt-2 space-y-2">
+            {stats.stages.map((stage) => (
+              <div
+                key={stage.stage}
+                className="flex items-center justify-between"
+              >
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-900">{stage.stage}</span>
+                  <span className="ml-2 text-sm text-gray-500">
+                    ({stage.count})
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-900">
+                  {formatMoney(stage.value)}
+                </span>
               </div>
-            </Section>
-          )}
-        </>
-      )}
+            ))}
+          </div>
+        </div>
+
+        {/* Last Updated */}
+        <div className="mt-4 text-right text-xs text-gray-500">
+          Last updated: {new Date(stats.lastUpdated).toLocaleString()}
+        </div>
+      </div>
     </div>
   );
 } 
