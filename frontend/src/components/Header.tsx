@@ -50,15 +50,15 @@ export default function Header() {
         Deal Tracker
       </Link>
       <Link 
-        href="/dashboard/preferences"
+        href="/alert-management"
         className={`block w-full px-4 py-2 text-base font-medium rounded-md ${
-          isActive('/dashboard/preferences')
+          isActive('/alert-management')
             ? 'bg-gray-100 text-gray-900'
             : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
         }`}
         onClick={() => setIsMobileMenuOpen(false)}
       >
-        Alert Preferences
+        Alert Management
       </Link>
     </>
   );
@@ -96,14 +96,14 @@ export default function Header() {
         Deal Tracker
       </Link>
       <Link 
-        href="/dashboard/preferences"
+        href="/alert-management"
         className={`px-3 py-2 rounded-md text-sm font-medium ${
-          isActive('/dashboard/preferences')
+          isActive('/alert-management')
             ? 'bg-gray-100 text-gray-900'
             : 'text-gray-500 hover:text-gray-900'
         }`}
       >
-        Alert Preferences
+        Alert Management
       </Link>
     </>
   );

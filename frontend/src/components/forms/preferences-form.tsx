@@ -64,7 +64,6 @@ export default function PreferencesForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const alertId = searchParams.get('id');
-  const isCreating = searchParams.get('action') === 'create';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -197,7 +196,7 @@ export default function PreferencesForm() {
       if (result.error) throw result.error;
       
       // Only redirect after successful operation
-      router.push('/dashboard');
+      router.push('/alert-management');
     } catch (err: any) {
       setError(err.message);
       setIsLoading(false);
@@ -218,7 +217,7 @@ export default function PreferencesForm() {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      router.push('/dashboard');
+      router.push('/alert-management');
     } catch (err: any) {
       setError(err.message);
       setIsLoading(false);
@@ -695,7 +694,7 @@ export default function PreferencesForm() {
         <div className="flex space-x-4">
           <button
             type="button"
-            onClick={() => router.push('/dashboard')}
+            onClick={() => router.push('/alert-management')}
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Cancel

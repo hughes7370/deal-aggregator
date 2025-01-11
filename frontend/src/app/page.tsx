@@ -15,7 +15,7 @@ export default async function Home() {
   const session = await auth();
 
   if (session?.userId) {
-    redirect("/dashboard/preferences");
+    redirect("/alert-management");
   }
 
   return (

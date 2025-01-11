@@ -91,7 +91,7 @@ export default function AlertCard({ alert, userId }: { alert: any; userId: strin
         </div>
         <div className="flex space-x-2">
           <Link
-            href={`/dashboard/preferences?id=${alert.id}`}
+            href={`/alert-management/edit?id=${alert.id}`}
             className="inline-flex items-center p-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
