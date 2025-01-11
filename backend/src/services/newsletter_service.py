@@ -238,6 +238,54 @@ class NewsletterService:
                 print(f"- Min price: {preferences['min_price']}")
                 query = query.gte('asking_price', preferences['min_price'])
             
+            # Apply business age filters
+            if preferences.get('min_business_age') is not None:
+                print(f"- Min business age: {preferences['min_business_age']}")
+                query = query.gte('business_age', preferences['min_business_age'])
+            if preferences.get('max_business_age') is not None:
+                print(f"- Max business age: {preferences['max_business_age']}")
+                query = query.lte('business_age', preferences['max_business_age'])
+
+            # Apply employee filters
+            if preferences.get('min_employees') is not None:
+                print(f"- Min employees: {preferences['min_employees']}")
+                query = query.gte('employees', preferences['min_employees'])
+            if preferences.get('max_employees') is not None:
+                print(f"- Max employees: {preferences['max_employees']}")
+                query = query.lte('employees', preferences['max_employees'])
+
+            # Apply annual revenue filters
+            if preferences.get('min_annual_revenue') is not None:
+                print(f"- Min annual revenue: {preferences['min_annual_revenue']}")
+                query = query.gte('annual_revenue', preferences['min_annual_revenue'])
+            if preferences.get('max_annual_revenue') is not None:
+                print(f"- Max annual revenue: {preferences['max_annual_revenue']}")
+                query = query.lte('annual_revenue', preferences['max_annual_revenue'])
+
+            # Apply EBITDA filters
+            if preferences.get('min_ebitda') is not None:
+                print(f"- Min EBITDA: {preferences['min_ebitda']}")
+                query = query.gte('ebitda', preferences['min_ebitda'])
+            if preferences.get('max_ebitda') is not None:
+                print(f"- Max EBITDA: {preferences['max_ebitda']}")
+                query = query.lte('ebitda', preferences['max_ebitda'])
+
+            # Apply profit margin filters
+            if preferences.get('min_profit_margin') is not None:
+                print(f"- Min profit margin: {preferences['min_profit_margin']}")
+                query = query.gte('profit_margin', preferences['min_profit_margin'])
+            if preferences.get('max_profit_margin') is not None:
+                print(f"- Max profit margin: {preferences['max_profit_margin']}")
+                query = query.lte('profit_margin', preferences['max_profit_margin'])
+
+            # Apply selling multiple filters
+            if preferences.get('min_selling_multiple') is not None:
+                print(f"- Min selling multiple: {preferences['min_selling_multiple']}")
+                query = query.gte('selling_multiple', preferences['min_selling_multiple'])
+            if preferences.get('max_selling_multiple') is not None:
+                print(f"- Max selling multiple: {preferences['max_selling_multiple']}")
+                query = query.lte('selling_multiple', preferences['max_selling_multiple'])
+
             # Apply industry filters
             if preferences.get('industries'):
                 # Normalize industries
@@ -261,7 +309,7 @@ class NewsletterService:
                     else:
                         normalized_industries.append(industry)
                 
-                # Remove duplicates while preserving order
+                # uplicates while preserving order
                 normalized_industries = list(dict.fromkeys(normalized_industries))
                 print(f"Final normalized industries: {normalized_industries}")
                 
@@ -313,9 +361,84 @@ class NewsletterService:
             if not result.data:
                 print("No listings found matching the query")
                 return []
-            
+
+            # Apply keyword search filters (post-query filtering)
+            listings = result.data
+            if preferences.get('search_keywords'):
+                search_keywords = preferences['search_keywords']
+                search_match_type = preferences.get('search_match_type', 'any')
+                search_in = preferences.get('search_in', ['title', 'description'])
+                exclude_keywords = preferences.get('exclude_keywords', [])
+                
+                print(f"\nApplying keyword filters:")
+                print(f"- Keywords: {search_keywords}")
+                print(f"- Match type: {search_match_type}")
+                print(f"- Search in: {search_in}")
+                print(f"- Exclude: {exclude_keywords}")
+                
+                # Calculate search scores for each listing
+                scored_listings = []
+                for listing in listings:
+                    score = 0
+                    matched_keywords = set()
+                    
+                    # Prepare search text based on fields to search in
+                    search_text = ""
+                    if 'title' in search_in:
+                        search_text += f" {listing.get('title', '')}"
+                    if 'description' in search_in:
+                        search_text += f" {listing.get('description', '')}"
+                        search_text += f" {listing.get('full_description', '')}"
+                    if 'location' in search_in:
+                        search_text += f" {listing.get('location', '')}"
+                    
+                    search_text = search_text.lower()
+                    
+                    # Check for excluded keywords first
+                    excluded = False
+                    for keyword in exclude_keywords:
+                        if keyword.lower() in search_text:
+                            excluded = True
+                            break
+                    
+                    if excluded:
+                        continue
+                    
+                    # Check for search keywords
+                    for keyword in search_keywords:
+                        keyword = keyword.lower()
+                        if keyword in search_text:
+                            matched_keywords.add(keyword)
+                            # Give extra weight to title matches
+                            if 'title' in search_in and keyword in listing.get('title', '').lower():
+                                score += 2
+                            else:
+                                score += 1
+                    
+                    # Apply match type rules
+                    include_listing = False
+                    if search_match_type == 'any' and len(matched_keywords) > 0:
+                        include_listing = True
+                    elif search_match_type == 'all' and len(matched_keywords) == len(search_keywords):
+                        include_listing = True
+                    elif search_match_type == 'exact':
+                        # For exact match, check if the exact phrase appears
+                        exact_phrase = ' '.join(search_keywords).lower()
+                        if exact_phrase in search_text:
+                            include_listing = True
+                            score += 3  # Bonus for exact phrase match
+                    
+                    if include_listing:
+                        scored_listings.append((listing, score))
+                
+                # Sort by score (highest first) and extract listings
+                scored_listings.sort(key=lambda x: x[1], reverse=True)
+                listings = [item[0] for item in scored_listings]
+                
+                print(f"Found {len(listings)} listings after keyword filtering")
+
             # Sort by newest first and limit to 10 listings
-            listings = sorted(result.data, key=lambda x: x.get('created_at', ''), reverse=True)[:10]
+            listings = sorted(listings, key=lambda x: x.get('created_at', ''), reverse=True)[:10]
             
             # Debug: print industries of matched listings
             if listings:

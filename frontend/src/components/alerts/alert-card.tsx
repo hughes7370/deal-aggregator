@@ -11,7 +11,10 @@ import {
   ClockIcon,
   CubeIcon,
   PencilSquareIcon,
-  TrashIcon
+  TrashIcon,
+  MagnifyingGlassIcon,
+  ChartBarIcon,
+  CalculatorIcon
 } from "@heroicons/react/24/outline";
 
 // Helper function to format currency
@@ -139,6 +142,34 @@ export default function AlertCard({ alert, userId }: { alert: any; userId: strin
           </div>
         )}
 
+        {/* Search Criteria */}
+        {alert.search_keywords && alert.search_keywords.length > 0 && (
+          <div className="py-4">
+            <div className="flex items-center">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 mr-3" />
+              <div>
+                <h3 className="text-sm font-medium text-gray-900">Search Criteria</h3>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600">
+                    Keywords: {alert.search_keywords.join(', ')}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Match Type: {alert.search_match_type}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Search In: {alert.search_in.join(', ')}
+                  </p>
+                  {alert.exclude_keywords && alert.exclude_keywords.length > 0 && (
+                    <p className="text-sm text-gray-600">
+                      Excluded: {alert.exclude_keywords.join(', ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Advanced Filters */}
         {hasAdvancedFilters(alert) && (
           <>
@@ -150,7 +181,7 @@ export default function AlertCard({ alert, userId }: { alert: any; userId: strin
                   <div>
                     <h3 className="text-sm font-medium text-gray-900">Business Age</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      {alert.min_business_age || '0'} - {alert.max_business_age || 'Any'} Years
+                      {alert.min_business_age || '0'} - {alert.max_business_age ? `${alert.max_business_age} years` : '50+ years'}
                     </p>
                   </div>
                 </div>
@@ -165,7 +196,67 @@ export default function AlertCard({ alert, userId }: { alert: any; userId: strin
                   <div>
                     <h3 className="text-sm font-medium text-gray-900">Team Size</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      {alert.min_employees || '0'} - {alert.max_employees || 'Any'} Employees
+                      {alert.min_employees || '0'} - {alert.max_employees ? `${alert.max_employees} employees` : '1000+ employees'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Annual Revenue */}
+            {(alert.min_annual_revenue !== null || alert.max_annual_revenue !== null) && (
+              <div className="py-4">
+                <div className="flex items-center">
+                  <BanknotesIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Annual Revenue</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      ${(alert.min_annual_revenue || 0).toLocaleString()} - {alert.max_annual_revenue ? `$${alert.max_annual_revenue.toLocaleString()}` : '$10M+'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Annual EBITDA */}
+            {(alert.min_ebitda !== null || alert.max_ebitda !== null) && (
+              <div className="py-4">
+                <div className="flex items-center">
+                  <BanknotesIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Annual EBITDA</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      ${(alert.min_ebitda || 0).toLocaleString()} - {alert.max_ebitda ? `$${alert.max_ebitda.toLocaleString()}` : '$5M+'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Profit Margin */}
+            {(alert.min_profit_margin !== null || alert.max_profit_margin !== null) && (
+              <div className="py-4">
+                <div className="flex items-center">
+                  <ChartBarIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Profit Margin</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {alert.min_profit_margin || '0'}% - {alert.max_profit_margin ? `${alert.max_profit_margin}%` : '100%+'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Selling Multiple */}
+            {(alert.min_selling_multiple !== null || alert.max_selling_multiple !== null) && (
+              <div className="py-4">
+                <div className="flex items-center">
+                  <CalculatorIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900">Selling Multiple</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {alert.min_selling_multiple || '0'}x - {alert.max_selling_multiple ? `${alert.max_selling_multiple}x` : '20x+'}
                     </p>
                   </div>
                 </div>

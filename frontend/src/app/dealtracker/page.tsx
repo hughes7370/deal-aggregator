@@ -7,6 +7,7 @@ import DealRow from '@/components/dealtracker/DealRow';
 import FilterControls from '@/components/dealtracker/controls/FilterControls';
 import { useUser, useAuth } from "@clerk/nextjs";
 import { createClient } from '@supabase/supabase-js';
+import { SearchBar, SearchScope } from '@/components/dealflow/search/SearchBar';
 
 type SortField = 'business_name' | 'asking_price' | 'business_type' | 'status' | 'next_steps' | 'priority' | 'last_updated';
 type SortDirection = 'asc' | 'desc';
@@ -60,6 +61,8 @@ export default function DealTracker() {
   const [filters, setFilters] = useState<Filters>({});
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [searchScope, setSearchScope] = useState<SearchScope>('all');
 
   // Set up authenticated Supabase client
   useEffect(() => {
@@ -372,10 +375,41 @@ export default function DealTracker() {
     }
   };
 
+  const handleSearch = (searchQuery: string, scope: SearchScope) => {
+    setQuery(searchQuery);
+    setSearchScope(scope);
+  };
+
   const filteredListings = useMemo(() => {
     let result = [...savedListings];
 
-    // Apply filters
+    // Apply search filter
+    if (query) {
+      const searchLower = query.toLowerCase();
+      result = result.filter(sl => {
+        switch (searchScope) {
+          case 'title':
+            return sl.listings.title.toLowerCase().includes(searchLower);
+          case 'description':
+            return sl.listings.title.toLowerCase().includes(searchLower); // Using title as fallback since description isn't available
+          case 'location':
+            return sl.listings.source_platform.toLowerCase().includes(searchLower); // Using source as fallback since location isn't available
+          case 'all':
+          default:
+            return (
+              sl.listings.title.toLowerCase().includes(searchLower) ||
+              sl.listings.source_platform.toLowerCase().includes(searchLower) ||
+              sl.listings.business_model.toLowerCase().includes(searchLower) ||
+              sl.deal_tracker?.status.toLowerCase().includes(searchLower) ||
+              sl.deal_tracker?.priority.toLowerCase().includes(searchLower) ||
+              sl.deal_tracker?.next_steps.toLowerCase().includes(searchLower) ||
+              sl.deal_tracker?.notes?.toLowerCase().includes(searchLower)
+            );
+        }
+      });
+    }
+
+    // Apply existing filters
     if (filters.status?.length) {
       result = result.filter(sl => filters.status?.includes(sl.deal_tracker?.status || 'Interested'));
     }
@@ -434,7 +468,7 @@ export default function DealTracker() {
     });
 
     return result;
-  }, [savedListings, filters, sortConfig]);
+  }, [savedListings, filters, sortConfig, query, searchScope]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -458,7 +492,7 @@ export default function DealTracker() {
     <div className="w-full">
       {/* Header */}
       <div className="border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-semibold text-gray-900">Deal Tracker</h1>
           <div className="flex items-center space-x-3">
             {selectedItems.size > 0 && (
@@ -498,6 +532,13 @@ export default function DealTracker() {
               Export CSV
             </button>
           </div>
+        </div>
+        <div className="max-w-3xl">
+          <SearchBar
+            onSearch={handleSearch}
+            placeholder="Search deals by title, status, priority, or notes..."
+            className="w-full"
+          />
         </div>
       </div>
 
