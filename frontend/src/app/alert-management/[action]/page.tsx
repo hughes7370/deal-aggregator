@@ -4,7 +4,7 @@ import PreferencesForm from "@/components/forms/preferences-form";
 
 interface PageProps {
   params: Promise<{ action: string }>;
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function AlertActionPage(props: PageProps) {
@@ -15,7 +15,8 @@ export default async function AlertActionPage(props: PageProps) {
   }
 
   const { action } = await props.params;
-  const id = props.searchParams.id as string | undefined;
+  const searchParams = await props.searchParams;
+  const id = searchParams.id as string | undefined;
 
   if (action === 'create') {
     return (
