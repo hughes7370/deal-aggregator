@@ -16,6 +16,7 @@ import { useListingsFilter } from '@/components/dealflow/hooks/useListingsFilter
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useUser, useAuth } from "@clerk/nextjs"
+import { SearchBar, type SearchScope } from '@/components/dealflow/search/SearchBar'
 
 // Initialize Supabase client with auth configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -112,6 +113,10 @@ export default function DealFlowPage() {
   // Profit filter state
   const [profitRange, setProfitRange] = useState<[number, number]>([0, 5000000])
   const [isAnnualProfit, setIsAnnualProfit] = useState(true)
+
+  // Add search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchScope, setSearchScope] = useState<SearchScope>('all')
 
   // Function to fetch listings from Supabase
   const fetchListings = async () => {
@@ -333,6 +338,8 @@ export default function DealFlowPage() {
       growthRate,
       teamSize,
       location,
+      searchQuery,
+      searchScope,
     }
   )
 
@@ -556,79 +563,75 @@ export default function DealFlowPage() {
     setProfitRange([profitRange[0] * multiplier, profitRange[1] * multiplier])
   }
 
+  // Add search handler
+  const handleSearch = (query: string, scope: SearchScope) => {
+    setSearchQuery(query)
+    setSearchScope(scope)
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-[1800px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
+          {/* Top header row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-8">
               <h1 className="text-2xl font-bold text-gray-900">Deal Flow</h1>
-              <SortDropdown value={sortBy} onChange={setSortBy} />
-              <ResultsCount showing={filteredListings.length} total={listings.length} />
+              <div className="flex items-center space-x-6">
+                <SortDropdown value={sortBy} onChange={setSortBy} />
+                <div className="h-6 w-px bg-gray-200" />
+                <ResultsCount showing={filteredListings.length} total={listings.length} />
+              </div>
             </div>
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
                 <PageSizeSelector pageSize={pageSize} onPageSizeChange={setPageSize} />
-                <div className="h-6 w-px bg-gray-200" />
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">View:</span>
-                  <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm ${
-                        viewMode === 'grid'
-                          ? 'bg-indigo-50 text-indigo-600'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                      Grid
-                    </button>
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`inline-flex items-center rounded-md px-3 py-1.5 text-sm ${
-                        viewMode === 'list'
-                          ? 'bg-indigo-50 text-indigo-600'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                    >
-                      <svg className="mr-1.5 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                      List
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={handleSaveSearch}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                >
-                  Save Search
-                </button>
-                <button
-                  onClick={handleRefreshData}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                >
-                  Refresh Data
-                </button>
+                <ActionButtons
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  onSaveSearch={handleSaveSearch}
+                  onRefreshData={handleRefreshData}
+                />
               </div>
             </div>
+          </div>
+          
+          {/* Search bar */}
+          <div className="py-3">
+            <SearchBar onSearch={handleSearch} className="max-w-3xl mx-auto" />
           </div>
         </div>
       </div>
 
-      <div className="max-w-[1800px] mx-auto px-6 py-6">
-        <div className="flex gap-6">
+      {/* Main content */}
+      <div className="max-w-[1800px] mx-auto px-6 py-8">
+        <div className="flex gap-8">
           {/* Left Sidebar */}
-          <aside className="w-72 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-[84px]">
-              <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+          <aside className="w-80 flex-shrink-0">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-[140px] transition-shadow hover:shadow-md">
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+                  <button 
+                    onClick={() => {
+                      setPriceRange([0, 10000000])
+                      setRevenueRange([0, 5000000])
+                      setProfitRange([0, 5000000])
+                      setMultipleRange([0, 10])
+                      setBusinessTypes([])
+                      setSources([])
+                      setProfitMargin([-100, 100])
+                      setGrowthRate([-100, 1000])
+                      setTeamSize([0, 1000])
+                      setLocation('')
+                      setSearchQuery('')
+                    }}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                  >
+                    Clear All
+                  </button>
+                </div>
                 
                 <PriceRangeFilter
                   value={priceRange}
@@ -680,8 +683,7 @@ export default function DealFlowPage() {
 
           {/* Main Content */}
           <div className="flex-1">
-            {/* Listings Grid */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-shadow hover:shadow-md">
               <ListingsGrid
                 listings={filteredListings}
                 isLoading={isLoading}

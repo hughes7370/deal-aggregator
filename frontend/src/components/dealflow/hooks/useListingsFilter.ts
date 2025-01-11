@@ -3,6 +3,7 @@ import { Listing } from '../listings/types'
 import { SortOption } from '../header/SortDropdown'
 import { BusinessType } from '../filters/BusinessTypeFilter'
 import { Source } from '../filters/SourceFilter'
+import { SearchScope } from '../search/SearchBar'
 
 interface FilterState {
   sortBy: SortOption
@@ -18,6 +19,8 @@ interface FilterState {
   growthRate: [number, number]
   teamSize: [number, number]
   location: string
+  searchQuery: string
+  searchScope: SearchScope
 }
 
 export function useListingsFilter(listings: Listing[], filters: FilterState) {
@@ -34,7 +37,31 @@ export function useListingsFilter(listings: Listing[], filters: FilterState) {
       profitMargin: 0,
       growthRate: 0,
       teamSize: 0,
-      location: 0
+      location: 0,
+      search: 0
+    }
+
+    // Apply search filter first
+    if (filters.searchQuery.length >= 2) {
+      filteredListings = filteredListings.filter((listing) => {
+        const query = filters.searchQuery.toLowerCase()
+        switch (filters.searchScope) {
+          case 'title':
+            return listing.title.toLowerCase().includes(query)
+          case 'description':
+            return listing.description.toLowerCase().includes(query)
+          case 'location':
+            return listing.location?.toLowerCase().includes(query)
+          case 'all':
+          default:
+            return (
+              listing.title.toLowerCase().includes(query) ||
+              listing.description.toLowerCase().includes(query) ||
+              listing.location?.toLowerCase().includes(query)
+            )
+        }
+      })
+      filterCounts.search = totalListings - filteredListings.length
     }
 
     // Threshold values that indicate "greater than"
@@ -43,7 +70,7 @@ export function useListingsFilter(listings: Listing[], filters: FilterState) {
     const PROFIT_THRESHOLD = 5000000 // > $5M
     const MULTIPLE_THRESHOLD = 10 // > 10.0x
 
-    // Apply filters
+    // Apply other filters
     filteredListings = filteredListings.filter((listing) => {
       let shouldInclude = true
 
