@@ -2,21 +2,20 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import PreferencesForm from "@/components/forms/preferences-form";
 
-export default async function AlertActionPage({
-  params,
-  searchParams,
-}: {
-  params: { action: string };
+interface PageProps {
+  params: Promise<{ action: string }>;
   searchParams: { [key: string]: string | string[] | undefined };
-}) {
+}
+
+export default async function AlertActionPage(props: PageProps) {
   const { userId } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  const action = params.action;
-  const id = searchParams.id as string | undefined;
+  const { action } = await props.params;
+  const id = props.searchParams.id as string | undefined;
 
   if (action === 'create') {
     return (
