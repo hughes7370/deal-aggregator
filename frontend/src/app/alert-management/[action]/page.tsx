@@ -1,27 +1,21 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import PreferencesForm from "@/components/forms/preferences-form";
 
-interface PageProps {
-  params: {
-    action: 'create' | 'edit';
-  };
-  searchParams: {
-    [key: string]: string | string[] | undefined;
-  };
+type Props = {
+  params: { action: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
-export default async function AlertActionPage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function AlertActionPage(props: Props) {
   const { userId } = await auth();
 
   if (!userId) {
     redirect("/sign-in");
   }
 
-  const { action } = params;
-  const id = searchParams.id as string | undefined;
+  const action = props.params.action;
+  const id = props.searchParams.id as string | undefined;
 
   if (action === 'create') {
     return (
@@ -32,7 +26,9 @@ export default async function AlertActionPage({
             Set up criteria for deals you want to track
           </p>
         </div>
-        {/* Alert form will go here */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-8">
+          <PreferencesForm />
+        </div>
       </div>
     );
   }
@@ -46,7 +42,9 @@ export default async function AlertActionPage({
             Update your alert criteria
           </p>
         </div>
-        {/* Alert form with existing data will go here */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-8">
+          <PreferencesForm />
+        </div>
       </div>
     );
   }
