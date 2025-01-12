@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckIcon } from '@heroicons/react/24/outline';
 
 interface ManualDealModalProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ interface ManualDealModalProps {
     next_steps: string;
     priority: string;
     notes?: string;
-  }) => Promise<void>;
+  }) => Promise<{ success: boolean; message: string }>;
 }
 
 const BUSINESS_TYPES = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Service', 'Other'];
@@ -39,14 +40,16 @@ export default function ManualDealModal({ isOpen, onClose, onSubmit }: ManualDea
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null);
+    setError('');
+    setSuccessMessage('');
 
     try {
-      const submissionData = {
+      const result = await onSubmit({
         title: formData.title,
         asking_price: formData.asking_price ? Number(formData.asking_price) : undefined,
         business_model: formData.business_model,
@@ -56,25 +59,19 @@ export default function ManualDealModal({ isOpen, onClose, onSubmit }: ManualDea
         status: formData.status,
         next_steps: formData.next_steps,
         priority: formData.priority,
-        notes: formData.notes || undefined
-      };
-
-      await onSubmit(submissionData);
-      setFormData({
-        title: '',
-        asking_price: '',
-        business_model: 'SaaS',
-        revenue: '',
-        ebitda: '',
-        selling_multiple: '',
-        status: 'Interested',
-        next_steps: 'Review Listing',
-        priority: 'Medium',
-        notes: ''
+        notes: formData.notes
       });
-      onClose();
+
+      if (result.success) {
+        setSuccessMessage(result.message);
+        setTimeout(() => {
+          onClose();
+        }, 1500); // Close modal after 1.5 seconds on success
+      } else {
+        setError(result.message);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add deal');
+      setError('An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -353,6 +350,12 @@ export default function ManualDealModal({ isOpen, onClose, onSubmit }: ManualDea
                                 <h3 className="text-sm font-medium text-red-800">{error}</h3>
                               </div>
                             </div>
+                          </div>
+                        )}
+                        {successMessage && (
+                          <div className="mt-2 text-sm text-green-600 flex items-center">
+                            <CheckIcon className="h-5 w-5 mr-1" />
+                            {successMessage}
                           </div>
                         )}
 
