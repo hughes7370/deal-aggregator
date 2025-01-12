@@ -192,6 +192,23 @@ export default function DealTracker() {
       if (!user?.emailAddresses?.[0]?.emailAddress) return;
       const userEmail = user.emailAddresses[0].emailAddress;
 
+      // Get fresh token and client for this operation
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
       // Find the saved listing that matches this listing ID
       const savedListing = savedListings.find(sl => sl.listings.id === listingId);
       if (!savedListing) {
@@ -203,20 +220,22 @@ export default function DealTracker() {
       const updatedListings = savedListings.map(sl => {
         if (sl.listings.id !== listingId) return sl;
         
+        const updatedDealTracker = {
+          ...(sl.deal_tracker || {
+            id: sl.listing_id,
+            status: 'Interested',
+            next_steps: 'Review Listing',
+            priority: 'Medium',
+            notes: '',
+            created_at: new Date().toISOString(),
+          }),
+          [field]: value,
+          last_updated: new Date().toISOString(),
+        };
+
         return {
           ...sl,
-          deal_tracker: {
-            ...(sl.deal_tracker || {
-              id: sl.listing_id,
-              status: 'Interested',
-              next_steps: 'Review Listing',
-              priority: 'Medium',
-              notes: '',
-              created_at: new Date().toISOString(),
-            }),
-            [field]: value,
-            last_updated: new Date().toISOString(),
-          }
+          deal_tracker: updatedDealTracker
         };
       });
 
@@ -225,7 +244,7 @@ export default function DealTracker() {
 
       if (!savedListing?.deal_tracker) {
         // Create new deal tracker entry
-        const { data: newDealTracker, error: createError } = await supabaseClient
+        const { data: newDealTracker, error: createError } = await client
           .from('deal_tracker')
           .insert({
             user_email: userEmail,
@@ -249,13 +268,13 @@ export default function DealTracker() {
         console.log('Created new deal tracker:', newDealTracker);
       } else {
         // Update existing deal tracker entry
-        const { error: updateError } = await supabaseClient
+        const { error: updateError } = await client
           .from('deal_tracker')
           .update({
             [field]: String(value),
             last_updated: new Date().toISOString(),
           })
-          .eq('id', savedListing.deal_tracker.id)
+          .eq('listing_id', savedListing.listing_id)
           .eq('user_email', userEmail);
 
         if (updateError) {
