@@ -82,17 +82,19 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
     <>
       <div 
         className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 h-full relative group ${
-          viewMode === 'list' ? 'flex' : ''
+          viewMode === 'list' ? 'flex flex-col sm:flex-row' : ''
         }`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Top Actions Bar - Always visible */}
-        <div className="absolute top-0 right-0 p-2 z-10 flex items-center space-x-1">
+        {/* Top Actions Bar - Always visible on mobile, hidden on desktop until hover */}
+        <div className={`${
+          isHovered ? 'opacity-100' : 'opacity-0 sm:opacity-0'
+        } absolute top-0 right-0 p-2 z-10 flex items-center space-x-1 transition-opacity duration-200 sm:bg-white/80 backdrop-blur-sm`}>
           <button
             onClick={() => onSave(id)}
             disabled={isSaving}
-            className={`p-1.5 rounded-full hover:bg-white/90 transition-colors ${
+            className={`p-1.5 rounded-full bg-white/90 hover:bg-white transition-colors ${
               isSaved ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-600'
             } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
@@ -109,7 +111,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
           </button>
           <button
             onClick={() => onHide(id)}
-            className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-white/90 transition-colors"
+            className="text-gray-400 hover:text-gray-600 p-1.5 rounded-full bg-white/90 hover:bg-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -117,10 +119,10 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
           </button>
         </div>
 
-        <div className={`p-5 flex flex-col h-full ${viewMode === 'list' ? 'flex-row items-center space-x-6' : ''}`}>
+        <div className={`p-4 sm:p-5 flex flex-col h-full ${viewMode === 'list' ? 'sm:flex-row sm:items-center sm:space-x-6' : ''}`}>
           {/* Header with days/hours listed */}
-          <div className={`flex items-start ${viewMode === 'list' ? 'w-48 flex-shrink-0' : 'mb-4'}`}>
-            <div className="flex items-center space-x-2">
+          <div className={`flex items-start ${viewMode === 'list' ? 'sm:w-48 flex-shrink-0' : 'mb-4'}`}>
+            <div className="flex flex-wrap items-center gap-2">
               {isNew && (
                 <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                   New
@@ -137,7 +139,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
             <div className="flex items-start space-x-2 mb-2">
               <BusinessTypeIcon className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">{title}</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">{title}</h3>
                 {location && location !== '00' && location !== '' && (
                   <p className="text-sm text-gray-500 mt-1">{location}</p>
                 )}
@@ -154,51 +156,75 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
           </div>
 
           {/* Key Metrics */}
-          <div className={`grid gap-4 pt-4 border-t border-gray-100 ${
-            viewMode === 'list' ? 'w-96 grid-cols-4 pt-0 border-0' : 'grid-cols-2'
+          <div className={`grid gap-3 pt-3 border-t border-gray-100 ${
+            viewMode === 'list' 
+              ? 'sm:w-96 grid-cols-2 sm:grid-cols-4 sm:pt-0 sm:border-0' 
+              : 'grid-cols-2'
           }`}>
-            <div className="bg-blue-50 p-3 rounded-lg">
+            <div className="bg-blue-50 p-2 sm:p-3 rounded-lg">
               <div className="text-xs font-medium text-blue-600 mb-1">Price</div>
-              <div className="text-sm font-semibold text-gray-900">{formatPrice(price)}</div>
+              <div className="text-sm font-semibold text-gray-900 truncate">{formatPrice(price)}</div>
             </div>
-            <div className="bg-green-50 p-3 rounded-lg">
+            <div className="bg-green-50 p-2 sm:p-3 rounded-lg">
               <div className="text-xs font-medium text-green-600 mb-1">Revenue</div>
-              <div className="text-sm font-semibold text-gray-900">{formatMetric(monthlyRevenue)}/mo</div>
+              <div className="text-sm font-semibold text-gray-900 truncate">{formatMetric(monthlyRevenue)}/mo</div>
             </div>
-            <div className="bg-purple-50 p-3 rounded-lg">
+            <div className="bg-purple-50 p-2 sm:p-3 rounded-lg">
               <div className="text-xs font-medium text-purple-600 mb-1">Profit</div>
-              <div className="text-sm font-semibold text-gray-900">{formatMetric(monthlyProfit)}/mo</div>
+              <div className="text-sm font-semibold text-gray-900 truncate">{formatMetric(monthlyProfit)}/mo</div>
             </div>
-            <div className="bg-indigo-50 p-3 rounded-lg">
+            <div className="bg-indigo-50 p-2 sm:p-3 rounded-lg">
               <div className="text-xs font-medium text-indigo-600 mb-1">Multiple</div>
-              <div className="text-sm font-semibold text-gray-900">{multiple.toFixed(1)}x</div>
+              <div className="text-sm font-semibold text-gray-900 truncate">{multiple.toFixed(1)}x</div>
             </div>
           </div>
 
-          {/* Quick Action Overlay - Doesn't cover the top */}
-          <div 
-            className={`absolute inset-x-0 bottom-0 top-16 bg-gray-900 bg-opacity-50 backdrop-blur-sm transition-all duration-200 flex items-center justify-center space-x-4 ${
-              isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            <button
-              onClick={() => setIsPreviewOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
-            >
-              <EyeIcon className="w-5 h-5 mr-1.5" />
-              Quick View
-            </button>
-            {originalListingUrl && (
-              <a
-                href={originalListingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 border border-white text-sm font-medium rounded-lg text-white hover:bg-white hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white shadow-sm transition-colors"
+          {/* Quick Action Overlay - Show on hover for desktop, show as buttons for mobile */}
+          <div className="mt-4 sm:mt-0">
+            <div className="sm:hidden flex flex-col gap-2">
+              <button
+                onClick={() => setIsPreviewOpen(true)}
+                className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
               >
-                <ArrowTopRightOnSquareIcon className="w-5 h-5 mr-1.5" />
-                View Original
-              </a>
-            )}
+                <EyeIcon className="w-5 h-5 mr-1.5" />
+                Quick View
+              </button>
+              {originalListingUrl && (
+                <a
+                  href={originalListingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
+                >
+                  <ArrowTopRightOnSquareIcon className="w-5 h-5 mr-1.5" />
+                  View Original
+                </a>
+              )}
+            </div>
+            <div 
+              className={`hidden sm:flex absolute inset-x-0 bottom-0 top-16 bg-gray-900 bg-opacity-50 backdrop-blur-sm transition-all duration-200 items-center justify-center space-x-4 ${
+                isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <button
+                onClick={() => setIsPreviewOpen(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
+              >
+                <EyeIcon className="w-5 h-5 mr-1.5" />
+                Quick View
+              </button>
+              {originalListingUrl && (
+                <a
+                  href={originalListingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 border border-white text-sm font-medium rounded-lg text-white hover:bg-white hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white shadow-sm transition-colors"
+                >
+                  <ArrowTopRightOnSquareIcon className="w-5 h-5 mr-1.5" />
+                  View Original
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>

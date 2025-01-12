@@ -118,6 +118,9 @@ export default function DealFlowPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchScope, setSearchScope] = useState<SearchScope>('all')
 
+  // Add state for mobile filter visibility
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
+
   // Function to fetch listings from Supabase
   const fetchListings = async () => {
     try {
@@ -578,43 +581,123 @@ export default function DealFlowPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-[1800px] mx-auto px-6 py-4">
-          {/* Top header row */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-2xl font-bold text-gray-900">Deal Flow</h1>
-              <div className="flex items-center space-x-6">
-                <SortDropdown value={sortBy} onChange={setSortBy} />
-                <div className="h-6 w-px bg-gray-200" />
-                <ResultsCount showing={filteredListings.length} total={listings.length} />
-              </div>
+      <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <h1 className="text-2xl font-semibold text-gray-900">Deal Flow</h1>
+              <button
+                onClick={() => setIsMobileFiltersOpen(true)}
+                className="sm:hidden ml-auto inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="ml-1">Filters</span>
+              </button>
             </div>
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-4">
-                <PageSizeSelector pageSize={pageSize} onPageSizeChange={setPageSize} />
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <div className="w-full sm:w-96">
+                <SearchBar
+                  onSearch={setSearchQuery}
+                  onScopeChange={setSearchScope}
+                  placeholder="Search listings..."
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <SortDropdown value={sortBy} onChange={setSortBy} />
+                <ResultsCount count={filteredListings.length} />
                 <ActionButtons
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
+                  onRefresh={handleRefreshData}
                   onSaveSearch={handleSaveSearch}
-                  onRefreshData={handleRefreshData}
                 />
               </div>
             </div>
           </div>
-          
-          {/* Search bar */}
-          <div className="py-3">
-            <SearchBar onSearch={handleSearch} className="max-w-3xl mx-auto" />
+        </div>
+      </header>
+
+      {/* Mobile filter dialog */}
+      <div className={`fixed inset-0 z-40 sm:hidden ${isMobileFiltersOpen ? 'block' : 'hidden'}`}>
+        {/* Overlay */}
+        <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileFiltersOpen(false)} />
+        
+        {/* Slide-out panel */}
+        <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white shadow-xl">
+          <div className="h-full flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+              <button
+                onClick={() => setIsMobileFiltersOpen(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-6">
+              <div className="space-y-8">
+                <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
+                <RevenueFilter
+                  value={revenueRange}
+                  onChange={setRevenueRange}
+                  isAnnual={isAnnualRevenue}
+                  onIsAnnualChange={handleRevenueToggle}
+                />
+                <ProfitFilter
+                  value={profitRange}
+                  onChange={setProfitRange}
+                  isAnnual={isAnnualProfit}
+                  onIsAnnualChange={handleProfitToggle}
+                />
+                <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
+                <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
+                <SourceFilter selected={sources} onChange={setSources} />
+                <AdvancedFilters
+                  profitMargin={profitMargin}
+                  onProfitMarginChange={setProfitMargin}
+                  growthRate={growthRate}
+                  onGrowthRateChange={setGrowthRate}
+                  teamSize={teamSize}
+                  onTeamSizeChange={setTeamSize}
+                  location={location}
+                  onLocationChange={setLocation}
+                />
+              </div>
+            </div>
+            <div className="border-t border-gray-200 px-4 py-3">
+              <button
+                onClick={() => {
+                  setPriceRange([0, 10000000])
+                  setRevenueRange([0, 5000000])
+                  setProfitRange([0, 5000000])
+                  setMultipleRange([0, 10])
+                  setBusinessTypes([])
+                  setSources([])
+                  setProfitMargin([-100, 100])
+                  setGrowthRate([-100, 1000])
+                  setTeamSize([0, 1000])
+                  setLocation('')
+                  setSearchQuery('')
+                  setIsMobileFiltersOpen(false)
+                }}
+                className="w-full text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                Clear All
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="max-w-[1800px] mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          {/* Left Sidebar */}
-          <aside className="w-80 flex-shrink-0">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
+          {/* Left Sidebar - Hidden on mobile */}
+          <aside className="hidden sm:block w-80 flex-shrink-0">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-[140px] transition-shadow hover:shadow-md">
               <div className="space-y-8">
                 <div className="flex items-center justify-between">
@@ -638,41 +721,23 @@ export default function DealFlowPage() {
                     Clear All
                   </button>
                 </div>
-                
-                <PriceRangeFilter
-                  value={priceRange}
-                  onChange={setPriceRange}
-                />
 
+                <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
                 <RevenueFilter
                   value={revenueRange}
                   onChange={setRevenueRange}
                   isAnnual={isAnnualRevenue}
                   onIsAnnualChange={handleRevenueToggle}
                 />
-
                 <ProfitFilter
                   value={profitRange}
                   onChange={setProfitRange}
                   isAnnual={isAnnualProfit}
                   onIsAnnualChange={handleProfitToggle}
                 />
-
-                <BusinessTypeFilter
-                  selected={businessTypes}
-                  onChange={setBusinessTypes}
-                />
-
-                <MultipleFilter
-                  value={multipleRange}
-                  onChange={setMultipleRange}
-                />
-
-                <SourceFilter
-                  selected={sources}
-                  onChange={setSources}
-                />
-
+                <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
+                <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
+                <SourceFilter selected={sources} onChange={setSources} />
                 <AdvancedFilters
                   profitMargin={profitMargin}
                   onProfitMarginChange={setProfitMargin}
@@ -688,8 +753,8 @@ export default function DealFlowPage() {
           </aside>
 
           {/* Main Content */}
-          <div className="flex-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-shadow hover:shadow-md">
+          <div className="flex-1 min-w-0">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 transition-shadow hover:shadow-md">
               <ListingsGrid
                 listings={filteredListings}
                 isLoading={isLoading}

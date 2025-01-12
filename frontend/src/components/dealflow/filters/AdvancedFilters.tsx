@@ -75,9 +75,9 @@ export function AdvancedFilters({
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
               />
             </svg>
-            <div className="absolute right-full top-0 mr-2 w-64 p-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none">
+            <div className="absolute left-1/2 transform -translate-x-1/2 mt-2 w-64 p-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] pointer-events-none">
               We recommend not using advanced filters. It may hide relevant listings when brokers haven't included this specific information.
-              <div className="absolute right-0 top-1/2 transform translate-x-full -translate-y-1/2">
+              <div className="absolute left-1/2 transform -translate-x-1/2 -top-1">
                 <div className="w-2 h-2 bg-gray-800 transform rotate-45"></div>
               </div>
             </div>

@@ -8,6 +8,7 @@ import FilterControls from '@/components/dealtracker/controls/FilterControls';
 import { useUser, useAuth } from "@clerk/nextjs";
 import { createClient } from '@supabase/supabase-js';
 import { SearchBar, SearchScope } from '@/components/dealflow/search/SearchBar';
+import SelectField from '@/components/dealtracker/SelectField';
 
 type SortField = 'business_name' | 'asking_price' | 'business_type' | 'status' | 'next_steps' | 'priority' | 'last_updated';
 type SortDirection = 'asc' | 'desc';
@@ -491,12 +492,12 @@ export default function DealTracker() {
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between mb-4">
           <h1 className="text-2xl font-semibold text-gray-900">Deal Tracker</h1>
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {selectedItems.size > 0 && (
-              <div className="flex items-center space-x-2 mr-4">
+              <div className="flex flex-wrap gap-2">
                 <span className="text-sm text-gray-600">{selectedItems.size} selected</span>
                 <button
                   onClick={() => handleBulkAction('Not Interested')}
@@ -512,28 +513,30 @@ export default function DealTracker() {
                 </button>
               </div>
             )}
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <FunnelIcon className="h-5 w-5 mr-2" />
-              Filter View
-              {Object.values(filters).some(arr => arr?.length > 0) && (
-                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {Object.values(filters).reduce((acc, arr) => acc + (arr?.length || 0), 0)}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-              Export CSV
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setIsFilterModalOpen(true)}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <FunnelIcon className="h-5 w-5 mr-2" />
+                Filter View
+                {Object.values(filters).some(arr => arr?.length > 0) && (
+                  <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {Object.values(filters).reduce((acc, arr) => acc + (arr?.length || 0), 0)}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                Export CSV
+              </button>
+            </div>
           </div>
         </div>
-        <div className="max-w-3xl">
+        <div className="max-w-3xl w-full">
           <SearchBar
             onSearch={handleSearch}
             placeholder="Search deals by title, status, priority, or notes..."
@@ -542,8 +545,112 @@ export default function DealTracker() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
+      {/* Mobile Card View / Desktop Table View */}
+      <div className="block sm:hidden">
+        {isLoading ? (
+          <div className="p-4 text-center text-sm text-gray-500">Loading...</div>
+        ) : filteredListings.length === 0 ? (
+          <div className="p-4 text-center text-sm text-gray-500">
+            No saved listings found. Save listings from the Deal Flow page to track them here.
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredListings.map((savedListing) => (
+              <div key={savedListing.listings.id} className="p-4 bg-white">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.has(savedListing.listings.id)}
+                    onChange={(e) => handleSelectItem(savedListing.listings.id, e.target.checked)}
+                    className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-medium text-gray-900">{savedListing.listings.title}</h3>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(savedListing.deal_tracker?.status)}`}>
+                        {savedListing.deal_tracker?.status || 'Interested'}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Price:</span>
+                        <span className="ml-1 text-gray-900">${savedListing.listings.asking_price.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Type:</span>
+                        <span className="ml-1 text-gray-900">{savedListing.listings.business_model}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Priority:</span>
+                        <SelectField
+                          value={savedListing.deal_tracker?.priority || 'Medium'}
+                          onChange={(value) => handleUpdateDeal(savedListing.listings.id, 'priority', value)}
+                          options={['High', 'Medium', 'Low']}
+                          className={`mt-1 w-full ${
+                            savedListing.deal_tracker?.priority === 'High' 
+                              ? 'bg-red-50 text-red-700' 
+                              : savedListing.deal_tracker?.priority === 'Medium'
+                              ? 'bg-yellow-50 text-yellow-700'
+                              : 'bg-green-50 text-green-700'
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Next Steps:</span>
+                        <SelectField
+                          value={savedListing.deal_tracker?.next_steps || 'Review Listing'}
+                          onChange={(value) => handleUpdateDeal(savedListing.listings.id, 'next_steps', value)}
+                          options={['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None']}
+                          className="mt-1 w-full bg-gray-50"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-gray-500 text-sm">Notes:</span>
+                      <div
+                        onClick={() => {
+                          const textarea = document.createElement('textarea');
+                          textarea.value = savedListing.deal_tracker?.notes || '';
+                          textarea.className = 'w-full mt-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
+                          textarea.onblur = (e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            handleUpdateDeal(savedListing.listings.id, 'notes', target.value);
+                            if (target.parentElement) {
+                              target.parentElement.replaceChild(
+                                document.createTextNode(target.value || 'Click to add notes...'),
+                                target
+                              );
+                            }
+                          };
+                          const textNode = document.createTextNode(savedListing.deal_tracker?.notes || 'Click to add notes...');
+                          const parent = textNode.parentElement;
+                          if (parent) {
+                            parent.replaceChild(textarea, textNode);
+                            textarea.focus();
+                          }
+                        }}
+                        className="mt-1 text-sm text-gray-900 cursor-pointer"
+                      >
+                        {savedListing.deal_tracker?.notes || 'Click to add notes...'}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs text-gray-500">
+                      <div>Updated: {savedListing.deal_tracker?.last_updated ? new Date(savedListing.deal_tracker.last_updated).toLocaleDateString() : '-'}</div>
+                      <div>{savedListing.listings.source_platform}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>

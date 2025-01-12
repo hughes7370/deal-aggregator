@@ -1,4 +1,4 @@
-import { ChartBarIcon, DocumentTextIcon, FunnelIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, DocumentTextIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { getKeyMetrics } from '@/hooks/useKeyMetrics';
 
 interface Metric {
@@ -24,22 +24,10 @@ export default async function KeyMetrics({ userId }: { userId: string }) {
       icon: FunnelIcon,
       color: 'text-green-500',
     },
-    {
-      label: 'Price Range',
-      value: metrics.priceRange,
-      icon: ChartBarIcon,
-      color: 'text-purple-500',
-    },
-    {
-      label: 'Most Active',
-      value: metrics.mostActive,
-      icon: BuildingOfficeIcon,
-      color: 'text-orange-500',
-    },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
       {metricsData.map((metric) => (
         <div
           key={metric.label}

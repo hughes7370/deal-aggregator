@@ -13,18 +13,13 @@ interface FilterControlsProps {
     type?: string[];
     next_steps?: string[];
   };
-  onApplyFilters: (filters: {
-    status?: string[];
-    priority?: string[];
-    type?: string[];
-    next_steps?: string[];
-  }) => void;
+  onApplyFilters: (filters: any) => void;
 }
 
-const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Other'];
 const STATUS_OPTIONS = ['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost'];
-const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
+const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Other'];
+const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 
 export default function FilterControls({ isOpen, onClose, filters, onApplyFilters }: FilterControlsProps) {
   const handleFilterChange = (category: string, value: string) => {
@@ -40,8 +35,12 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
   };
 
   const clearFilters = () => {
-    onApplyFilters({});
-    onClose();
+    onApplyFilters({
+      status: [],
+      priority: [],
+      type: [],
+      next_steps: [],
+    });
   };
 
   return (
@@ -60,7 +59,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+          <div className="flex min-h-full items-end justify-center sm:items-center p-0">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -70,8 +69,8 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                <div className="absolute right-0 top-0 hidden pr-4 pt-4 sm:block">
+              <Dialog.Panel className="relative transform rounded-t-xl sm:rounded-xl bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all w-full sm:my-8 sm:max-w-lg sm:p-6">
+                <div className="absolute right-0 top-0 pr-4 pt-4 sm:block">
                   <button
                     type="button"
                     className="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -81,102 +80,132 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                     <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                   </button>
                 </div>
-
-                <div>
-                  <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                    Filter Deals
-                  </Dialog.Title>
-
-                  <div className="mt-6 space-y-6">
-                    {/* Status Filter */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900">Status</h4>
-                      <div className="mt-2 space-y-2">
-                        {STATUS_OPTIONS.map((status) => (
-                          <label key={status} className="inline-flex items-center mr-4">
-                            <input
-                              type="checkbox"
-                              checked={(filters.status || []).includes(status)}
-                              onChange={() => handleFilterChange('status', status)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-600">{status}</span>
-                          </label>
-                        ))}
+                
+                <div className="sm:flex sm:items-start">
+                  <div className="mt-3 w-full">
+                    <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900 mb-4">
+                      Filter Deals
+                    </Dialog.Title>
+                    
+                    <div className="space-y-6">
+                      {/* Status Filter */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Status</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {STATUS_OPTIONS.map((status) => (
+                            <label
+                              key={status}
+                              className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                                filters.status?.includes(status)
+                                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={filters.status?.includes(status)}
+                                onChange={() => handleFilterChange('status', status)}
+                              />
+                              {status}
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Priority Filter */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900">Priority</h4>
-                      <div className="mt-2 space-y-2">
-                        {PRIORITY_OPTIONS.map((priority) => (
-                          <label key={priority} className="inline-flex items-center mr-4">
-                            <input
-                              type="checkbox"
-                              checked={(filters.priority || []).includes(priority)}
-                              onChange={() => handleFilterChange('priority', priority)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-600">{priority}</span>
-                          </label>
-                        ))}
+                      {/* Priority Filter */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Priority</h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          {PRIORITY_OPTIONS.map((priority) => (
+                            <label
+                              key={priority}
+                              className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                                filters.priority?.includes(priority)
+                                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={filters.priority?.includes(priority)}
+                                onChange={() => handleFilterChange('priority', priority)}
+                              />
+                              {priority}
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Type Filter */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900">Type</h4>
-                      <div className="mt-2 space-y-2">
-                        {TYPE_OPTIONS.map((type) => (
-                          <label key={type} className="inline-flex items-center mr-4">
-                            <input
-                              type="checkbox"
-                              checked={(filters.type || []).includes(type)}
-                              onChange={() => handleFilterChange('type', type)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-600">{type}</span>
-                          </label>
-                        ))}
+                      {/* Business Type Filter */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Business Type</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {TYPE_OPTIONS.map((type) => (
+                            <label
+                              key={type}
+                              className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                                filters.type?.includes(type)
+                                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={filters.type?.includes(type)}
+                                onChange={() => handleFilterChange('type', type)}
+                              />
+                              {type}
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Next Steps Filter */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-900">Next Steps</h4>
-                      <div className="mt-2 space-y-2">
-                        {NEXT_STEPS_OPTIONS.map((step) => (
-                          <label key={step} className="inline-flex items-center mr-4">
-                            <input
-                              type="checkbox"
-                              checked={(filters.next_steps || []).includes(step)}
-                              onChange={() => handleFilterChange('next_steps', step)}
-                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span className="ml-2 text-sm text-gray-600">{step}</span>
-                          </label>
-                        ))}
+                      {/* Next Steps Filter */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Next Steps</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {NEXT_STEPS_OPTIONS.map((step) => (
+                            <label
+                              key={step}
+                              className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
+                                filters.next_steps?.includes(step)
+                                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={filters.next_steps?.includes(step)}
+                                onChange={() => handleFilterChange('next_steps', step)}
+                              />
+                              {step}
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <div className="mt-6 flex items-center justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={clearFilters}
-                      className="text-sm font-medium text-gray-700 hover:text-gray-900"
-                    >
-                      Clear Filters
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="inline-flex justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-                    >
-                      Apply Filters
-                    </button>
-                  </div>
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto"
+                    onClick={clearFilters}
+                  >
+                    Clear All
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
+                    onClick={onClose}
+                  >
+                    Apply Filters
+                  </button>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

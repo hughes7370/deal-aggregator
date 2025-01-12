@@ -525,31 +525,33 @@ class NewsletterService:
 
         return f"""
             <div style="margin-bottom: 24px; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: white;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
-                    <h3 style="margin: 0; color: #111827; font-size: 18px; font-weight: 600; line-height: 1.4; flex: 1;">
+                <div style="display: flex; flex-direction: column; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 18px; font-weight: 600; line-height: 1.4;">
                         {listing.get('title', 'Untitled Listing')}
                     </h3>
                     <a href="{listing.get('listing_url', '#')}" 
-                       style="display: inline-flex; align-items: center; padding: 8px 16px; background-color: #2563eb; 
-                              color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;
-                              transition: all 0.2s; border: 1px solid #2563eb; white-space: nowrap; margin-left: 16px;">
+                       style="display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; 
+                              background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px; 
+                              font-size: 14px; font-weight: 500; transition: all 0.2s; border: 1px solid #2563eb; 
+                              width: fit-content;">
                         View Details →
                     </a>
                 </div>
                 
-                <div style="display: flex; gap: 32px;">
-                    <table style="border-collapse: collapse; min-width: 300px;">
+                <div style="display: flex; flex-direction: column; gap: 24px;">
+                    <table style="border-collapse: collapse; width: 100%; max-width: 300px;">
                         <tbody>
                             {''.join(metric_rows)}
                         </tbody>
                     </table>
                     
                     <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; margin-bottom: 12px; padding: 8px 12px; background-color: #f9fafb; border-radius: 6px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; 
+                                    padding: 8px 12px; background-color: #f9fafb; border-radius: 6px;">
                             <div style="color: #4b5563; font-size: 14px;">
                                 <span style="color: #6b7280;">🏢</span> {listing.get('industry', 'Not specified')}
                             </div>
-                            <div style="margin: 0 12px; color: #d1d5db;">|</div>
+                            <div style="color: #d1d5db;">|</div>
                             <div style="color: #4b5563; font-size: 14px;">
                                 <span style="color: #6b7280;">🤝</span> {listing.get('source_platform', 'Not specified')}
                             </div>
@@ -586,7 +588,7 @@ class NewsletterService:
             criteria_items.append(f"Price Range: {self.format_currency(alert.get('min_price', 0))} - {self.format_currency(alert.get('max_price', 'Any'))}")
         if alert.get('industries'):
             criteria_items.append(f"Industries: {', '.join(alert.get('industries', []))}")
-            
+
         # Advanced criteria
         advanced_items = []
         if alert.get('preferred_business_models') and len(alert.get('preferred_business_models', [])) > 0:
@@ -631,7 +633,7 @@ class NewsletterService:
                     {''.join(self.generate_listing_html(listing) for listing in exact_matches)}
                 </div>
             """
-            
+
         # Generate HTML for other matches
         other_matches_html = ""
         if other_matches:
@@ -648,27 +650,56 @@ class NewsletterService:
             """
         
         return f"""
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-                        max-width: 600px; margin: 0 auto; padding: 24px; background-color: #f3f4f6;">
-                <h1 style="color: #111827; font-size: 24px; margin-bottom: 24px;">
-                    {alert.get('name', 'Your')} - Deal Alert
-                </h1>
-                
-                {search_criteria_html}
-                {exact_matches_html}
-                {other_matches_html}
-                
-                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #d1d5db; color: #6b7280; font-size: 14px; text-align: center;">
-                    <p style="margin-bottom: 12px;">
-                        To update your preferences or unsubscribe, visit your 
-                        <a href="https://dealsight.co/dashboard/preferences" 
-                           style="color: #2563eb; text-decoration: none;">dashboard</a>.
-                    </p>
-                    <p style="color: #9ca3af; font-size: 12px;">
-                        © 2024 DealSight. All rights reserved.
-                    </p>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    @media only screen and (max-width: 600px) {{
+                        .email-container {{
+                            padding: 16px !important;
+                        }}
+                        .listing-container {{
+                            padding: 16px !important;
+                        }}
+                        .metrics-container {{
+                            flex-direction: column !important;
+                        }}
+                        .metrics-table {{
+                            margin-bottom: 16px !important;
+                        }}
+                        .view-details-btn {{
+                            width: 100% !important;
+                            text-align: center !important;
+                        }}
+                    }}
+                </style>
+            </head>
+            <body style="margin: 0; padding: 0; background-color: #f3f4f6;">
+                <div class="email-container" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
+                            max-width: 600px; margin: 0 auto; padding: 24px; background-color: #f3f4f6;">
+                    <h1 style="color: #111827; font-size: 24px; margin-bottom: 24px;">
+                        {alert.get('name', 'Your')} - Deal Alert
+                    </h1>
+                    
+                    {search_criteria_html}
+                    {exact_matches_html}
+                    {other_matches_html}
+                    
+                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #d1d5db; color: #6b7280; font-size: 14px; text-align: center;">
+                        <p style="margin-bottom: 12px;">
+                            To update your preferences or unsubscribe, visit your 
+                            <a href="https://dealsight.co/dashboard/preferences" 
+                               style="color: #2563eb; text-decoration: none;">dashboard</a>.
+                        </p>
+                        <p style="color: #9ca3af; font-size: 12px;">
+                            © 2024 DealSight. All rights reserved.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </body>
+            </html>
         """
 
     def schedule_newsletter(self, user_id: str, scheduled_for: datetime = None, alert_id: str = None) -> str:

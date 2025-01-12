@@ -68,6 +68,7 @@ export function ActionButtons({
 
       {/* Action buttons */}
       <div className="flex items-center space-x-3">
+        {/* Save Search button commented out for now
         <motion.button
           whileHover={{ scale: 1.02, backgroundColor: '#4F46E5' }}
           whileTap={{ scale: 0.98 }}
@@ -77,15 +78,14 @@ export function ActionButtons({
           <BookmarkIcon className="mr-1.5 h-4 w-4" />
           Save Search
         </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.02, backgroundColor: '#F9FAFB' }}
-          whileTap={{ scale: 0.98 }}
+        */}
+        <button
           onClick={onRefreshData}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg bg-white text-gray-900"
         >
-          <ArrowPathIcon className="mr-1.5 h-4 w-4" />
+          <ArrowPathIcon className="mr-1.5 h-4 w-4 text-gray-900" />
           Refresh Data
-        </motion.button>
+        </button>
       </div>
     </div>
   )
