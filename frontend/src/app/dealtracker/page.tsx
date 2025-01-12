@@ -70,21 +70,28 @@ export default function DealTracker() {
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
 
-  // Load filters from Supabase
+  // Load filters when user is available
   useEffect(() => {
     const loadFilters = async () => {
-      if (!user?.emailAddresses?.[0]?.emailAddress) {
+      if (!user) {
+        console.log('No user found');
+        return;
+      }
+
+      const userEmail = user.primaryEmailAddress?.emailAddress;
+      if (!userEmail) {
         console.log('No user email found');
         return;
       }
 
       try {
-        // Get fresh token and client for this operation
+        // Get fresh token
         const token = await getToken({ template: "supabase" });
         if (!token) {
           throw new Error('Failed to get authentication token');
         }
 
+        // Create fresh client
         const client = createClient(supabaseUrl, supabaseAnonKey, {
           auth: {
             persistSession: false
@@ -96,7 +103,6 @@ export default function DealTracker() {
           }
         });
 
-        const userEmail = user.emailAddresses[0].emailAddress;
         console.log('Loading filters for user:', userEmail);
 
         const { data, error } = await client
@@ -123,61 +129,85 @@ export default function DealTracker() {
     loadFilters();
   }, [user, getToken]);
 
-  // Save filters to Supabase whenever they change
-  useEffect(() => {
-    const saveFilters = async () => {
-      if (!user?.emailAddresses?.[0]?.emailAddress) {
-        console.log('No user email found');
-        return;
+  // Save filters when they change and user is available
+  const saveFilters = async (filtersToSave: Filters) => {
+    if (!user) {
+      console.log('No user found');
+      return;
+    }
+
+    const userEmail = user.primaryEmailAddress?.emailAddress;
+    if (!userEmail) {
+      console.log('No user email found');
+      return;
+    }
+
+    try {
+      // Get fresh token
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
       }
 
-      try {
-        // Get fresh token and client for this operation
-        const token = await getToken({ template: "supabase" });
-        if (!token) {
-          throw new Error('Failed to get authentication token');
-        }
-
-        const client = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: {
-            persistSession: false
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+      // Create fresh client
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
+        }
+      });
+
+      console.log('Saving filters for user:', userEmail);
+
+      const { error: upsertError } = await client
+        .from('user_filters')
+        .upsert({
+          user_email: userEmail,
+          page: 'deal_tracker',
+          filters: filtersToSave,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_email,page'
         });
 
-        const userEmail = user.emailAddresses[0].emailAddress;
-        console.log('Saving filters for user:', userEmail);
-
-        const { error: upsertError } = await client
-          .from('user_filters')
-          .upsert({
-            user_email: userEmail,
-            page: 'deal_tracker',
-            filters: filters,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_email,page'
-          });
-
-        if (upsertError) {
-          console.error('Error saving filters:', upsertError);
-        } else {
-          console.log('Successfully saved filters:', filters);
-        }
-      } catch (error) {
-        console.error('Error saving filters:', error);
+      if (upsertError) {
+        console.error('Error saving filters:', upsertError);
+      } else {
+        console.log('Successfully saved filters:', filtersToSave);
       }
-    };
-
-    // Only save if there are actual filters to save
-    if (Object.values(filters).some(arr => arr.length > 0)) {
-      saveFilters();
+    } catch (error) {
+      console.error('Error saving filters:', error);
     }
-  }, [filters, user, getToken]);
+  };
+
+  // Handle filter changes
+  const handleApplyFilters = (newFilters: Filters) => {
+    console.log('Applying new filters:', newFilters);
+    try {
+      // Ensure we maintain the filter structure and validate arrays
+      const updatedFilters = {
+        status: Array.isArray(newFilters.status) ? newFilters.status : [],
+        priority: Array.isArray(newFilters.priority) ? newFilters.priority : [],
+        type: Array.isArray(newFilters.type) ? newFilters.type : [],
+        next_steps: Array.isArray(newFilters.next_steps) ? newFilters.next_steps : []
+      };
+      console.log('Structured filters to apply:', updatedFilters);
+      setFilters(updatedFilters);
+      
+      // Only save if there are actual filters to save
+      if (Object.values(updatedFilters).some(arr => arr.length > 0)) {
+        saveFilters(updatedFilters);
+      }
+      
+      setIsFilterModalOpen(false);
+    } catch (e) {
+      console.error('Error applying filters:', e);
+    }
+  };
 
   // Set up authenticated Supabase client
   useEffect(() => {
@@ -567,24 +597,6 @@ export default function DealTracker() {
   const handleSearch = (searchQuery: string, scope: SearchScope) => {
     setQuery(searchQuery);
     setSearchScope(scope);
-  };
-
-  const handleApplyFilters = (newFilters: Filters) => {
-    console.log('Applying new filters:', newFilters);
-    try {
-      // Ensure we maintain the filter structure and validate arrays
-      const updatedFilters = {
-        status: Array.isArray(newFilters.status) ? newFilters.status : [],
-        priority: Array.isArray(newFilters.priority) ? newFilters.priority : [],
-        type: Array.isArray(newFilters.type) ? newFilters.type : [],
-        next_steps: Array.isArray(newFilters.next_steps) ? newFilters.next_steps : []
-      };
-      console.log('Structured filters to apply:', updatedFilters);
-      setFilters(updatedFilters);
-      setIsFilterModalOpen(false);
-    } catch (e) {
-      console.error('Error applying filters:', e);
-    }
   };
 
   // Filter the listings based on current filters
