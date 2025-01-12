@@ -6,14 +6,14 @@ export interface ActionButtonsProps {
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   onSaveSearch: () => void
-  onRefreshData: () => void
+  onRefresh: () => void
 }
 
 export function ActionButtons({
   viewMode,
   onViewModeChange,
   onSaveSearch,
-  onRefreshData,
+  onRefresh,
 }: ActionButtonsProps) {
   return (
     <div className="flex items-center space-x-6">
@@ -80,7 +80,7 @@ export function ActionButtons({
         </motion.button>
         */}
         <button
-          onClick={onRefreshData}
+          onClick={onRefresh}
           className="inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-lg bg-white text-gray-900"
         >
           <ArrowPathIcon className="mr-1.5 h-4 w-4 text-gray-900" />
