@@ -43,6 +43,29 @@ interface SavedListing {
   selected?: boolean;
 }
 
+// Add type for the Supabase response
+interface DealTrackerResponse {
+  id: string;
+  user_email: string;
+  listing_id: string;
+  listings: {
+    id: string;
+    title: string;
+    asking_price: number;
+    business_model: string;
+    source_platform: string;
+  };
+  deal_tracker: {
+    id: string;
+    status: string;
+    next_steps: string;
+    priority: string;
+    notes: string;
+    last_updated: string;
+    created_at: string;
+  } | null;
+}
+
 // Initialize Supabase client with auth configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -279,39 +302,21 @@ export default function DealTracker() {
       const userEmail = user.emailAddresses[0].emailAddress;
       console.log('Fetching listings for email:', userEmail);
 
-      // First check if we have any saved listings
-      const { data: savedListingsCheck, error: checkError } = await client
-        .from('user_saved_listings')
-        .select('id, user_email')
-        .eq('user_email', userEmail);
-
-      if (checkError) {
-        console.error('Error checking saved listings:', checkError);
-        return;
-      }
-
-      console.log('Saved listings check:', savedListingsCheck);
-
-      if (!savedListingsCheck || savedListingsCheck.length === 0) {
-        console.log('No saved listings found for user');
-        return;
-      }
-
-      // Now fetch full data with joins
+      // Fetch all data in a single query with proper joins
       const { data, error } = await client
         .from('user_saved_listings')
         .select(`
           id,
           user_email,
           listing_id,
-          listings!inner(
+          listings!inner (
             id,
             title,
             asking_price,
             business_model,
             source_platform
           ),
-          deal_tracker(
+          deal_tracker!left (
             id,
             status,
             next_steps,
@@ -323,23 +328,33 @@ export default function DealTracker() {
         `)
         .eq('user_email', userEmail)
         .order('saved_at', { ascending: false })
-        .returns<SavedListing[]>();
-
-      console.log('Full data fetch result:', { data, error });
+        .returns<DealTrackerResponse[]>();
 
       if (error) {
-        console.error('Error fetching full data:', error);
+        console.error('Error fetching data:', error);
         throw error;
       }
-      
-      if (!data || data.length === 0) {
-        console.log('No data returned from full fetch');
-      } else {
-        console.log('Number of listings found:', data.length);
-        console.log('First listing:', data[0]);
-      }
 
-      setSavedListings(data || []);
+      console.log('Fetched data:', data);
+
+      // Transform the data to match our SavedListing type
+      const transformedData: SavedListing[] = (data || []).map(item => ({
+        id: item.id,
+        user_email: item.user_email,
+        listing_id: item.listing_id,
+        listings: item.listings,
+        deal_tracker: item.deal_tracker || {
+          id: item.listing_id,
+          status: 'Interested',
+          next_steps: 'Review Listing',
+          priority: 'Medium',
+          notes: '',
+          last_updated: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }
+      }));
+
+      setSavedListings(transformedData);
     } catch (error) {
       console.error('Error in fetchSavedListings:', error);
     } finally {
