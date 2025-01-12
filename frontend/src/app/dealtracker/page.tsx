@@ -22,6 +22,20 @@ interface Filters {
   next_steps?: string[];
 }
 
+interface ListingOverride {
+  id: string;
+  user_email: string;
+  listing_id: string;
+  title?: string;
+  asking_price?: number;
+  business_model?: string;
+  revenue?: number;
+  ebitda?: number;
+  selling_multiple?: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface SavedListing {
   id: string;
   user_email: string;
@@ -36,6 +50,7 @@ interface SavedListing {
     ebitda: number;
     selling_multiple: number;
   };
+  listing_override?: ListingOverride;
   deal_tracker?: {
     id: string;
     status: string;
@@ -301,9 +316,23 @@ export default function DealTracker() {
         console.error('Error fetching deal tracker data:', dealTrackerError);
       }
 
-      // Create a map of deal tracker data by listing_id
+      // Fetch listing overrides
+      const { data: overridesData, error: overridesError } = await client
+        .from('listing_overrides')
+        .select('*')
+        .eq('user_email', userEmail)
+        .returns<ListingOverride[]>();
+
+      if (overridesError) {
+        console.error('Error fetching listing overrides:', overridesError);
+      }
+
+      // Create maps for quick lookups
       const dealTrackerMap = new Map(
         dealTrackerData?.map(dt => [dt.listing_id, dt]) || []
+      );
+      const overridesMap = new Map(
+        overridesData?.map(override => [override.listing_id, override]) || []
       );
 
       // Then fetch the saved listings with their details
@@ -339,9 +368,11 @@ export default function DealTracker() {
         return;
       }
 
-      // Transform the data to match our SavedListing type
+      // Transform the data to include overrides
       const transformedData: SavedListing[] = data.map(item => {
         const dealTracker = dealTrackerMap.get(item.listing_id);
+        const override = overridesMap.get(item.listing_id);
+        
         return {
           id: item.id,
           user_email: item.user_email,
@@ -356,6 +387,7 @@ export default function DealTracker() {
             ebitda: item.listings.ebitda,
             selling_multiple: item.listings.selling_multiple
           },
+          listing_override: override,
           deal_tracker: dealTracker || {
             id: item.listing_id,
             status: 'Interested',
@@ -779,6 +811,92 @@ export default function DealTracker() {
     link.click();
   };
 
+  const handleUpdateOverride = async (listingId: string, field: string, value: string | number) => {
+    try {
+      if (!user?.emailAddresses?.[0]?.emailAddress) {
+        console.error('No user email found for update');
+        return;
+      }
+      const userEmail = user.emailAddresses[0].emailAddress;
+
+      // Get fresh token and client for this operation
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
+      // Find the current listing and its override
+      const listing = savedListings.find(sl => sl.listings.id === listingId);
+      if (!listing) throw new Error('Listing not found');
+
+      // Update local state first for optimistic UI
+      const updatedListings = savedListings.map(sl => {
+        if (sl.listings.id !== listingId) return sl;
+
+        const updatedOverride = {
+          ...(sl.listing_override || {
+            user_email: userEmail,
+            listing_id: listingId,
+            created_at: new Date().toISOString(),
+          }),
+          [field]: value,
+          updated_at: new Date().toISOString()
+        };
+
+        return {
+          ...sl,
+          listing_override: updatedOverride
+        };
+      });
+
+      setSavedListings(updatedListings as SavedListing[]);
+
+      // Then update the database
+      if (!listing.listing_override) {
+        // Create new override
+        const { error: createError } = await client
+          .from('listing_overrides')
+          .insert({
+            user_email: userEmail,
+            listing_id: listingId,
+            [field]: value,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+
+        if (createError) throw createError;
+      } else {
+        // Update existing override
+        const { error: updateError } = await client
+          .from('listing_overrides')
+          .update({
+            [field]: value,
+            updated_at: new Date().toISOString()
+          })
+          .eq('listing_id', listingId)
+          .eq('user_email', userEmail);
+
+        if (updateError) throw updateError;
+      }
+    } catch (error) {
+      console.error('Error in handleUpdateOverride:', error);
+      // Revert the optimistic update on error
+      await fetchSavedListings();
+      throw error; // Re-throw to let the InlineEdit component handle the error UI
+    }
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-10">
       <div className="sm:flex sm:items-center">
@@ -990,8 +1108,10 @@ export default function DealTracker() {
                   <DealRow
                     key={listing.listings.id}
                     listing={listing.listings}
+                    listing_override={listing.listing_override}
                     dealTracker={listing.deal_tracker}
                     onUpdate={handleUpdateDeal}
+                    onUpdateOverride={handleUpdateOverride}
                     isSelected={selectedItems.has(listing.listings.id)}
                     onSelect={(checked) => {
                       const newSelected = new Set(selectedItems);

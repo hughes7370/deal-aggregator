@@ -2,12 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import SelectField from './SelectField';
+import InlineEdit from './InlineEdit';
 
 interface ColumnConfig {
   id: string;
   label: string;
   isVisible: boolean;
   isDefault: boolean;
+}
+
+interface ListingOverride {
+  id: string;
+  user_email: string;
+  listing_id: string;
+  title?: string;
+  asking_price?: number;
+  business_model?: string;
+  revenue?: number;
+  ebitda?: number;
+  selling_multiple?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DealRowProps {
@@ -21,6 +36,7 @@ interface DealRowProps {
     ebitda: number;
     selling_multiple: number;
   };
+  listing_override?: ListingOverride;
   dealTracker?: {
     id: string;
     status: string;
@@ -31,6 +47,7 @@ interface DealRowProps {
     created_at: string;
   };
   onUpdate: (listingId: string, field: string, value: string | number) => void;
+  onUpdateOverride: (listingId: string, field: string, value: string | number) => Promise<void>;
   isSelected: boolean;
   onSelect: (checked: boolean) => void;
   statusColor: string;
@@ -95,7 +112,17 @@ const getPriorityColor = (priority: string) => {
   }
 };
 
-export default function DealRow({ listing, dealTracker, onUpdate, isSelected, onSelect, statusColor, columnConfig }: DealRowProps) {
+export default function DealRow({
+  listing,
+  listing_override,
+  dealTracker,
+  onUpdate,
+  onUpdateOverride,
+  isSelected,
+  onSelect,
+  statusColor,
+  columnConfig
+}: DealRowProps) {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(dealTracker?.notes || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -172,6 +199,14 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
     return columnConfig.find(col => col.id === columnId)?.isVisible ?? false;
   };
 
+  // Helper function to get the effective value (override or original)
+  const getEffectiveValue = (field: keyof ListingOverride) => {
+    if (listing_override && field in listing_override && listing_override[field] !== null) {
+      return listing_override[field];
+    }
+    return listing[field as keyof typeof listing];
+  };
+
   return (
     <tr className="hover:bg-gray-50">
       <td className="w-8 px-2 py-2">
@@ -184,29 +219,55 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
       </td>
       {isColumnVisible('business') && (
         <td className="w-1/4 px-3 py-2">
-          <div className="text-sm text-gray-900 truncate max-w-[300px]">
-            {listing.title}
-          </div>
+          <InlineEdit
+            value={getEffectiveValue('title') as string}
+            onSave={(value) => onUpdateOverride(listing.id, 'title', value)}
+            className="text-sm text-gray-900 truncate max-w-[300px]"
+          />
         </td>
       )}
       {isColumnVisible('asking_price') && (
-        <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          ${listing.asking_price?.toLocaleString() || '-'}
+        <td className="w-24 px-3 py-2">
+          <InlineEdit
+            value={getEffectiveValue('asking_price') as number}
+            onSave={(value) => onUpdateOverride(listing.id, 'asking_price', value)}
+            type="number"
+            formatValue={(v) => `$${Number(v).toLocaleString()}`}
+            className="text-sm text-gray-900 whitespace-nowrap"
+          />
         </td>
       )}
       {isColumnVisible('revenue') && (
-        <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          ${listing.revenue?.toLocaleString() || '-'}
+        <td className="w-24 px-3 py-2">
+          <InlineEdit
+            value={getEffectiveValue('revenue') as number}
+            onSave={(value) => onUpdateOverride(listing.id, 'revenue', value)}
+            type="number"
+            formatValue={(v) => `$${Number(v).toLocaleString()}`}
+            className="text-sm text-gray-900 whitespace-nowrap"
+          />
         </td>
       )}
       {isColumnVisible('ebitda') && (
-        <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          ${listing.ebitda?.toLocaleString() || '-'}
+        <td className="w-24 px-3 py-2">
+          <InlineEdit
+            value={getEffectiveValue('ebitda') as number}
+            onSave={(value) => onUpdateOverride(listing.id, 'ebitda', value)}
+            type="number"
+            formatValue={(v) => `$${Number(v).toLocaleString()}`}
+            className="text-sm text-gray-900 whitespace-nowrap"
+          />
         </td>
       )}
       {isColumnVisible('multiple') && (
-        <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          {listing.selling_multiple ? `${listing.selling_multiple.toFixed(1)}x` : '-'}
+        <td className="w-24 px-3 py-2">
+          <InlineEdit
+            value={getEffectiveValue('selling_multiple') as number}
+            onSave={(value) => onUpdateOverride(listing.id, 'selling_multiple', value)}
+            type="number"
+            formatValue={(v) => `${Number(v).toFixed(1)}x`}
+            className="text-sm text-gray-900 whitespace-nowrap"
+          />
         </td>
       )}
       {isColumnVisible('status') && (
