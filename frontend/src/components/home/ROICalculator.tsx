@@ -42,7 +42,7 @@ export default function ROICalculator() {
   const roi = (netReturn / annualCost) * 100;
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -51,8 +51,10 @@ export default function ROICalculator() {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-3xl font-bold text-gray-900">ROI Calculator</h2>
-          <p className="mt-4 text-xl text-gray-500">
+          <h2 className="text-4xl font-bold text-blue-600">
+            ROI Calculator
+          </h2>
+          <p className="mt-4 text-xl text-gray-600">
             Calculate your potential savings and returns with DealSight
           </p>
         </motion.div>
@@ -64,133 +66,104 @@ export default function ROICalculator() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl shadow-lg p-8"
+            className="bg-white rounded-2xl shadow-sm p-8"
           >
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Customize Your Calculation</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-8">Customize Your Calculation</h3>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Average Deal Size
-                </label>
-                <input
-                  type="range"
-                  min="100000"
-                  max="5000000"
-                  step="100000"
-                  value={dealSize}
-                  onChange={(e) => setDealSize(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  ${dealSize.toLocaleString()}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Multiple Paid
-                </label>
-                <input
-                  type="range"
-                  min="2"
-                  max="6"
-                  step="0.1"
-                  value={currentMultiple}
-                  onChange={(e) => setCurrentMultiple(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  {currentMultiple}x multiple
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Deals Per Year
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={dealsPerYear}
-                  onChange={(e) => setDealsPerYear(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  {dealsPerYear} deals
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Search Hours Per Deal
-                </label>
-                <input
-                  type="range"
-                  min="10"
-                  max="100"
-                  step="5"
-                  value={searchHoursPerDeal}
-                  onChange={(e) => setSearchHoursPerDeal(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  {searchHoursPerDeal} hours
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Analysis Hours Per Deal
-                </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  step="5"
-                  value={analysisHours}
-                  onChange={(e) => setAnalysisHours(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  {analysisHours} hours
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Competition Level in Target Market
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={competitionLevel}
-                  onChange={(e) => setCompetitionLevel(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  {['Very Low', 'Low', 'Medium', 'High', 'Very High'][competitionLevel - 1]}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Missed Deals Last Year
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="5"
-                  value={missedDeals}
-                  onChange={(e) => setMissedDeals(Number(e.target.value))}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  {missedDeals} deals
-                </p>
-              </div>
+            <div className="space-y-8">
+              {[
+                {
+                  label: "Average Deal Size",
+                  value: dealSize,
+                  setValue: setDealSize,
+                  min: 100000,
+                  max: 5000000,
+                  step: 100000,
+                  format: (v: number) => `$${v.toLocaleString()}`,
+                  icon: CurrencyDollarIcon
+                },
+                {
+                  label: "Current Multiple Paid",
+                  value: currentMultiple,
+                  setValue: setCurrentMultiple,
+                  min: 2,
+                  max: 6,
+                  step: 0.1,
+                  format: (v: number) => `${v}x multiple`,
+                  icon: ChartBarIcon
+                },
+                {
+                  label: "Deals Per Year",
+                  value: dealsPerYear,
+                  setValue: setDealsPerYear,
+                  min: 1,
+                  max: 10,
+                  step: 1,
+                  format: (v: number) => `${v} deals`,
+                  icon: ScaleIcon
+                },
+                {
+                  label: "Current Search Hours Per Deal",
+                  value: searchHoursPerDeal,
+                  setValue: setSearchHoursPerDeal,
+                  min: 10,
+                  max: 100,
+                  step: 5,
+                  format: (v: number) => `${v} hours`,
+                  icon: ClockIcon
+                },
+                {
+                  label: "Analysis Hours Per Deal",
+                  value: analysisHours,
+                  setValue: setAnalysisHours,
+                  min: 5,
+                  max: 50,
+                  step: 5,
+                  format: (v: number) => `${v} hours`,
+                  icon: ClockIcon
+                },
+                {
+                  label: "Competition Level in Target Market",
+                  value: competitionLevel,
+                  setValue: setCompetitionLevel,
+                  min: 1,
+                  max: 5,
+                  step: 1,
+                  format: (v: number) => ['Very Low', 'Low', 'Medium', 'High', 'Very High'][v - 1],
+                  icon: ChartBarIcon
+                },
+                {
+                  label: "Missed Deals Last Year",
+                  value: missedDeals,
+                  setValue: setMissedDeals,
+                  min: 0,
+                  max: 5,
+                  step: 1,
+                  format: (v: number) => `${v} deals`,
+                  icon: ScaleIcon
+                }
+              ].map((input, index) => (
+                <div key={input.label} className="relative">
+                  <div className="flex items-center gap-2 mb-2">
+                    <input.icon className="w-5 h-5 text-blue-600" />
+                    <label className="text-sm font-medium text-gray-700">
+                      {input.label}
+                    </label>
+                  </div>
+                  <input
+                    type="range"
+                    min={input.min}
+                    max={input.max}
+                    step={input.step}
+                    value={input.value}
+                    onChange={(e) => input.setValue(Number(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                  <p className="mt-2 text-sm font-medium text-blue-600">
+                    {input.format(input.value)}
+                  </p>
+                </div>
+              ))}
             </div>
           </motion.div>
 
@@ -200,83 +173,82 @@ export default function ROICalculator() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="bg-white rounded-2xl shadow-lg p-8"
+            className="bg-white rounded-2xl shadow-sm p-8 lg:sticky lg:top-8"
           >
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Potential Returns</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-8">Your Potential Returns</h3>
 
-            <div className="space-y-8">
-              <div>
-                <div className="flex items-center mb-2">
-                  <ClockIcon className="h-5 w-5 text-blue-600 mr-2" />
-                  <h4 className="text-lg font-medium text-gray-900">Time Savings</h4>
+            <div className="space-y-6">
+              {[
+                {
+                  icon: ClockIcon,
+                  title: "Time Savings",
+                  description: `${Math.round(annualTimeSaved)} hours saved annually`,
+                  value: timeSavingsValue,
+                  color: "blue"
+                },
+                {
+                  icon: CurrencyDollarIcon,
+                  title: "Deal Savings",
+                  description: "Through early access and multiple improvement",
+                  value: dealSavings + multiplesSavings,
+                  color: "green"
+                },
+                {
+                  icon: ScaleIcon,
+                  title: "Competition & Opportunity",
+                  description: "Value from reduced competition and missed deals",
+                  value: competitionImpact + missedDealCost,
+                  color: "purple"
+                }
+              ].map((result) => (
+                <div
+                  key={result.title}
+                  className={`bg-${result.color}-50 rounded-xl p-6 transition-all duration-200 hover:shadow-md`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <result.icon className={`h-6 w-6 text-${result.color}-600`} />
+                    <h4 className="text-lg font-medium text-gray-900">{result.title}</h4>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {result.description}
+                  </p>
+                  <p className={`text-2xl font-bold text-${result.color}-600`}>
+                    ${Math.round(result.value).toLocaleString()}
+                  </p>
                 </div>
-                <p className="text-sm text-gray-500 mb-2">
-                  {Math.round(annualTimeSaved)} hours saved annually
-                </p>
-                <p className="text-2xl font-bold text-blue-600">
-                  ${Math.round(timeSavingsValue).toLocaleString()} value
-                </p>
+              ))}
+
+              {/* Total ROI */}
+              <div className="mt-8 pt-8 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <ChartBarIcon className="h-6 w-6 text-indigo-600" />
+                    <h4 className="text-lg font-medium text-gray-900">Annual ROI</h4>
+                  </div>
+                  <span className="text-sm text-gray-500">
+                    Based on ${annualCost.toLocaleString()} annual investment
+                  </span>
+                </div>
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-6 shadow-lg">
+                  <p className="text-sm text-blue-100 mb-1">Net Return</p>
+                  <p className="text-3xl font-bold">${Math.round(netReturn).toLocaleString()}</p>
+                  <p className="text-sm text-blue-100 mt-2">
+                    {Math.round(roi)}% Return on Investment
+                  </p>
+                </div>
               </div>
 
-              <div>
-                <div className="flex items-center mb-2">
-                  <CurrencyDollarIcon className="h-5 w-5 text-green-600 mr-2" />
-                  <h4 className="text-lg font-medium text-gray-900">Deal Savings</h4>
-                </div>
-                <p className="text-sm text-gray-500 mb-2">
-                  Through early access and multiple improvement
-                </p>
-                <p className="text-2xl font-bold text-green-600">
-                  ${Math.round(dealSavings + multiplesSavings).toLocaleString()}
-                </p>
-              </div>
-
-              <div>
-                <div className="flex items-center mb-2">
-                  <ScaleIcon className="h-5 w-5 text-purple-600 mr-2" />
-                  <h4 className="text-lg font-medium text-gray-900">Competition & Opportunity</h4>
-                </div>
-                <p className="text-sm text-gray-500 mb-2">
-                  Value from reduced competition and missed deals
-                </p>
-                <p className="text-2xl font-bold text-purple-600">
-                  ${Math.round(competitionImpact + missedDealCost).toLocaleString()}
-                </p>
-              </div>
-
-              <div>
-                <div className="flex items-center mb-2">
-                  <ChartBarIcon className="h-5 w-5 text-indigo-600 mr-2" />
-                  <h4 className="text-lg font-medium text-gray-900">Net Return</h4>
-                </div>
-                <p className="text-sm text-gray-500 mb-2">
-                  After annual subscription cost
-                </p>
-                <p className="text-2xl font-bold text-indigo-600">
-                  ${Math.round(netReturn).toLocaleString()}
-                </p>
-                <p className="mt-1 text-sm font-medium text-gray-900">
-                  ROI: {Math.round(roi)}%
-                </p>
-              </div>
+              <motion.a
+                href="/sign-up"
+                className="mt-6 w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Start Free Trial
+              </motion.a>
             </div>
           </motion.div>
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mt-12 text-center"
-        >
-          <a
-            href="/sign-up"
-            className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
-          >
-            Start Your Free Trial
-          </a>
-        </motion.div>
       </div>
     </section>
   );

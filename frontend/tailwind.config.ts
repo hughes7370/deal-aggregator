@@ -9,6 +9,11 @@ export default {
   theme: {
     extend: {
       colors: {
+        brand: {
+          primary: '#4666F6',
+          secondary: '#3B5BDC',
+          accent: '#7C3AED',
+        },
         background: 'var(--background)',
         foreground: 'var(--foreground)',
       },

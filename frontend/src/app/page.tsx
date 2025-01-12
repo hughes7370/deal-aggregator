@@ -22,10 +22,10 @@ export default async function Home() {
     <main className="min-h-screen">
       <Hero />
       <BrokerLogos />
-      <SampleDeal />
+      <Features />
       <Pricing />
       <DealFlowOverview />
-      <Features />
+      <SampleDeal />
       <SuccessStories />
       <ROICalculator />
       <CTASection />

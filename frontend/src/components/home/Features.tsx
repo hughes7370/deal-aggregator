@@ -1,162 +1,222 @@
 'use client'
 
 import { 
+  GlobeAltIcon,
+  ListBulletIcon,
+  TableCellsIcon,
   SparklesIcon,
-  ChartBarIcon,
   BoltIcon,
-  ShieldCheckIcon,
-  DocumentMagnifyingGlassIcon,
-  BellAlertIcon,
-  ArrowTrendingUpIcon,
-  CurrencyDollarIcon,
 } from "@heroicons/react/24/outline";
 import { motion } from "framer-motion";
+import Image from 'next/image';
 
-const features = [
+const liveFeatures = [
   {
-    title: "AI-Powered Deal Analysis",
-    description: "Get instant insights on business health, growth trajectory, and risk factors using our advanced AI algorithms.",
+    title: "Unified Deal Flow",
+    description: "Never Miss Another Deal - First and only platform aggregating digital business listings across all major brokers in real-time.",
+    icon: GlobeAltIcon,
+    points: [
+      "Instant access to 15+ specialized digital brokers",
+      "Early notification of new SaaS, E-commerce, and Content listings",
+      "Custom alerts with advanced filtering",
+      "Save 30+ hours monthly on deal sourcing",
+      "Comprehensive coverage of $100K-$10M deals"
+    ],
+    image: "/images/platform/Alerts.png"
+  },
+  {
+    title: "Intelligent Deal Management",
+    description: "Find Exactly What You're Looking For - Powerful filtering and organization tools built for serious buyers.",
+    icon: ListBulletIcon,
+    points: [
+      "Advanced search across all listings",
+      "Custom deal views and filtering",
+      "Detailed metrics at a glance",
+      "Quick-action deal cards",
+      "Efficient deal organization"
+    ],
+    image: "/images/platform/Dashboard.png"
+  },
+  {
+    title: "Deal Pipeline Tracking",
+    description: "Track Your Opportunities - Professional-grade deal tracking system designed for digital acquisitions.",
+    icon: TableCellsIcon,
+    points: [
+      "Streamlined deal management",
+      "Status and progress tracking",
+      "Key metrics dashboard",
+      "Important dates monitoring",
+      "Deal notes and export options"
+    ],
+    image: "/images/platform/DealTracker.png"
+  }
+];
+
+const upcomingFeatures = [
+  {
+    title: "AI Deal Analysis",
+    description: "Make Faster, Smarter Decisions - Let our AI analyze each deal across 50+ quality metrics.",
     icon: SparklesIcon,
-    example: {
-      title: "Sample Analysis Report",
-      items: [
-        "Customer Cohort Analysis",
-        "Revenue Quality Score: 8.5/10",
-        "Growth Sustainability Index",
-        "Risk Factor Breakdown"
-      ]
-    }
+    points: [
+      "Instant quality scoring",
+      "Comprehensive risk assessment",
+      "Growth potential analysis",
+      "Comparable deal insights",
+      "Red flag detection"
+    ]
   },
   {
-    title: "Smart Deal Filtering",
-    description: "Save time with automated spam removal and intelligent ranking of high-potential opportunities based on your criteria.",
-    icon: DocumentMagnifyingGlassIcon,
-    example: {
-      title: "Filter Interface",
-      items: [
-        "Revenue Range: $100K-$5M",
-        "Industry: SaaS, Content, FBA",
-        "Growth Rate: >15% YoY",
-        "Profit Margins: >40%"
-      ]
-    }
-  },
-  {
-    title: "Market Comparables",
-    description: "Compare deals against our database of verified transactions to ensure you're getting the best value.",
-    icon: ChartBarIcon,
-    example: {
-      title: "Comparison Dashboard",
-      items: [
-        "Similar Deals Analysis",
-        "Industry Multiple Range",
-        "Valuation Benchmarks",
-        "Growth vs. Multiple Chart"
-      ]
-    }
-  },
-  {
-    title: "Priority Access",
-    description: "Get notified about matching deals before they're publicly listed, giving you a competitive edge.",
+    title: "Smart Deal Insights",
+    description: "Deep Deal Intelligence - Get instant insights on what matters most.",
     icon: BoltIcon,
-    example: {
-      title: "Alert System",
-      items: [
-        "48-Hour Early Access",
-        "Instant SMS/Email Alerts",
-        "One-Click Deal Review",
-        "Direct Broker Contact"
-      ]
-    }
-  },
-  {
-    title: "Risk Assessment",
-    description: "Comprehensive evaluation of customer concentration, churn rates, and other critical risk factors.",
-    icon: ShieldCheckIcon,
-    example: {
-      title: "Risk Dashboard",
-      items: [
-        "Customer Concentration",
-        "Platform Dependencies",
-        "Traffic Diversity Score",
-        "Competitive Analysis"
-      ]
-    }
-  },
-  {
-    title: "Performance Tracking",
-    description: "Track key performance metrics and identify growth opportunities in your target deals.",
-    icon: ArrowTrendingUpIcon,
-    example: {
-      title: "Metrics Dashboard",
-      items: [
-        "MRR/ARR Growth Trends",
-        "Customer Acquisition Cost",
-        "Lifetime Value Analysis",
-        "Margin Evolution"
-      ]
-    }
-  },
+    points: [
+      "Revenue quality analysis",
+      "Customer metrics evaluation",
+      "Market position scoring",
+      "Growth trajectory assessment",
+      "Operational assessment"
+    ]
+  }
 ];
 
 export default function Features() {
   return (
-    <section className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="pt-24 pb-32 gradient-light relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-indigo-100 to-transparent" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-purple-100 to-transparent" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center"
+          className="text-center mb-16"
         >
-          <h2 className="text-3xl font-bold text-gray-900">Powerful Features</h2>
-          <p className="mt-4 text-xl text-gray-500">
-            Everything you need to find and evaluate the perfect acquisition opportunity
+          <div className="inline-block px-4 py-2">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text" style={{ lineHeight: '1.6' }}>
+              Find High-Quality Digital Businesses<br />
+              <span className="inline-block py-3">Before Anyone Else</span>
+            </h2>
+          </div>
+          <p className="mt-6 text-xl text-gray-600">
+            Get exclusive 48-hour early access to verified listings from QuietLight, Empire Flippers,<br className="hidden sm:block" />
+            and 15+ specialized brokers - all in one place
           </p>
         </motion.div>
 
+        {/* Live Features */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3"
+          className="mt-16 space-y-16"
         >
-          {features.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 * index }}
-              className="relative p-8 bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-shadow duration-300"
-            >
-              <div className="h-12 w-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-                <feature.icon className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                {feature.title}
-              </h3>
-              <p className="text-gray-600 leading-relaxed mb-6">
-                {feature.description}
-              </p>
-              
-              <div className="pt-6 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  {feature.example.title}
-                </h4>
-                <ul className="space-y-2">
-                  {feature.example.items.map((item, i) => (
-                    <li key={i} className="flex items-center text-sm text-gray-500">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-2" />
-                      {item}
+          <div className="text-center">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+              LIVE NOW
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-24">
+            {liveFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 * index }}
+                className="relative"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                  <div className={`${!feature.image ? 'lg:col-span-2' : 'order-2 lg:order-1'}`}>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="h-12 w-12 rounded-xl flex items-center justify-center gradient-primary">
+                        <feature.icon className="h-6 w-6 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                        {feature.title}
+                      </h3>
+                    </div>
+                    <p className="text-gray-600 leading-relaxed mb-6">
+                      {feature.description}
+                    </p>
+                    <ul className="space-y-3">
+                      {feature.points.map((point, i) => (
+                        <li key={i} className="flex items-center text-sm text-gray-600">
+                          <span className="w-2 h-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mr-2" />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {feature.image && (
+                    <div className="order-1 lg:order-2">
+                      <div className="relative aspect-[16/10] rounded-xl overflow-hidden shadow-xl">
+                        <Image
+                          src={feature.image}
+                          alt={feature.title}
+                          fill
+                          className="object-contain bg-gray-50"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Coming Soon Features */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-24"
+        >
+          <div className="text-center mb-16">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              COMING SOON
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+            {upcomingFeatures.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 * index }}
+                className="relative p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 card-hover border border-indigo-50"
+              >
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center gradient-primary mb-6">
+                  <feature.icon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed mb-6">
+                  {feature.description}
+                </p>
+                <ul className="space-y-3">
+                  {feature.points.map((point, i) => (
+                    <li key={i} className="flex items-center text-sm text-gray-600">
+                      <span className="w-2 h-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mr-2" />
+                      {point}
                     </li>
                   ))}
                 </ul>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>

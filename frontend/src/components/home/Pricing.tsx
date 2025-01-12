@@ -1,78 +1,78 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { CheckIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, SparklesIcon, StarIcon, RocketLaunchIcon } from "@heroicons/react/24/outline";
 
 const tiers = [
   {
-    name: 'Basic',
-    price: 297,
-    description: 'Perfect for individual buyers starting their acquisition journey',
+    name: 'Explorer',
+    price: 'Free',
+    description: "Try DealSight's core features",
     features: [
-      'Daily deal alerts',
-      'Basic deal analysis',
-      'Market trends dashboard',
-      'Email support',
-      'Deal filtering',
-      'Basic comparables',
-      '1 saved search',
-      'Basic export options',
-      '1 team seat',
-      'Simple deal tracking',
+      'Basic listing aggregation across platforms',
+      '5 saved searches',
+      'Daily digest alerts',
+      'Basic deal tracker (up to 10 deals)',
+      'Limited to publicly available listings',
+      'AI basic scoring (Pending)',
     ],
-    cta: 'Start Basic Trial',
+    cta: 'Get Started Free',
     highlight: false,
+    gradient: 'from-brand-primary/80 to-brand-secondary/80',
+    bgGradient: 'from-brand-primary/5 to-brand-secondary/5'
   },
   {
-    name: 'Pro',
-    price: 697,
-    description: 'For serious buyers looking for competitive advantage',
+    name: 'Professional',
+    price: 79,
+    description: 'For serious individual buyers',
     features: [
-      '4-hour early access alerts',
-      'Full AI-powered analysis',
-      'Advanced market analytics',
-      'Priority support',
-      'Advanced filtering',
-      'Detailed comparables',
-      '10 saved searches',
-      'Advanced exports',
-      '3 team seats',
-      'Full deal pipeline',
-      'Due diligence checklist',
-      'Deal negotiation insights',
+      'All Explorer features',
+      'Unlimited saved searches',
+      'Instant or custom schedule alerts',
+      'Advanced filtering options',
+      'Advanced deal tracker (unlimited)',
+      'Access to broker-direct listings',
+      'Custom deal flow integrations',
+      'AI basic scoring (Pending)',
+      'Deep AI analysis (Pending)',
+      'Export capabilities',
     ],
     cta: 'Start Pro Trial',
     highlight: true,
     popular: true,
+    gradient: 'from-brand-primary to-brand-secondary',
+    bgGradient: 'from-brand-primary/10 to-brand-secondary/10'
   },
   {
     name: 'Enterprise',
-    price: 'Custom',
-    description: 'For professional buyers and investment firms',
+    price: 199,
+    description: 'For brokers & acquisition teams',
     features: [
-      'Instant deal alerts',
-      'Custom analysis framework',
-      'API access',
+      'All Professional features',
+      'Priority alert processing',
+      'Custom alert rules and filtering',
+      'Unlimited AI basic scoring (Pending)',
+      'Premium Deep AI analysis (Pending)',
+      'Premium support',
       'Dedicated account manager',
-      'White-label reports',
-      'Team collaboration',
-      'Unlimited saved searches',
-      'Custom exports',
-      'Unlimited team seats',
-      'Custom pipeline',
-      'Full due diligence suite',
-      'M&A advisory services',
-      'Deal flow automation',
     ],
     cta: 'Contact Sales',
     highlight: false,
+    gradient: 'from-brand-secondary to-brand-accent',
+    bgGradient: 'from-brand-secondary/10 to-brand-accent/10'
   },
 ];
 
 export default function Pricing() {
   return (
-    <section className="py-24 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-brand-primary/20 to-transparent" />
+        <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-brand-secondary/20 to-transparent" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -80,8 +80,10 @@ export default function Pricing() {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          <h2 className="text-3xl font-bold text-gray-900">Transparent Pricing</h2>
-          <p className="mt-4 text-xl text-gray-500">
+          <h2 className="text-4xl font-bold text-gradient-primary">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="mt-4 text-xl text-gray-600">
             Choose the plan that best fits your acquisition strategy
           </p>
         </motion.div>
@@ -95,53 +97,60 @@ export default function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative bg-white rounded-2xl shadow-lg p-8 ${
-                tier.highlight ? 'ring-2 ring-blue-600' : ''
+              className={`relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm p-8 border border-brand-primary/10 hover:border-brand-primary/20 transition-all duration-300 ${
+                tier.highlight ? 'ring-2 ring-brand-primary' : ''
               }`}
             >
               {tier.popular && (
-                <div className="absolute top-0 right-0 -mt-4 -mr-4">
-                  <div className="inline-flex items-center rounded-full bg-blue-600 px-4 py-1 text-sm font-semibold text-white shadow-sm">
-                    <SparklesIcon className="mr-1.5 h-4 w-4" />
+                <div className="absolute -top-5 inset-x-0 flex justify-center">
+                  <div className="inline-flex items-center rounded-full gradient-primary px-4 py-1 text-sm font-medium text-white shadow-lg">
+                    <StarIcon className="mr-1.5 h-4 w-4" />
                     Most Popular
                   </div>
                 </div>
               )}
+              
               <div className="text-center">
-                <h3 className="text-2xl font-semibold text-gray-900">{tier.name}</h3>
-                <p className="mt-4 text-gray-500">{tier.description}</p>
-                <p className="mt-8">
+                <h3 className={`text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${tier.gradient}`}>
+                  {tier.name}
+                </h3>
+                <p className="mt-4 text-gray-600 min-h-[48px]">{tier.description}</p>
+                <div className={`mt-8 p-4 rounded-xl bg-gradient-to-r ${tier.bgGradient}`}>
                   {typeof tier.price === 'number' ? (
-                    <>
+                    <div className="flex items-baseline justify-center gap-1">
                       <span className="text-4xl font-bold text-gray-900">${tier.price}</span>
-                      <span className="text-gray-500">/month</span>
-                    </>
+                      <span className="text-gray-600">/month</span>
+                    </div>
                   ) : (
                     <span className="text-4xl font-bold text-gray-900">{tier.price}</span>
                   )}
-                </p>
+                </div>
               </div>
 
               <ul className="mt-8 space-y-4">
                 {tier.features.map((feature) => (
-                  <li key={feature} className="flex items-center">
-                    <CheckIcon className="h-5 w-5 text-green-500 mr-3" />
+                  <li key={feature} className="flex items-start gap-3">
+                    <div className={`mt-1 flex-shrink-0 h-5 w-5 rounded-full bg-gradient-to-r ${tier.gradient} p-1`}>
+                      <CheckIcon className="h-3 w-3 text-white" />
+                    </div>
                     <span className="text-gray-600">{feature}</span>
                   </li>
                 ))}
               </ul>
 
               <div className="mt-8">
-                <a
+                <motion.a
                   href={tier.name === 'Enterprise' ? '/contact' : '/sign-up'}
-                  className={`block w-full text-center px-6 py-3 rounded-md text-sm font-semibold ${
+                  className={`block w-full text-center px-6 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     tier.highlight
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      ? 'gradient-primary text-white shadow-lg hover:shadow-xl'
+                      : `bg-gradient-to-r ${tier.gradient} text-white shadow hover:shadow-md`
                   }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {tier.cta}
-                </a>
+                </motion.a>
               </div>
             </motion.div>
           ))}
@@ -153,43 +162,52 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mt-24 bg-white rounded-2xl shadow-lg p-8 text-center"
+          className="mt-24 bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm p-8 text-center border border-brand-primary/10"
         >
-          <h3 className="text-2xl font-bold text-gray-900">Start Your Free Trial Today</h3>
-          <div className="mt-8 grid gap-6 md:grid-cols-4">
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900">No Credit Card Required</h4>
-              <p className="mt-2 text-gray-500">
-                Start your trial without any commitment
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900">Full Pro Features</h4>
-              <p className="mt-2 text-gray-500">
-                Access all Pro features for 14 days
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900">Cancel Anytime</h4>
-              <p className="mt-2 text-gray-500">
-                No questions asked, easy cancellation
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900">Special Offer</h4>
-              <p className="mt-2 text-gray-500">
-                50% off first 3 months if you upgrade
-              </p>
-            </div>
+          <h3 className="text-2xl font-bold text-gradient-primary">
+            Start With Explorer Today
+          </h3>
+          <div className="mt-8 grid gap-8 md:grid-cols-4">
+            {[
+              {
+                title: 'No Credit Card Required',
+                description: 'Start exploring without any commitment'
+              },
+              {
+                title: 'Upgrade Anytime',
+                description: 'Scale up as your needs grow'
+              },
+              {
+                title: 'Easy to Use',
+                description: 'Intuitive interface, no learning curve'
+              },
+              {
+                title: 'Premium Support',
+                description: 'Help when you need it'
+              }
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 * index }}
+                className="p-4 rounded-xl bg-gradient-to-r from-brand-primary/5 to-brand-secondary/5"
+              >
+                <h4 className="text-lg font-semibold text-gray-900">{item.title}</h4>
+                <p className="mt-2 text-gray-600">{item.description}</p>
+              </motion.div>
+            ))}
           </div>
-          <div className="mt-12">
-            <a
-              href="/sign-up"
-              className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
-            >
-              Start Your Free Trial
-            </a>
-          </div>
+          <motion.a
+            href="/sign-up"
+            className="mt-12 inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-lg text-white gradient-primary shadow-lg hover:shadow-xl transition-all duration-200"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <RocketLaunchIcon className="mr-2 h-5 w-5" />
+            Get Started Free
+          </motion.a>
         </motion.div>
       </div>
     </section>

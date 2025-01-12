@@ -2,8 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Brand Colors */
+  --brand-primary: #4666F6;
+  --brand-secondary: #3B5BDC;
+  --brand-accent: #7C3AED;
+  
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+  --gradient-accent: linear-gradient(135deg, var(--brand-secondary), var(--brand-accent));
+  
+  /* Background Colors */
+  --background-light: #f8fafc;
+  --background-dark: #f1f5f9;
+}
+
 html {
   scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background-light);
 }
 
 /* Add visual separation between sections */
@@ -20,5 +39,41 @@ section::after {
   width: 100%;
   max-width: 1280px;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgb(229 231 235), transparent);
+  background: linear-gradient(to right, transparent, rgb(203 213 225), transparent);
+}
+
+/* Add subtle gradient backgrounds */
+.gradient-light {
+  background: linear-gradient(135deg, var(--background-light), var(--background-dark));
+}
+
+.gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.gradient-accent {
+  background: var(--gradient-accent);
+}
+
+/* Brand text gradients */
+.text-gradient-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-accent {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Card styles */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 } 
