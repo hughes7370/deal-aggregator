@@ -25,7 +25,7 @@ type Filters = {
 
 const STATUS_OPTIONS = ['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
-const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Other'];
+const TYPE_OPTIONS = ['SaaS', 'E-commerce', 'Content', 'Service', 'Marketplace', 'Other'];
 const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 
 export default function FilterControls({ isOpen, onClose, filters, onApplyFilters }: FilterControlsProps) {
@@ -47,10 +47,10 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
     });
   }, [filters]);
 
-  const handleFilterChange = (type: string, value: string) => {
+  const handleFilterChange = (type: keyof Filters, value: string) => {
     console.log('FilterControls: Handling filter change:', { type, value });
     setLocalFilters(prev => {
-      const currentValues = Array.isArray(prev[type]) ? prev[type] : [];
+      const currentValues = prev[type] || [];
       const newValues = currentValues.includes(value)
         ? currentValues.filter(v => v !== value)
         : [...currentValues, value];
@@ -66,7 +66,14 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
 
   const handleApply = () => {
     console.log('FilterControls: Applying filters:', localFilters);
-    onApplyFilters(localFilters);
+    // Ensure we're passing non-empty arrays only
+    const cleanedFilters = {
+      status: localFilters.status?.filter(Boolean) || [],
+      priority: localFilters.priority?.filter(Boolean) || [],
+      type: localFilters.type?.filter(Boolean) || [],
+      next_steps: localFilters.next_steps?.filter(Boolean) || []
+    };
+    onApplyFilters(cleanedFilters);
     onClose();
   };
 

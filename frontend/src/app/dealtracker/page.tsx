@@ -573,43 +573,60 @@ export default function DealTracker() {
 
   // Filter the listings based on current filters
   const filteredListings = useMemo(() => {
-    console.log('Filtering listings with filters:', filters);
+    console.log('Applying filters:', filters);
     console.log('Total listings before filter:', savedListings.length);
     
-    const filtered = savedListings.filter(listing => {
+    return savedListings.filter(listing => {
       // If no filters are set, show all listings
-      if (!filters.status?.length && !filters.priority?.length && !filters.type?.length && !filters.next_steps?.length) {
+      const hasActiveFilters = Object.values(filters).some(arr => arr && arr.length > 0);
+      if (!hasActiveFilters) {
         return true;
       }
 
-      const matchesStatus = !filters.status?.length || 
-        filters.status.includes(listing.deal_tracker?.status || 'Interested');
-      
-      const matchesPriority = !filters.priority?.length || 
-        filters.priority.includes(listing.deal_tracker?.priority || 'Medium');
-      
-      const matchesType = !filters.type?.length || 
-        filters.type.includes(listing.listings.business_model);
-      
-      const matchesNextSteps = !filters.next_steps?.length || 
-        filters.next_steps.includes(listing.deal_tracker?.next_steps || 'Review Listing');
+      // Get the deal tracker values, using defaults if not set
+      const status = listing.deal_tracker?.status || 'Interested';
+      const priority = listing.deal_tracker?.priority || 'Medium';
+      const type = listing.listings.business_model;
+      const nextSteps = listing.deal_tracker?.next_steps || 'Review Listing';
 
-      // Log individual filter matches for debugging
-      if (!matchesStatus || !matchesPriority || !matchesType || !matchesNextSteps) {
-        console.log('Filter miss for listing:', {
-          listingId: listing.listings.id,
-          status: { matches: matchesStatus, value: listing.deal_tracker?.status || 'Interested', filter: filters.status },
-          priority: { matches: matchesPriority, value: listing.deal_tracker?.priority || 'Medium', filter: filters.priority },
-          type: { matches: matchesType, value: listing.listings.business_model, filter: filters.type },
-          nextSteps: { matches: matchesNextSteps, value: listing.deal_tracker?.next_steps || 'Review Listing', filter: filters.next_steps }
-        });
-      }
+      // Check each filter condition
+      const matchesStatus = !filters.status?.length || filters.status.includes(status);
+      const matchesPriority = !filters.priority?.length || filters.priority.includes(priority);
+      
+      // Special handling for business type to match database values
+      const matchesType = !filters.type?.length || filters.type.some(filterType => {
+        // Handle special cases for business model matching
+        if (filterType === 'E-commerce' && (type === 'Ecommerce' || type === 'E-commerce' || type === 'FBA')) {
+          return true;
+        }
+        if (filterType === 'Service' && (type === 'Service' || type === 'Agency' || type === 'Services')) {
+          return true;
+        }
+        if (filterType === 'SaaS' && (type === 'SaaS' || type === 'Software')) {
+          return true;
+        }
+        return type === filterType;
+      });
+      
+      const matchesNextSteps = !filters.next_steps?.length || filters.next_steps.includes(nextSteps);
 
+      // Log filter matches for debugging
+      console.log('Filtering listing:', {
+        id: listing.listings.id,
+        type,
+        filters: filters.type,
+        matchesType,
+        status,
+        matchesStatus,
+        priority,
+        matchesPriority,
+        nextSteps,
+        matchesNextSteps
+      });
+
+      // Return true only if all applicable filters match
       return matchesStatus && matchesPriority && matchesType && matchesNextSteps;
     });
-
-    console.log('Filtered listings count:', filtered.length);
-    return filtered;
   }, [savedListings, filters]);
 
   return (
