@@ -150,7 +150,7 @@ export default function DealFlowPage() {
         }
 
         // Calculate time listed
-        const timeDiff = Date.now() - new Date(listing.first_seen_at).getTime();
+        const timeDiff = Date.now() - new Date(listing.created_at).getTime();
         const hoursListed = Math.floor(timeDiff / (1000 * 60 * 60));
         const daysListed = Math.floor(hoursListed / 24);
 

@@ -50,9 +50,6 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export default function DealTracker() {
   const { user } = useUser();
   const { getToken } = useAuth();
-  const [supabaseClient, setSupabaseClient] = useState(() => 
-    createClient(supabaseUrl, supabaseAnonKey)
-  );
   const [savedListings, setSavedListings] = useState<SavedListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
@@ -209,49 +206,9 @@ export default function DealTracker() {
     }
   };
 
-  // Set up authenticated Supabase client
-  useEffect(() => {
-    const setupSupabase = async () => {
-      if (!user) {
-        console.log('No user found, using anonymous Supabase client');
-        return;
-      }
-
-      try {
-        // Get token with specific template
-        const token = await getToken({ template: "supabase" });
-        
-        if (!token) {
-          console.error('Failed to get Clerk JWT token');
-          return;
-        }
-
-        // Create a new Supabase client with the token
-        const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: {
-            persistSession: false
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        });
-
-        console.log('Created authenticated Supabase client');
-        setSupabaseClient(authenticatedClient);
-
-      } catch (error) {
-        console.error('Error in Supabase auth setup:', error);
-      }
-    };
-
-    setupSupabase();
-  }, [user, getToken]);
-
   useEffect(() => {
     fetchSavedListings();
-  }, [supabaseClient]);
+  }, [user]);
 
   const fetchSavedListings = async () => {
     try {
@@ -494,13 +451,30 @@ export default function DealTracker() {
     const userEmail = user.emailAddresses[0].emailAddress;
 
     try {
+      // Get fresh token and client for this operation
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
       // Get the selected listings with their listing_ids
       const selectedListings = savedListings.filter(sl => selectedItems.has(sl.listings.id));
       
       for (const listing of selectedListings) {
         if (!listing.deal_tracker) {
           // Create new deal tracker entry
-          await supabaseClient
+          await client
             .from('deal_tracker')
             .insert({
               user_email: userEmail,
@@ -512,7 +486,7 @@ export default function DealTracker() {
             });
         } else {
           // Update existing deal tracker entry
-          await supabaseClient
+          await client
             .from('deal_tracker')
             .update({
               status: action,
@@ -523,28 +497,10 @@ export default function DealTracker() {
         }
       }
 
-      // Update local state
-      setSavedListings(prev => prev.map(sl => 
-        selectedItems.has(sl.listings.id)
-          ? { 
-              ...sl, 
-              deal_tracker: {
-                id: sl.deal_tracker?.id || sl.listing_id,
-                status: action,
-                next_steps: sl.deal_tracker?.next_steps || 'Review Listing',
-                priority: sl.deal_tracker?.priority || 'Medium',
-                notes: sl.deal_tracker?.notes || '',
-                last_updated: new Date().toISOString(),
-                created_at: sl.deal_tracker?.created_at || new Date().toISOString(),
-              }
-            }
-          : sl
-      ));
-
-      // Clear selection
-      setSelectedItems(new Set());
+      await fetchSavedListings();
     } catch (error) {
-      console.error('Error performing bulk action:', error);
+      console.error('Error in bulk action:', error);
+      await fetchSavedListings();
     }
   };
 
