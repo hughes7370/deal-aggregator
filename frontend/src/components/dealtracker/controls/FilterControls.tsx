@@ -24,37 +24,39 @@ const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call',
 export default function FilterControls({ isOpen, onClose, filters, onApplyFilters }: FilterControlsProps) {
   const [localFilters, setLocalFilters] = useState(filters);
 
-  // Update local filters when props change
+  // Keep local filters in sync with parent filters
   useEffect(() => {
     setLocalFilters(filters);
   }, [filters]);
 
-  const handleFilterChange = (category: string, value: string) => {
-    const currentFilters = localFilters[category as keyof typeof localFilters] || [];
-    const newFilters = currentFilters.includes(value)
-      ? currentFilters.filter(v => v !== value)
-      : [...currentFilters, value];
-
-    setLocalFilters({
-      ...localFilters,
-      [category]: newFilters,
+  const handleFilterChange = (type: string, value: string) => {
+    setLocalFilters(prev => {
+      const currentValues = prev[type] || [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter(v => v !== value)
+        : [...currentValues, value];
+      
+      return {
+        ...prev,
+        [type]: newValues
+      };
     });
   };
 
-  const handleApplyFilters = () => {
+  const handleApply = () => {
     onApplyFilters(localFilters);
     onClose();
   };
 
-  const clearFilters = () => {
-    const emptyFilters = {
+  const handleClear = () => {
+    const clearedFilters = {
       status: [],
       priority: [],
       type: [],
-      next_steps: [],
+      next_steps: []
     };
-    setLocalFilters(emptyFilters);
-    onApplyFilters(emptyFilters);
+    setLocalFilters(clearedFilters);
+    onApplyFilters(clearedFilters);
   };
 
   return (
@@ -209,14 +211,14 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                   <button
                     type="button"
                     className="inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto"
-                    onClick={clearFilters}
+                    onClick={handleClear}
                   >
                     Clear All
                   </button>
                   <button
                     type="button"
                     className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
-                    onClick={handleApplyFilters}
+                    onClick={handleApply}
                   >
                     Apply Filters
                   </button>

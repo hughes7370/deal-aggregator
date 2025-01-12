@@ -59,11 +59,38 @@ export default function DealTracker() {
     field: 'last_updated',
     direction: 'desc'
   });
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>({
+    status: [],
+    priority: [],
+    type: [],
+    next_steps: []
+  });
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
+
+  // Keep filters in localStorage
+  useEffect(() => {
+    // Load filters from localStorage on mount
+    const savedFilters = localStorage.getItem('dealTrackerFilters');
+    console.log('Initial load - Saved filters from localStorage:', savedFilters);
+    if (savedFilters) {
+      try {
+        const parsedFilters = JSON.parse(savedFilters);
+        console.log('Parsed filters:', parsedFilters);
+        setFilters(parsedFilters);
+      } catch (e) {
+        console.error('Error parsing saved filters:', e);
+      }
+    }
+  }, []);
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    console.log('Saving filters to localStorage:', filters);
+    localStorage.setItem('dealTrackerFilters', JSON.stringify(filters));
+  }, [filters]);
 
   // Set up authenticated Supabase client
   useEffect(() => {
@@ -227,8 +254,12 @@ export default function DealTracker() {
   }, [user]);
 
   const handleUpdateDeal = async (listingId: string, field: string, value: string | number) => {
+    console.log('Updating deal:', { listingId, field, value });
     try {
-      if (!user?.emailAddresses?.[0]?.emailAddress) return;
+      if (!user?.emailAddresses?.[0]?.emailAddress) {
+        console.error('No user email found for update');
+        return;
+      }
       const userEmail = user.emailAddresses[0].emailAddress;
 
       // Get fresh token and client for this operation
@@ -255,28 +286,35 @@ export default function DealTracker() {
         return;
       }
 
+      console.log('Found saved listing:', savedListing);
+
       // Update local state first
       const updatedListings = savedListings.map(sl => {
         if (sl.listings.id !== listingId) return sl;
         
+        const updatedDealTracker = {
+          ...(sl.deal_tracker || {}),
+          id: sl.deal_tracker?.id || savedListing.listing_id,
+          status: field === 'status' ? String(value) : sl.deal_tracker?.status || 'Interested',
+          next_steps: field === 'next_steps' ? String(value) : sl.deal_tracker?.next_steps || 'Review Listing',
+          priority: field === 'priority' ? String(value) : sl.deal_tracker?.priority || 'Medium',
+          notes: field === 'notes' ? String(value) : sl.deal_tracker?.notes || '',
+          last_updated: new Date().toISOString(),
+          created_at: sl.deal_tracker?.created_at || new Date().toISOString(),
+        };
+
+        console.log('Updated deal tracker:', updatedDealTracker);
+        
         return {
           ...sl,
-          deal_tracker: {
-            ...(sl.deal_tracker || {}),
-            id: sl.deal_tracker?.id || savedListing.listing_id,
-            status: field === 'status' ? String(value) : sl.deal_tracker?.status || 'Interested',
-            next_steps: field === 'next_steps' ? String(value) : sl.deal_tracker?.next_steps || 'Review Listing',
-            priority: field === 'priority' ? String(value) : sl.deal_tracker?.priority || 'Medium',
-            notes: field === 'notes' ? String(value) : sl.deal_tracker?.notes || '',
-            last_updated: new Date().toISOString(),
-            created_at: sl.deal_tracker?.created_at || new Date().toISOString(),
-          }
+          deal_tracker: updatedDealTracker
         };
       });
 
       setSavedListings(updatedListings);
 
       if (!savedListing?.deal_tracker) {
+        console.log('Creating new deal tracker entry');
         // Create new deal tracker entry
         const { error: createError } = await client
           .from('deal_tracker')
@@ -296,6 +334,7 @@ export default function DealTracker() {
           return;
         }
       } else {
+        console.log('Updating existing deal tracker entry');
         // Update existing deal tracker entry
         const { error: updateError } = await client
           .from('deal_tracker')
@@ -313,7 +352,7 @@ export default function DealTracker() {
         }
       }
 
-      // Fetch fresh data after successful update
+      console.log('Successfully updated deal');
       await fetchSavedListings();
     } catch (error) {
       console.error('Error in handleUpdateDeal:', error);
@@ -444,13 +483,25 @@ export default function DealTracker() {
   };
 
   const handleApplyFilters = (newFilters: Filters) => {
-    setFilters(newFilters);
+    console.log('Applying new filters:', newFilters);
+    // Ensure we maintain the filter structure
+    const updatedFilters = {
+      status: newFilters.status || [],
+      priority: newFilters.priority || [],
+      type: newFilters.type || [],
+      next_steps: newFilters.next_steps || []
+    };
+    console.log('Structured filters to apply:', updatedFilters);
+    setFilters(updatedFilters);
     setIsFilterModalOpen(false);
   };
 
   // Filter the listings based on current filters
   const filteredListings = useMemo(() => {
-    return savedListings.filter(listing => {
+    console.log('Filtering listings with filters:', filters);
+    console.log('Total listings before filter:', savedListings.length);
+    
+    const filtered = savedListings.filter(listing => {
       // If no filters are set, show all listings
       if (!filters.status?.length && !filters.priority?.length && !filters.type?.length && !filters.next_steps?.length) {
         return true;
@@ -468,8 +519,22 @@ export default function DealTracker() {
       const matchesNextSteps = !filters.next_steps?.length || 
         filters.next_steps.includes(listing.deal_tracker?.next_steps || 'Review Listing');
 
+      // Log individual filter matches for debugging
+      if (!matchesStatus || !matchesPriority || !matchesType || !matchesNextSteps) {
+        console.log('Filter miss for listing:', {
+          listingId: listing.listings.id,
+          status: { matches: matchesStatus, value: listing.deal_tracker?.status || 'Interested', filter: filters.status },
+          priority: { matches: matchesPriority, value: listing.deal_tracker?.priority || 'Medium', filter: filters.priority },
+          type: { matches: matchesType, value: listing.listings.business_model, filter: filters.type },
+          nextSteps: { matches: matchesNextSteps, value: listing.deal_tracker?.next_steps || 'Review Listing', filter: filters.next_steps }
+        });
+      }
+
       return matchesStatus && matchesPriority && matchesType && matchesNextSteps;
     });
+
+    console.log('Filtered listings count:', filtered.length);
+    return filtered;
   }, [savedListings, filters]);
 
   return (

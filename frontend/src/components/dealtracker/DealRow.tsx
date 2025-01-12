@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SelectField from './SelectField';
 
 interface DealRowProps {
@@ -87,11 +87,73 @@ const getPriorityColor = (priority: string) => {
 export default function DealRow({ listing, dealTracker, onUpdate, isSelected, onSelect, statusColor }: DealRowProps) {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(dealTracker?.notes || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleNotesBlur = () => {
+  useEffect(() => {
+    console.log('DealRow: Notes updated from props:', {
+      listingId: listing.id,
+      newNotes: dealTracker?.notes,
+      oldNotes: notesValue
+    });
+    setNotesValue(dealTracker?.notes || '');
+  }, [dealTracker?.notes]);
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    console.log('DealRow: Notes changing:', {
+      listingId: listing.id,
+      oldValue: notesValue,
+      newValue
+    });
+    setNotesValue(newValue);
+    setError(null);
+  };
+
+  const handleNotesBlur = async () => {
+    console.log('DealRow: Notes blur event:', {
+      listingId: listing.id,
+      currentValue: notesValue,
+      originalValue: dealTracker?.notes,
+      isSaving
+    });
+
+    if (notesValue !== dealTracker?.notes && !isSaving) {
+      setIsSaving(true);
+      setError(null);
+      try {
+        console.log('DealRow: Saving notes:', {
+          listingId: listing.id,
+          newValue: notesValue
+        });
+        await onUpdate(listing.id, 'notes', notesValue);
+        console.log('DealRow: Notes saved successfully');
+      } catch (error) {
+        console.error('DealRow: Error saving notes:', error);
+        setError('Failed to save notes. Please try again.');
+        setNotesValue(dealTracker?.notes || '');
+      } finally {
+        setIsSaving(false);
+      }
+    }
     setIsEditingNotes(false);
-    if (notesValue !== dealTracker?.notes) {
-      onUpdate(listing.id, 'notes', notesValue);
+  };
+
+  const handleNotesKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    console.log('DealRow: Key pressed:', {
+      key: e.key,
+      shiftKey: e.shiftKey,
+      listingId: listing.id
+    });
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleNotesBlur();
+    } else if (e.key === 'Escape') {
+      console.log('DealRow: Canceling edit');
+      setIsEditingNotes(false);
+      setNotesValue(dealTracker?.notes || '');
+      setError(null);
     }
   };
 
@@ -139,19 +201,52 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
       </td>
       <td className="w-48 px-3 py-2">
         {isEditingNotes ? (
-          <textarea
-            value={notesValue}
-            onChange={(e) => setNotesValue(e.target.value)}
-            onBlur={handleNotesBlur}
-            autoFocus
-            className="w-full p-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+          <div className="relative">
+            <textarea
+              value={notesValue}
+              onChange={handleNotesChange}
+              onBlur={handleNotesBlur}
+              onKeyDown={handleNotesKeyDown}
+              autoFocus
+              rows={2}
+              disabled={isSaving}
+              className={`w-full p-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                isSaving ? 'bg-gray-50 cursor-wait' : ''
+              } ${error ? 'border-red-300 focus:ring-red-500' : ''}`}
+              placeholder="Add notes..."
+            />
+            {isSaving && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50">
+                <span className="text-xs text-gray-500">Saving...</span>
+              </div>
+            )}
+            {error && (
+              <div className="absolute -bottom-4 left-0 right-0">
+                <span className="text-xs text-red-500">{error}</span>
+              </div>
+            )}
+          </div>
         ) : (
           <div
-            onClick={() => setIsEditingNotes(true)}
-            className="text-xs text-gray-900 cursor-pointer truncate max-w-[200px]"
+            onClick={() => {
+              if (!isSaving) {
+                console.log('DealRow: Starting note edit for listing:', listing.id);
+                setIsEditingNotes(true);
+                setError(null);
+              }
+            }}
+            className={`text-xs text-gray-900 cursor-text hover:bg-gray-50 rounded p-1.5 min-h-[2rem] flex items-center group relative ${
+              isSaving ? 'cursor-wait opacity-50' : ''
+            } ${error ? 'border-red-300' : ''}`}
           >
-            {dealTracker?.notes || 'Click to add notes...'}
+            <span className={`${dealTracker?.notes ? '' : 'text-gray-400 italic'} whitespace-pre-wrap break-words`}>
+              {dealTracker?.notes || 'Click to add notes...'}
+            </span>
+            {!isSaving && !error && (
+              <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-gray-400">
+                Click to edit
+              </span>
+            )}
           </div>
         )}
       </td>
