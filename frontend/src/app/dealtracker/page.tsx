@@ -888,58 +888,87 @@ export default function DealTracker() {
         }
       });
 
-      // Find the current listing and its override
+      // Find the current listing
       const listing = savedListings.find(sl => sl.listings.id === listingId);
       if (!listing) throw new Error('Listing not found');
+
+      // Check if this is a manual listing by looking at the source_platform
+      const isManualListing = listing.listings.source_platform === 'Manual Entry';
 
       // Update local state first for optimistic UI
       const updatedListings = savedListings.map(sl => {
         if (sl.listings.id !== listingId) return sl;
 
-        const updatedOverride = {
-          ...(sl.listing_override || {
-            user_email: userEmail,
-            listing_id: listingId,
-            created_at: new Date().toISOString(),
-          }),
-          [field]: value,
-          updated_at: new Date().toISOString()
-        };
+        if (isManualListing) {
+          // For manual listings, update the listings object directly
+          return {
+            ...sl,
+            listings: {
+              ...sl.listings,
+              [field]: value
+            }
+          };
+        } else {
+          // For regular listings, update the override
+          const updatedOverride = {
+            ...(sl.listing_override || {
+              user_email: userEmail,
+              listing_id: listingId,
+              created_at: new Date().toISOString(),
+            }),
+            [field]: value,
+            updated_at: new Date().toISOString()
+          };
 
-        return {
-          ...sl,
-          listing_override: updatedOverride
-        };
+          return {
+            ...sl,
+            listing_override: updatedOverride
+          };
+        }
       });
 
       setSavedListings(updatedListings as SavedListing[]);
 
-      // Then update the database
-      if (!listing.listing_override) {
-        // Create new override
-        const { error: createError } = await client
-          .from('listing_overrides')
-          .insert({
-            user_email: userEmail,
-            listing_id: listingId,
-            [field]: value,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (createError) throw createError;
-      } else {
-        // Update existing override
+      if (isManualListing) {
+        // Update the manual_listings table directly
         const { error: updateError } = await client
-          .from('listing_overrides')
+          .from('manual_listings')
           .update({
             [field]: value,
             updated_at: new Date().toISOString()
           })
-          .eq('listing_id', listingId)
+          .eq('id', listingId)
           .eq('user_email', userEmail);
 
         if (updateError) throw updateError;
+      } else {
+        // Handle regular listings with overrides as before
+        if (!listing.listing_override) {
+          // Create new override
+          const { error: createError } = await client
+            .from('listing_overrides')
+            .insert({
+              user_email: userEmail,
+              listing_id: listingId,
+              [field]: value,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (createError) throw createError;
+        } else {
+          // Update existing override
+          const { error: updateError } = await client
+            .from('listing_overrides')
+            .update({
+              [field]: value,
+              updated_at: new Date().toISOString()
+            })
+            .eq('listing_id', listingId)
+            .eq('user_email', userEmail);
+
+          if (updateError) throw updateError;
+        }
       }
     } catch (error) {
       console.error('Error in handleUpdateOverride:', error);
