@@ -70,47 +70,114 @@ export default function DealTracker() {
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
 
-  // Keep filters in localStorage
+  // Load filters from Supabase
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return;
+    const loadFilters = async () => {
+      if (!user?.emailAddresses?.[0]?.emailAddress) {
+        console.log('No user email found');
+        return;
+      }
 
-    try {
-      // Load filters from localStorage on mount
-      const savedFilters = localStorage.getItem('dealTrackerFilters');
-      console.log('Initial load - Saved filters from localStorage:', savedFilters);
-      if (savedFilters) {
-        const parsedFilters = JSON.parse(savedFilters);
-        console.log('Parsed filters:', parsedFilters);
-        if (parsedFilters && typeof parsedFilters === 'object') {
-          setFilters({
-            status: Array.isArray(parsedFilters.status) ? parsedFilters.status : [],
-            priority: Array.isArray(parsedFilters.priority) ? parsedFilters.priority : [],
-            type: Array.isArray(parsedFilters.type) ? parsedFilters.type : [],
-            next_steps: Array.isArray(parsedFilters.next_steps) ? parsedFilters.next_steps : []
-          });
+      try {
+        // Get fresh token and client for this operation
+        const token = await getToken({ template: "supabase" });
+        if (!token) {
+          throw new Error('Failed to get authentication token');
         }
-      }
-    } catch (e) {
-      console.error('Error loading filters from localStorage:', e);
-    }
-  }, []);
 
-  // Save filters to localStorage whenever they change
+        const client = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        });
+
+        const userEmail = user.emailAddresses[0].emailAddress;
+        console.log('Loading filters for user:', userEmail);
+
+        const { data, error } = await client
+          .from('user_filters')
+          .select('filters')
+          .eq('user_email', userEmail)
+          .eq('page', 'deal_tracker')
+          .single();
+
+        if (error) {
+          console.error('Error loading filters:', error);
+          return;
+        }
+
+        if (data?.filters) {
+          console.log('Loaded filters from DB:', data.filters);
+          setFilters(data.filters);
+        }
+      } catch (error) {
+        console.error('Error loading filters:', error);
+      }
+    };
+
+    loadFilters();
+  }, [user, getToken]);
+
+  // Save filters to Supabase whenever they change
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      console.log('Saving filters to localStorage:', filters);
-      if (Object.values(filters).some(arr => arr.length > 0)) {
-        localStorage.setItem('dealTrackerFilters', JSON.stringify(filters));
-      } else {
-        localStorage.removeItem('dealTrackerFilters');
+    const saveFilters = async () => {
+      if (!user?.emailAddresses?.[0]?.emailAddress) {
+        console.log('No user email found');
+        return;
       }
-    } catch (e) {
-      console.error('Error saving filters to localStorage:', e);
+
+      try {
+        // Get fresh token and client for this operation
+        const token = await getToken({ template: "supabase" });
+        if (!token) {
+          throw new Error('Failed to get authentication token');
+        }
+
+        const client = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        });
+
+        const userEmail = user.emailAddresses[0].emailAddress;
+        console.log('Saving filters for user:', userEmail);
+
+        const { error: upsertError } = await client
+          .from('user_filters')
+          .upsert({
+            user_email: userEmail,
+            page: 'deal_tracker',
+            filters: filters,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_email,page'
+          });
+
+        if (upsertError) {
+          console.error('Error saving filters:', upsertError);
+        } else {
+          console.log('Successfully saved filters:', filters);
+        }
+      } catch (error) {
+        console.error('Error saving filters:', error);
+      }
+    };
+
+    // Only save if there are actual filters to save
+    if (Object.values(filters).some(arr => arr.length > 0)) {
+      saveFilters();
     }
-  }, [filters]);
+  }, [filters, user, getToken]);
 
   // Set up authenticated Supabase client
   useEffect(() => {
