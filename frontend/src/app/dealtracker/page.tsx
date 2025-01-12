@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, Fragment } from 'react';
-import { FunnelIcon, ArrowsUpDownIcon, ArrowDownTrayIcon, CheckIcon, ViewColumnsIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, ArrowsUpDownIcon, ArrowDownTrayIcon, CheckIcon, ViewColumnsIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import DealRow from '@/components/dealtracker/DealRow';
 import FilterControls from '@/components/dealtracker/controls/FilterControls';
@@ -693,6 +693,92 @@ export default function DealTracker() {
     })));
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedItems.size === 0 || !user?.emailAddresses?.[0]?.emailAddress) return;
+    const userEmail = user.emailAddresses[0].emailAddress;
+
+    try {
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
+      // Delete deal tracker entries first
+      await client
+        .from('deal_tracker')
+        .delete()
+        .eq('user_email', userEmail)
+        .in('listing_id', Array.from(selectedItems));
+
+      // Then delete saved listings
+      await client
+        .from('user_saved_listings')
+        .delete()
+        .eq('user_email', userEmail)
+        .in('listing_id', Array.from(selectedItems));
+
+      // Clear selected items and refresh the list
+      setSelectedItems(new Set());
+      await fetchSavedListings();
+    } catch (error) {
+      console.error('Error in bulk delete:', error);
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (selectedItems.size === 0) return;
+
+    const selectedListings = savedListings.filter(sl => selectedItems.has(sl.listings.id));
+    const headers = [
+      'Business Name',
+      'Price',
+      'Monthly Revenue',
+      'Monthly Profit',
+      'Multiple',
+      'Type',
+      'Status',
+      'Next Steps',
+      'Priority',
+      'Notes',
+      'Last Updated'
+    ];
+    const rows = selectedListings.map(sl => [
+      sl.listings.title,
+      sl.listings.asking_price?.toLocaleString() || '-',
+      sl.listings.revenue?.toLocaleString() || '-',
+      sl.listings.ebitda?.toLocaleString() || '-',
+      sl.listings.selling_multiple ? `${sl.listings.selling_multiple.toFixed(1)}x` : '-',
+      sl.listings.business_model,
+      sl.deal_tracker?.status || 'Interested',
+      sl.deal_tracker?.next_steps || 'Review Listing',
+      sl.deal_tracker?.priority || 'Medium',
+      sl.deal_tracker?.notes || '',
+      sl.deal_tracker?.last_updated ? new Date(sl.deal_tracker.last_updated).toLocaleDateString() : '-'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `selected-deals-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-10">
       <div className="sm:flex sm:items-center">
@@ -701,8 +787,99 @@ export default function DealTracker() {
           <p className="mt-2 text-sm text-gray-700">
             Track and manage your deals in one place
           </p>
+          {selectedItems.size > 0 && (
+            <p className="mt-1 text-sm text-gray-500">
+              {selectedItems.size} {selectedItems.size === 1 ? 'item' : 'items'} selected
+            </p>
+          )}
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none space-x-2">
+          {selectedItems.size > 0 && (
+            <Menu as="div" className="relative inline-block text-left">
+              <Menu.Button className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                Bulk Actions
+                <ChevronDownIcon className="h-5 w-5 ml-2" aria-hidden="true" />
+              </Menu.Button>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="py-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => handleBulkAction('Interested')}
+                          className={`${
+                            active ? 'bg-gray-100' : ''
+                          } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
+                        >
+                          Mark as Interested
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => handleBulkAction('Not Interested')}
+                          className={`${
+                            active ? 'bg-gray-100' : ''
+                          } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
+                        >
+                          Mark as Not Interested
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => handleBulkAction('Contacted')}
+                          className={`${
+                            active ? 'bg-gray-100' : ''
+                          } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
+                        >
+                          Mark as Contacted
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <div className="border-t border-gray-100">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={handleBulkExport}
+                            className={`${
+                              active ? 'bg-gray-100' : ''
+                            } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
+                          >
+                            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                            Export Selected
+                          </button>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={handleBulkDelete}
+                            className={`${
+                              active ? 'bg-gray-100 text-red-900' : 'text-red-700'
+                            } flex items-center w-full px-4 py-2 text-sm text-left`}
+                          >
+                            <TrashIcon className="h-5 w-5 mr-2" />
+                            Delete Selected
+                          </button>
+                        )}
+                      </Menu.Item>
+                    </div>
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+          )}
           <Menu as="div" className="relative inline-block text-left">
             <Menu.Button className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
               <ViewColumnsIcon className="h-5 w-5 mr-2" />
@@ -769,7 +946,7 @@ export default function DealTracker() {
             className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
           >
             <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-            Export
+            Export All
           </button>
         </div>
       </div>
