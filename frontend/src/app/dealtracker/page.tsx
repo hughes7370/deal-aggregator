@@ -1073,91 +1073,74 @@ export default function DealTracker() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-10">
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-base font-semibold leading-6 text-gray-900">Deal Tracker</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            Track and manage your deals in one place
-          </p>
-          {selectedItems.size > 0 && (
-            <p className="mt-1 text-sm text-gray-500">
-              {selectedItems.size} {selectedItems.size === 1 ? 'item' : 'items'} selected
-            </p>
-          )}
-        </div>
-        <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none space-x-2">
-          <button
-            type="button"
-            onClick={() => setIsManualDealModalOpen(true)}
-            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Add Deal
-          </button>
-          {selectedItems.size > 0 && (
-            <Menu as="div" className="relative inline-block text-left">
-              <Menu.Button className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                Bulk Actions
-                <ChevronDownIcon className="h-5 w-5 ml-2" aria-hidden="true" />
-              </Menu.Button>
-              <Transition
-                as={Fragment}
-                enter="transition ease-out duration-100"
-                enterFrom="transform opacity-0 scale-95"
-                enterTo="transform opacity-100 scale-100"
-                leave="transition ease-in duration-75"
-                leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
+    <div className="min-h-screen bg-gray-50">
+      {/* Main container with proper padding and max-width */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header section */}
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Deal Tracker</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setIsManualDealModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <div className="py-1">
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={() => handleBulkAction('Interested')}
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
-                        >
-                          Mark as Interested
-                        </button>
-                      )}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={() => handleBulkAction('Not Interested')}
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
-                        >
-                          Mark as Not Interested
-                        </button>
-                      )}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={() => handleBulkAction('Contacted')}
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
-                        >
-                          Mark as Contacted
-                        </button>
-                      )}
-                    </Menu.Item>
-                    <div className="border-t border-gray-100">
+                <PlusIcon className="h-5 w-5 mr-1.5" />
+                Add Deal
+              </button>
+              <button
+                onClick={() => setIsFilterModalOpen(true)}
+                className="sm:hidden inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <FunnelIcon className="h-5 w-5 mr-1.5" />
+                Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Search and controls row */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:w-96">
+              <SearchBar
+                onSearch={setQuery}
+                onScopeChange={setSearchScope}
+                placeholder="Search deals..."
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Bulk actions dropdown */}
+              <Menu as="div" className="relative">
+                <Menu.Button
+                  disabled={selectedItems.size === 0}
+                  className={`inline-flex items-center px-4 py-2 border rounded-md shadow-sm text-sm font-medium ${
+                    selectedItems.size === 0
+                      ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  Actions
+                  <ChevronDownIcon className="ml-2 h-5 w-5" />
+                </Menu.Button>
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute left-0 z-10 mt-2 w-48 origin-top-left rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <div className="py-1">
                       <Menu.Item>
                         {({ active }) => (
                           <button
-                            onClick={handleBulkExport}
+                            onClick={() => handleBulkAction('export')}
                             className={`${
                               active ? 'bg-gray-100' : ''
-                            } flex items-center w-full px-4 py-2 text-sm text-left text-gray-700`}
+                            } flex w-full items-center px-4 py-2 text-sm text-gray-700`}
                           >
-                            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+                            <ArrowDownTrayIcon className="mr-3 h-5 w-5 text-gray-400" />
                             Export Selected
                           </button>
                         )}
@@ -1165,156 +1148,198 @@ export default function DealTracker() {
                       <Menu.Item>
                         {({ active }) => (
                           <button
-                            onClick={handleBulkDelete}
+                            onClick={() => handleBulkAction('delete')}
                             className={`${
-                              active ? 'bg-gray-100 text-red-900' : 'text-red-700'
-                            } flex items-center w-full px-4 py-2 text-sm text-left`}
+                              active ? 'bg-gray-100' : ''
+                            } flex w-full items-center px-4 py-2 text-sm text-red-700`}
                           >
-                            <TrashIcon className="h-5 w-5 mr-2" />
+                            <TrashIcon className="mr-3 h-5 w-5 text-red-400" />
                             Delete Selected
                           </button>
                         )}
                       </Menu.Item>
                     </div>
-                  </div>
-                </Menu.Items>
-              </Transition>
-            </Menu>
-          )}
-          <Menu as="div" className="relative inline-block text-left">
-            <Menu.Button className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-              <ViewColumnsIcon className="h-5 w-5 mr-2" />
-              Columns
-            </Menu.Button>
-            <Transition
-              as={Fragment}
-              enter="transition ease-out duration-100"
-              enterFrom="transform opacity-0 scale-95"
-              enterTo="transform opacity-100 scale-100"
-              leave="transition ease-in duration-75"
-              leaveFrom="transform opacity-100 scale-100"
-              leaveTo="transform opacity-0 scale-95"
-            >
-              <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                <div className="py-1">
-                  <div className="px-3 py-2 border-b border-gray-200">
-                    <button
-                      onClick={resetToDefault}
-                      className="text-sm text-gray-700 hover:text-gray-900"
-                    >
-                      Reset to Default
-                    </button>
-                  </div>
-                  {columnConfig.map((column) => (
-                    <Menu.Item key={column.id}>
-                      {({ active }) => (
-                        <button
-                          onClick={() => toggleColumn(column.id)}
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex items-center w-full px-3 py-2 text-sm text-left`}
-                        >
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={column.isVisible}
-                              onChange={() => toggleColumn(column.id)}
-                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
-                            />
-                            <span className={column.isVisible ? 'font-medium' : 'text-gray-500'}>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
+
+              {/* Column visibility dropdown */}
+              <Menu as="div" className="relative">
+                <Menu.Button className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                  <ViewColumnsIcon className="h-5 w-5 mr-1.5" />
+                  Columns
+                  <ChevronDownIcon className="ml-2 h-5 w-5" />
+                </Menu.Button>
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <div className="py-1">
+                      {columnConfig.map((column) => (
+                        <Menu.Item key={column.id}>
+                          {({ active }) => (
+                            <button
+                              onClick={() => toggleColumn(column.id)}
+                              className={`${
+                                active ? 'bg-gray-100' : ''
+                              } flex w-full items-center px-4 py-2 text-sm text-gray-700`}
+                            >
+                              <span className={`mr-3 h-5 w-5 ${column.isVisible ? 'text-indigo-600' : 'text-gray-400'}`}>
+                                {column.isVisible && <CheckIcon className="h-5 w-5" />}
+                              </span>
                               {column.label}
-                            </span>
-                          </div>
-                        </button>
-                      )}
-                    </Menu.Item>
-                  ))}
-                </div>
-              </Menu.Items>
-            </Transition>
-          </Menu>
-          <button
-            type="button"
-            onClick={() => setIsFilterModalOpen(true)}
-            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          >
-            <FunnelIcon className="h-5 w-5 mr-2" />
-            Filter
-          </button>
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-          >
-            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-            Export All
-          </button>
+                            </button>
+                          )}
+                        </Menu.Item>
+                      ))}
+                      <div className="border-t border-gray-100 my-1" />
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={resetToDefault}
+                            className={`${
+                              active ? 'bg-gray-100' : ''
+                            } flex w-full items-center px-4 py-2 text-sm text-gray-700`}
+                          >
+                            Reset to Default
+                          </button>
+                        )}
+                      </Menu.Item>
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <FilterControls
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        filters={filters}
-        onApplyFilters={handleApplyFilters}
-      />
+        {/* Main content area */}
+        <div className="mt-6">
+          {/* Desktop filters sidebar */}
+          <div className="hidden lg:block fixed top-8 left-8 w-64 space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Filter Deals</h3>
+              <FilterControls
+                filters={filters}
+                onApplyFilters={handleApplyFilters}
+                onClose={() => {}}
+                isOpen={false}
+              />
+            </div>
+          </div>
 
-      <div className="mt-8 flow-root">
-        <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead>
-                <tr>
-                  <th scope="col" className="w-8 px-2 py-3.5">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={selectedItems.size > 0 && selectedItems.size === savedListings.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedItems(new Set(savedListings.map(l => l.listings.id)));
-                        } else {
-                          setSelectedItems(new Set());
-                        }
-                      }}
-                    />
-                  </th>
-                  {columnConfig.map(column => column.isVisible && (
-                    <th key={column.id} scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                      {column.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredListings.map((listing) => (
-                  <DealRow
-                    key={listing.listings.id}
-                    listing={listing.listings}
-                    listing_override={listing.listing_override}
-                    dealTracker={listing.deal_tracker}
-                    onUpdate={handleUpdateDeal}
-                    onUpdateOverride={handleUpdateOverride}
-                    isSelected={selectedItems.has(listing.listings.id)}
-                    onSelect={(checked) => {
-                      const newSelected = new Set(selectedItems);
-                      if (checked) {
-                        newSelected.add(listing.listings.id);
-                      } else {
-                        newSelected.delete(listing.listings.id);
-                      }
-                      setSelectedItems(newSelected);
+          {/* Mobile filters modal */}
+          {isFilterModalOpen && (
+            <div className="fixed inset-0 z-40 lg:hidden">
+              <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsFilterModalOpen(false)} />
+              <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white shadow-xl">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-medium text-gray-900">Filters</h2>
+                  <button
+                    onClick={() => setIsFilterModalOpen(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <span className="sr-only">Close filters</span>
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="p-6 overflow-y-auto">
+                  <FilterControls
+                    isOpen={true}
+                    filters={filters}
+                    onApplyFilters={(newFilters) => {
+                      handleApplyFilters(newFilters);
+                      setIsFilterModalOpen(false);
                     }}
-                    statusColor={getStatusColor(listing.deal_tracker?.status || 'Interested')}
-                    columnConfig={columnConfig}
+                    onClose={() => setIsFilterModalOpen(false)}
                   />
-                ))}
-              </tbody>
-            </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Deals table with horizontal scroll on mobile */}
+          <div className="mt-6 lg:ml-72">
+            <div className="overflow-x-auto">
+              <div className="inline-block min-w-full align-middle">
+                <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-300">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="w-8 px-2 py-3.5">
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.size > 0 && selectedItems.size === savedListings.length}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedItems(new Set(savedListings.map(l => l.id)));
+                              } else {
+                                setSelectedItems(new Set());
+                              }
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                        </th>
+                        {columnConfig.map((column) => (
+                          column.isVisible && (
+                            <th
+                              key={column.id}
+                              scope="col"
+                              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
+                            >
+                              <button
+                                onClick={() => handleSort(column.id as SortField)}
+                                className="group inline-flex items-center"
+                              >
+                                {column.label}
+                                <ArrowsUpDownIcon className="ml-2 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                              </button>
+                            </th>
+                          )
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {savedListings.map((listing) => (
+                        <DealRow
+                          key={listing.id}
+                          listing={listing.listings}
+                          listing_override={listing.listing_override}
+                          dealTracker={listing.deal_tracker}
+                          onUpdate={handleUpdateDeal}
+                          onUpdateOverride={handleUpdateOverride}
+                          isSelected={selectedItems.has(listing.id)}
+                          onSelect={(checked) => {
+                            const newSelected = new Set(selectedItems);
+                            if (checked) {
+                              newSelected.add(listing.id);
+                            } else {
+                              newSelected.delete(listing.id);
+                            }
+                            setSelectedItems(newSelected);
+                          }}
+                          statusColor={getStatusColor(listing.deal_tracker?.status)}
+                          columnConfig={columnConfig}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Manual deal modal */}
       <ManualDealModal
         isOpen={isManualDealModalOpen}
         onClose={() => setIsManualDealModalOpen(false)}

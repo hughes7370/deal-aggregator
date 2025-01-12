@@ -214,20 +214,24 @@ export default function DealRow({
           type="checkbox"
           checked={isSelected}
           onChange={(e) => onSelect(e.target.checked)}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
         />
       </td>
       {isColumnVisible('business') && (
-        <td className="w-1/4 px-3 py-2">
-          <InlineEdit
-            value={getEffectiveValue('title') as string}
-            onSave={(value) => onUpdateOverride(listing.id, 'title', value)}
-            className="text-sm text-gray-900 truncate max-w-[300px]"
-          />
+        <td className="px-3 py-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <InlineEdit
+              value={getEffectiveValue('title') as string}
+              onSave={(value) => onUpdateOverride(listing.id, 'title', value)}
+              className="text-sm text-gray-900 font-medium"
+            />
+            <span className="text-xs text-gray-500 hidden sm:inline">•</span>
+            <span className="text-xs text-gray-500">{listing.source_platform}</span>
+          </div>
         </td>
       )}
       {isColumnVisible('asking_price') && (
-        <td className="w-24 px-3 py-2">
+        <td className="px-3 py-2">
           <InlineEdit
             value={getEffectiveValue('asking_price') as number}
             onSave={(value) => onUpdateOverride(listing.id, 'asking_price', value)}
@@ -238,7 +242,7 @@ export default function DealRow({
         </td>
       )}
       {isColumnVisible('revenue') && (
-        <td className="w-24 px-3 py-2">
+        <td className="hidden sm:table-cell px-3 py-2">
           <InlineEdit
             value={getEffectiveValue('revenue') as number}
             onSave={(value) => onUpdateOverride(listing.id, 'revenue', value)}
@@ -249,7 +253,7 @@ export default function DealRow({
         </td>
       )}
       {isColumnVisible('ebitda') && (
-        <td className="w-24 px-3 py-2">
+        <td className="hidden sm:table-cell px-3 py-2">
           <InlineEdit
             value={getEffectiveValue('ebitda') as number}
             onSave={(value) => onUpdateOverride(listing.id, 'ebitda', value)}
@@ -260,7 +264,7 @@ export default function DealRow({
         </td>
       )}
       {isColumnVisible('multiple') && (
-        <td className="w-24 px-3 py-2">
+        <td className="hidden sm:table-cell px-3 py-2">
           <InlineEdit
             value={getEffectiveValue('selling_multiple') as number}
             onSave={(value) => onUpdateOverride(listing.id, 'selling_multiple', value)}
@@ -271,100 +275,80 @@ export default function DealRow({
         </td>
       )}
       {isColumnVisible('status') && (
-        <td className="w-28 px-3 py-2">
+        <td className="px-3 py-2">
           <SelectField
-            value={dealTracker?.status || 'Interested'}
-            onChange={(value) => onUpdate(listing.id, 'status', value)}
+            value={dealTracker?.status || ''}
             options={STATUS_OPTIONS}
-            className={`text-xs ${getStatusColor(dealTracker?.status || 'Interested')}`}
+            onChange={(value) => onUpdate(listing.id, 'status', value)}
+            getOptionColor={getStatusColor}
+            className="w-full sm:w-auto"
           />
         </td>
       )}
       {isColumnVisible('next_steps') && (
-        <td className="w-32 px-3 py-2">
+        <td className="px-3 py-2">
           <SelectField
-            value={dealTracker?.next_steps || 'Review Listing'}
-            onChange={(value) => onUpdate(listing.id, 'next_steps', value)}
+            value={dealTracker?.next_steps || ''}
             options={NEXT_STEPS_OPTIONS}
-            className={`text-xs ${getNextStepsColor(dealTracker?.next_steps || 'Review Listing')}`}
+            onChange={(value) => onUpdate(listing.id, 'next_steps', value)}
+            getOptionColor={getNextStepsColor}
+            className="w-full sm:w-auto"
           />
         </td>
       )}
       {isColumnVisible('priority') && (
-        <td className="w-24 px-3 py-2">
+        <td className="px-3 py-2">
           <SelectField
-            value={dealTracker?.priority || 'Medium'}
-            onChange={(value) => onUpdate(listing.id, 'priority', value)}
+            value={dealTracker?.priority || ''}
             options={PRIORITY_OPTIONS}
-            className={`text-xs ${getPriorityColor(dealTracker?.priority || 'Medium')}`}
+            onChange={(value) => onUpdate(listing.id, 'priority', value)}
+            getOptionColor={getPriorityColor}
+            className="w-full sm:w-auto"
           />
         </td>
       )}
       {isColumnVisible('notes') && (
-        <td className="w-48 px-3 py-2">
-          {isEditingNotes ? (
-            <div className="relative">
+        <td className="px-3 py-2">
+          <div className="relative">
+            {isEditingNotes ? (
               <textarea
                 value={notesValue}
                 onChange={handleNotesChange}
                 onBlur={handleNotesBlur}
                 onKeyDown={handleNotesKeyDown}
-                autoFocus
-                rows={2}
-                disabled={isSaving}
-                className={`w-full p-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
-                  isSaving ? 'bg-gray-50 cursor-wait' : ''
-                } ${error ? 'border-red-300 focus:ring-red-500' : ''}`}
+                className="block w-full rounded-md border-0 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:leading-6"
+                rows={3}
                 placeholder="Add notes..."
+                autoFocus
               />
-              {isSaving && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50">
-                  <span className="text-xs text-gray-500">Saving...</span>
-                </div>
-              )}
-              {error && (
-                <div className="absolute -bottom-4 left-0 right-0">
-                  <span className="text-xs text-red-500">{error}</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div
-              onClick={() => {
-                if (!isSaving) {
-                  console.log('DealRow: Starting note edit for listing:', listing.id);
-                  setIsEditingNotes(true);
-                  setError(null);
-                }
-              }}
-              className={`text-xs text-gray-900 cursor-text hover:bg-gray-50 rounded p-1.5 min-h-[2rem] flex items-center group relative ${
-                isSaving ? 'cursor-wait opacity-50' : ''
-              } ${error ? 'border-red-300' : ''}`}
-            >
-              <span className={`${dealTracker?.notes ? '' : 'text-gray-400 italic'} whitespace-pre-wrap break-words`}>
-                {dealTracker?.notes || 'Click to add notes...'}
-              </span>
-              {!isSaving && !error && (
-                <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-gray-400">
-                  Click to edit
-                </span>
-              )}
-            </div>
-          )}
+            ) : (
+              <button
+                onClick={() => setIsEditingNotes(true)}
+                className={`text-left w-full text-sm ${
+                  notesValue ? 'text-gray-900' : 'text-gray-500 italic'
+                } hover:text-gray-700`}
+              >
+                {notesValue || 'Add notes...'}
+              </button>
+            )}
+            {error && (
+              <p className="mt-1 text-xs text-red-600">{error}</p>
+            )}
+          </div>
         </td>
       )}
       {isColumnVisible('last_updated') && (
-        <td className="w-24 px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+        <td className="hidden sm:table-cell px-3 py-2 text-sm text-gray-500">
           {dealTracker?.last_updated ? new Date(dealTracker.last_updated).toLocaleDateString() : '-'}
         </td>
       )}
       {isColumnVisible('source') && (
-        <td className="w-24 px-3 py-2 text-xs text-gray-500 truncate max-w-[100px]">
+        <td className="hidden sm:table-cell px-3 py-2 text-sm text-gray-500">
           {listing.source_platform}
         </td>
       )}
       {isColumnVisible('added') && (
-        <td className="w-24 px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+        <td className="hidden sm:table-cell px-3 py-2 text-sm text-gray-500">
           {dealTracker?.created_at ? new Date(dealTracker.created_at).toLocaleDateString() : '-'}
         </td>
       )}

@@ -579,198 +579,148 @@ export default function DealFlowPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
-        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-            <div className="flex items-center gap-4 w-full sm:w-auto">
-              <h1 className="text-2xl font-semibold text-gray-900">Deal Flow</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Main container with proper padding and max-width */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header section */}
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Deal Flow</h1>
+            <div className="flex items-center space-x-2">
               <button
                 onClick={() => setIsMobileFiltersOpen(true)}
-                className="sm:hidden ml-auto inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                className="sm:hidden inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                </svg>
-                <span className="ml-1">Filters</span>
+                Filters
               </button>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-              <div className="w-full sm:w-96">
-                <SearchBar
-                  onSearch={setSearchQuery}
-                  onScopeChange={setSearchScope}
-                  placeholder="Search listings..."
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <SortDropdown value={sortBy} onChange={setSortBy} />
-                <ResultsCount count={filteredListings.length} />
-                <ActionButtons
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  onRefresh={handleRefreshData}
-                  onSaveSearch={handleSaveSearch}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile filter dialog */}
-      <div className={`fixed inset-0 z-40 sm:hidden ${isMobileFiltersOpen ? 'block' : 'hidden'}`}>
-        {/* Overlay */}
-        <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileFiltersOpen(false)} />
-        
-        {/* Slide-out panel */}
-        <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white shadow-xl">
-          <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-              <button
-                onClick={() => setIsMobileFiltersOpen(false)}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 py-6">
-              <div className="space-y-8">
-                <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
-                <RevenueFilter
-                  value={revenueRange}
-                  onChange={setRevenueRange}
-                  isAnnual={isAnnualRevenue}
-                  onIsAnnualChange={handleRevenueToggle}
-                />
-                <ProfitFilter
-                  value={profitRange}
-                  onChange={setProfitRange}
-                  isAnnual={isAnnualProfit}
-                  onIsAnnualChange={handleProfitToggle}
-                />
-                <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
-                <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
-                <SourceFilter selected={sources} onChange={setSources} />
-                <AdvancedFilters
-                  profitMargin={profitMargin}
-                  onProfitMarginChange={setProfitMargin}
-                  growthRate={growthRate}
-                  onGrowthRateChange={setGrowthRate}
-                  teamSize={teamSize}
-                  onTeamSizeChange={setTeamSize}
-                  location={location}
-                  onLocationChange={setLocation}
-                />
-              </div>
-            </div>
-            <div className="border-t border-gray-200 px-4 py-3">
-              <button
-                onClick={() => {
-                  setPriceRange([0, 10000000])
-                  setRevenueRange([0, 5000000])
-                  setProfitRange([0, 5000000])
-                  setMultipleRange([0, 10])
-                  setBusinessTypes([])
-                  setSources([])
-                  setProfitMargin([-100, 100])
-                  setGrowthRate([-100, 1000])
-                  setTeamSize([0, 1000])
-                  setLocation('')
-                  setSearchQuery('')
-                  setIsMobileFiltersOpen(false)
-                }}
-                className="w-full text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                Clear All
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
-          {/* Left Sidebar - Hidden on mobile */}
-          <aside className="hidden sm:block w-80 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-[140px] transition-shadow hover:shadow-md">
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-                  <button 
-                    onClick={() => {
-                      setPriceRange([0, 10000000])
-                      setRevenueRange([0, 5000000])
-                      setProfitRange([0, 5000000])
-                      setMultipleRange([0, 10])
-                      setBusinessTypes([])
-                      setSources([])
-                      setProfitMargin([-100, 100])
-                      setGrowthRate([-100, 1000])
-                      setTeamSize([0, 1000])
-                      setLocation('')
-                      setSearchQuery('')
-                    }}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
-                  >
-                    Clear All
-                  </button>
-                </div>
-
-                <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
-                <RevenueFilter
-                  value={revenueRange}
-                  onChange={setRevenueRange}
-                  isAnnual={isAnnualRevenue}
-                  onIsAnnualChange={handleRevenueToggle}
-                />
-                <ProfitFilter
-                  value={profitRange}
-                  onChange={setProfitRange}
-                  isAnnual={isAnnualProfit}
-                  onIsAnnualChange={handleProfitToggle}
-                />
-                <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
-                <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
-                <SourceFilter selected={sources} onChange={setSources} />
-                <AdvancedFilters
-                  profitMargin={profitMargin}
-                  onProfitMarginChange={setProfitMargin}
-                  growthRate={growthRate}
-                  onGrowthRateChange={setGrowthRate}
-                  teamSize={teamSize}
-                  onTeamSizeChange={setTeamSize}
-                  location={location}
-                  onLocationChange={setLocation}
-                />
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 transition-shadow hover:shadow-md">
-              <ListingsGrid
-                listings={filteredListings}
-                isLoading={isLoading}
-                error={error}
-                onRetry={handleRefreshData}
-                onSaveListing={handleSaveListing}
-                onHideListing={handleHideListing}
+              <ActionButtons
                 viewMode={viewMode}
-                pageSize={pageSize}
-                savedListings={savedListings}
-                savingListings={savingListings}
+                onViewModeChange={setViewMode}
+                onRefresh={handleRefreshData}
+                onSaveSearch={handleSaveSearch}
               />
             </div>
           </div>
+
+          {/* Search and filters row */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="w-full sm:w-96">
+              <SearchBar
+                onSearch={setSearchQuery}
+                onScopeChange={setSearchScope}
+                placeholder="Search listings..."
+              />
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+              <SortDropdown value={sortBy} onChange={setSortBy} />
+              <ResultsCount count={listings.length} />
+            </div>
+          </div>
+        </div>
+
+        {/* Main content area */}
+        <div className="mt-6 lg:grid lg:grid-cols-[280px,1fr] lg:gap-8">
+          {/* Filters sidebar - desktop */}
+          <div className="hidden lg:block">
+            <div className="sticky top-8 space-y-6">
+              <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
+              <RevenueFilter
+                value={revenueRange}
+                onChange={setRevenueRange}
+                isAnnual={isAnnualRevenue}
+                onIsAnnualChange={handleRevenueToggle}
+              />
+              <ProfitFilter
+                value={profitRange}
+                onChange={setProfitRange}
+                isAnnual={isAnnualProfit}
+                onIsAnnualChange={handleProfitToggle}
+              />
+              <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
+              <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
+              <SourceFilter selected={sources} onChange={setSources} />
+              <AdvancedFilters
+                profitMargin={profitMargin}
+                onProfitMarginChange={setProfitMargin}
+                growthRate={growthRate}
+                onGrowthRateChange={setGrowthRate}
+                teamSize={teamSize}
+                onTeamSizeChange={setTeamSize}
+                location={location}
+                onLocationChange={setLocation}
+              />
+            </div>
+          </div>
+
+          {/* Mobile filters dialog */}
+          {isMobileFiltersOpen && (
+            <div className="fixed inset-0 z-40 lg:hidden">
+              <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileFiltersOpen(false)} />
+              <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white shadow-xl p-6 overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-medium text-gray-900">Filters</h2>
+                  <button
+                    onClick={() => setIsMobileFiltersOpen(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <span className="sr-only">Close filters</span>
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <div className="space-y-6">
+                  <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
+                  <RevenueFilter
+                    value={revenueRange}
+                    onChange={setRevenueRange}
+                    isAnnual={isAnnualRevenue}
+                    onIsAnnualChange={handleRevenueToggle}
+                  />
+                  <ProfitFilter
+                    value={profitRange}
+                    onChange={setProfitRange}
+                    isAnnual={isAnnualProfit}
+                    onIsAnnualChange={handleProfitToggle}
+                  />
+                  <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
+                  <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
+                  <SourceFilter selected={sources} onChange={setSources} />
+                  <AdvancedFilters
+                    profitMargin={profitMargin}
+                    onProfitMarginChange={setProfitMargin}
+                    growthRate={growthRate}
+                    onGrowthRateChange={setGrowthRate}
+                    teamSize={teamSize}
+                    onTeamSizeChange={setTeamSize}
+                    location={location}
+                    onLocationChange={setLocation}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Listings section */}
+          <div className="mt-6 lg:mt-0">
+            <div className="mb-4 flex items-center justify-between">
+              <PageSizeSelector pageSize={pageSize} onPageSizeChange={setPageSize} />
+            </div>
+            <ListingsGrid
+              listings={listings}
+              viewMode={viewMode}
+              onSaveListing={handleSaveListing}
+              onHideListing={handleHideListing}
+              savedListings={savedListings}
+              savingListings={savingListings}
+              isLoading={isLoading}
+              error={error}
+              onRetry={handleRefreshData}
+              pageSize={pageSize}
+            />
+          </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 } 

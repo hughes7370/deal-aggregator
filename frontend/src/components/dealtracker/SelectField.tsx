@@ -9,14 +9,22 @@ interface SelectFieldProps {
   onChange: (value: string) => void;
   options: string[];
   className?: string;
+  getOptionColor?: (option: string) => string;
 }
 
-export default function SelectField({ value, onChange, options, className = '' }: SelectFieldProps) {
+export default function SelectField({ value, onChange, options, className = '', getOptionColor }: SelectFieldProps) {
+  const getColorClasses = (option: string) => {
+    if (getOptionColor) {
+      return getOptionColor(option);
+    }
+    return '';
+  };
+
   return (
     <Listbox value={value} onChange={onChange}>
       <div className="relative">
         <Listbox.Button
-          className={`relative w-full cursor-pointer rounded-md py-1.5 pl-3 pr-8 text-left focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 border border-gray-200 ${className}`}
+          className={`relative w-full cursor-pointer rounded-md py-1.5 pl-3 pr-8 text-left focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 border border-gray-200 ${getColorClasses(value)} ${className}`}
         >
           <span className="block truncate">{value}</span>
           <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -36,8 +44,8 @@ export default function SelectField({ value, onChange, options, className = '' }
                 value={option}
                 className={({ active }) =>
                   `relative cursor-pointer select-none py-2 pl-3 pr-9 ${
-                    active ? 'bg-blue-50 text-blue-900' : 'text-gray-900'
-                  }`
+                    active ? 'bg-gray-50' : ''
+                  } ${getColorClasses(option)}`
                 }
               >
                 {({ selected, active }) => (
@@ -48,7 +56,7 @@ export default function SelectField({ value, onChange, options, className = '' }
                     {selected && (
                       <span
                         className={`absolute inset-y-0 right-0 flex items-center pr-3 ${
-                          active ? 'text-blue-600' : 'text-blue-600'
+                          active ? 'text-indigo-600' : 'text-indigo-600'
                         }`}
                       >
                         <CheckIcon className="h-4 w-4" aria-hidden="true" />
