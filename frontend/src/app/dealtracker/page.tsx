@@ -255,94 +255,69 @@ export default function DealTracker() {
         return;
       }
 
-      // Create a new array with the updated listing
+      // Update local state first
       const updatedListings = savedListings.map(sl => {
         if (sl.listings.id !== listingId) return sl;
         
-        const updatedDealTracker = {
-          ...(sl.deal_tracker || {
-            id: savedListing.listing_id,
-            status: 'Interested',
-            next_steps: 'Review Listing',
-            priority: 'Medium',
-            notes: '',
-            created_at: new Date().toISOString(),
-          }),
-          [field]: value,
-          last_updated: new Date().toISOString(),
-        };
-
         return {
           ...sl,
-          deal_tracker: updatedDealTracker as SavedListing['deal_tracker']
+          deal_tracker: {
+            ...(sl.deal_tracker || {}),
+            id: sl.deal_tracker?.id || savedListing.listing_id,
+            status: field === 'status' ? String(value) : sl.deal_tracker?.status || 'Interested',
+            next_steps: field === 'next_steps' ? String(value) : sl.deal_tracker?.next_steps || 'Review Listing',
+            priority: field === 'priority' ? String(value) : sl.deal_tracker?.priority || 'Medium',
+            notes: field === 'notes' ? String(value) : sl.deal_tracker?.notes || '',
+            last_updated: new Date().toISOString(),
+            created_at: sl.deal_tracker?.created_at || new Date().toISOString(),
+          }
         };
       });
 
-      // Update local state first
       setSavedListings(updatedListings);
 
       if (!savedListing?.deal_tracker) {
         // Create new deal tracker entry
-        const { data: newDealTracker, error: createError } = await client
+        const { error: createError } = await client
           .from('deal_tracker')
           .insert({
             user_email: userEmail,
             listing_id: savedListing.listing_id,
-            [field]: String(value),
             status: field === 'status' ? String(value) : 'Interested',
             next_steps: field === 'next_steps' ? String(value) : 'Review Listing',
             priority: field === 'priority' ? String(value) : 'Medium',
             notes: field === 'notes' ? String(value) : '',
             last_updated: new Date().toISOString(),
-          })
-          .select()
-          .single();
+          });
 
         if (createError) {
           console.error('Error creating deal tracker:', createError);
-          await fetchSavedListings(); // Revert to server state on error
+          await fetchSavedListings();
           return;
         }
-
-        console.log('Created new deal tracker:', newDealTracker);
       } else {
-        // Get the latest deal tracker data first
-        const { data: currentTracker, error: fetchError } = await client
-          .from('deal_tracker')
-          .select('*')
-          .eq('listing_id', savedListing.listing_id)
-          .eq('user_email', userEmail)
-          .single();
-
-        if (fetchError) {
-          console.error('Error fetching current deal tracker:', fetchError);
-          await fetchSavedListings(); // Revert to server state on error
-          return;
-        }
-
-        // Update existing deal tracker entry using its ID
+        // Update existing deal tracker entry
         const { error: updateError } = await client
           .from('deal_tracker')
           .update({
             [field]: String(value),
             last_updated: new Date().toISOString(),
           })
-          .eq('id', currentTracker.id);
+          .eq('listing_id', savedListing.listing_id)
+          .eq('user_email', userEmail);
 
         if (updateError) {
           console.error('Error updating deal tracker:', updateError);
-          await fetchSavedListings(); // Revert to server state on error
+          await fetchSavedListings();
           return;
         }
-
-        console.log('Updated deal tracker for listing:', listingId);
       }
 
       // Fetch fresh data after successful update
       await fetchSavedListings();
     } catch (error) {
       console.error('Error in handleUpdateDeal:', error);
-      await fetchSavedListings(); // Revert to server state on error
+      await fetchSavedListings();
     }
   };
 
