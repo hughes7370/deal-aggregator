@@ -66,6 +66,48 @@ export default function DealTracker() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
+  const [supabaseClient, setSupabaseClient] = useState(() => 
+    createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false
+      }
+    })
+  );
+
+  // Set up authenticated Supabase client
+  useEffect(() => {
+    const setupSupabase = async () => {
+      if (!user) {
+        console.log('No user found, using anonymous Supabase client')
+        return
+      }
+
+      try {
+        const token = await getToken({ template: "supabase" })
+        if (!token) {
+          console.error('Failed to get Clerk JWT token')
+          return
+        }
+
+        const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        })
+
+        setSupabaseClient(authenticatedClient)
+      } catch (error) {
+        console.error('Error in Supabase auth setup:', error)
+      }
+    }
+
+    setupSupabase()
+  }, [user, getToken])
 
   // Load filters when user is available
   useEffect(() => {
@@ -328,18 +370,18 @@ export default function DealTracker() {
   }, [user]);
 
   const handleUpdateDeal = async (listingId: string, field: string, value: string | number) => {
-    console.log('Updating deal:', { listingId, field, value });
+    console.log('Updating deal:', { listingId, field, value })
     try {
       if (!user?.emailAddresses?.[0]?.emailAddress) {
-        console.error('No user email found for update');
-        return;
+        console.error('No user email found for update')
+        return
       }
-      const userEmail = user.emailAddresses[0].emailAddress;
+      const userEmail = user.emailAddresses[0].emailAddress
 
       // Get fresh token and client for this operation
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken({ template: "supabase" })
       if (!token) {
-        throw new Error('Failed to get authentication token');
+        throw new Error('Failed to get authentication token')
       }
 
       const client = createClient(supabaseUrl, supabaseAnonKey, {
@@ -351,64 +393,50 @@ export default function DealTracker() {
             Authorization: `Bearer ${token}`
           }
         }
-      });
+      })
 
-      // Find the saved listing that matches this listing ID
-      const savedListing = savedListings.find(sl => sl.listings.id === listingId);
-      if (!savedListing) {
-        console.error('Could not find saved listing with ID:', listingId);
-        return;
-      }
-
-      console.log('Found saved listing:', savedListing);
-
-      // Update local state first
+      // Update local state first for optimistic UI
       const updatedListings = savedListings.map(sl => {
-        if (sl.listings.id !== listingId) return sl;
+        if (sl.listings.id !== listingId) return sl
         
         const updatedDealTracker = {
-          ...(sl.deal_tracker || {}),
-          id: sl.deal_tracker?.id || savedListing.listing_id,
-          status: field === 'status' ? String(value) : sl.deal_tracker?.status || 'Interested',
-          next_steps: field === 'next_steps' ? String(value) : sl.deal_tracker?.next_steps || 'Review Listing',
-          priority: field === 'priority' ? String(value) : sl.deal_tracker?.priority || 'Medium',
-          notes: field === 'notes' ? String(value) : sl.deal_tracker?.notes || '',
-          last_updated: new Date().toISOString(),
-          created_at: sl.deal_tracker?.created_at || new Date().toISOString(),
-        };
-
-        console.log('Updated deal tracker:', updatedDealTracker);
+          ...(sl.deal_tracker || {
+            status: 'Interested',
+            next_steps: 'Review Listing',
+            priority: 'Medium',
+            notes: '',
+            created_at: new Date().toISOString()
+          }),
+          id: sl.deal_tracker?.id || sl.listing_id,
+          [field]: String(value),
+          last_updated: new Date().toISOString()
+        }
         
         return {
           ...sl,
           deal_tracker: updatedDealTracker
-        };
-      });
+        }
+      })
 
-      setSavedListings(updatedListings);
+      setSavedListings(updatedListings as SavedListing[])
 
-      if (!savedListing?.deal_tracker) {
-        console.log('Creating new deal tracker entry');
+      // Then update the database
+      if (!savedListings.find(sl => sl.listings.id === listingId)?.deal_tracker) {
         // Create new deal tracker entry
         const { error: createError } = await client
           .from('deal_tracker')
           .insert({
             user_email: userEmail,
-            listing_id: savedListing.listing_id,
+            listing_id: listingId,
             status: field === 'status' ? String(value) : 'Interested',
             next_steps: field === 'next_steps' ? String(value) : 'Review Listing',
             priority: field === 'priority' ? String(value) : 'Medium',
             notes: field === 'notes' ? String(value) : '',
             last_updated: new Date().toISOString(),
-          });
+          })
 
-        if (createError) {
-          console.error('Error creating deal tracker:', createError);
-          await fetchSavedListings();
-          return;
-        }
+        if (createError) throw createError
       } else {
-        console.log('Updating existing deal tracker entry');
         // Update existing deal tracker entry
         const { error: updateError } = await client
           .from('deal_tracker')
@@ -416,23 +444,17 @@ export default function DealTracker() {
             [field]: String(value),
             last_updated: new Date().toISOString(),
           })
-          .eq('listing_id', savedListing.listing_id)
-          .eq('user_email', userEmail);
+          .eq('listing_id', listingId)
+          .eq('user_email', userEmail)
 
-        if (updateError) {
-          console.error('Error updating deal tracker:', updateError);
-          await fetchSavedListings();
-          return;
-        }
+        if (updateError) throw updateError
       }
-
-      console.log('Successfully updated deal');
-      await fetchSavedListings();
     } catch (error) {
-      console.error('Error in handleUpdateDeal:', error);
-      await fetchSavedListings();
+      console.error('Error in handleUpdateDeal:', error)
+      // Revert the optimistic update on error
+      await fetchSavedListings()
     }
-  };
+  }
 
   const handleSort = (field: SortField) => {
     setSortConfig(prev => ({
