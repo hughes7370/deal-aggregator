@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -22,25 +22,39 @@ const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Other'];
 const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 
 export default function FilterControls({ isOpen, onClose, filters, onApplyFilters }: FilterControlsProps) {
+  const [localFilters, setLocalFilters] = useState(filters);
+
+  // Update local filters when props change
+  useEffect(() => {
+    setLocalFilters(filters);
+  }, [filters]);
+
   const handleFilterChange = (category: string, value: string) => {
-    const currentFilters = filters[category as keyof typeof filters] || [];
+    const currentFilters = localFilters[category as keyof typeof localFilters] || [];
     const newFilters = currentFilters.includes(value)
       ? currentFilters.filter(v => v !== value)
       : [...currentFilters, value];
 
-    onApplyFilters({
-      ...filters,
+    setLocalFilters({
+      ...localFilters,
       [category]: newFilters,
     });
   };
 
+  const handleApplyFilters = () => {
+    onApplyFilters(localFilters);
+    onClose();
+  };
+
   const clearFilters = () => {
-    onApplyFilters({
+    const emptyFilters = {
       status: [],
       priority: [],
       type: [],
       next_steps: [],
-    });
+    };
+    setLocalFilters(emptyFilters);
+    onApplyFilters(emptyFilters);
   };
 
   return (
@@ -96,7 +110,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                             <label
                               key={status}
                               className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                                filters.status?.includes(status)
+                                localFilters.status?.includes(status)
                                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                               }`}
@@ -104,7 +118,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                               <input
                                 type="checkbox"
                                 className="sr-only"
-                                checked={filters.status?.includes(status)}
+                                checked={localFilters.status?.includes(status)}
                                 onChange={() => handleFilterChange('status', status)}
                               />
                               {status}
@@ -121,7 +135,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                             <label
                               key={priority}
                               className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                                filters.priority?.includes(priority)
+                                localFilters.priority?.includes(priority)
                                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                               }`}
@@ -129,7 +143,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                               <input
                                 type="checkbox"
                                 className="sr-only"
-                                checked={filters.priority?.includes(priority)}
+                                checked={localFilters.priority?.includes(priority)}
                                 onChange={() => handleFilterChange('priority', priority)}
                               />
                               {priority}
@@ -146,7 +160,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                             <label
                               key={type}
                               className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                                filters.type?.includes(type)
+                                localFilters.type?.includes(type)
                                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                               }`}
@@ -154,7 +168,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                               <input
                                 type="checkbox"
                                 className="sr-only"
-                                checked={filters.type?.includes(type)}
+                                checked={localFilters.type?.includes(type)}
                                 onChange={() => handleFilterChange('type', type)}
                               />
                               {type}
@@ -171,7 +185,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                             <label
                               key={step}
                               className={`relative flex items-center justify-center px-3 py-2 rounded-lg border text-sm cursor-pointer transition-colors ${
-                                filters.next_steps?.includes(step)
+                                localFilters.next_steps?.includes(step)
                                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                                   : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                               }`}
@@ -179,7 +193,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                               <input
                                 type="checkbox"
                                 className="sr-only"
-                                checked={filters.next_steps?.includes(step)}
+                                checked={localFilters.next_steps?.includes(step)}
                                 onChange={() => handleFilterChange('next_steps', step)}
                               />
                               {step}
@@ -202,7 +216,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                   <button
                     type="button"
                     className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
-                    onClick={onClose}
+                    onClick={handleApplyFilters}
                   >
                     Apply Filters
                   </button>
