@@ -55,26 +55,14 @@ const liveFeatures = [
 const upcomingFeatures = [
   {
     title: "AI Deal Analysis",
-    description: "Make Faster, Smarter Decisions - Let our AI analyze each deal across 50+ quality metrics.",
+    description: "Make Faster, Smarter Decisions - Let our AI analyze each deal across key metrics.",
     icon: SparklesIcon,
     points: [
-      "Instant quality scoring",
-      "Comprehensive risk assessment",
-      "Growth potential analysis",
-      "Comparable deal insights",
-      "Red flag detection"
-    ]
-  },
-  {
-    title: "Smart Deal Insights",
-    description: "Deep Deal Intelligence - Get instant insights on what matters most.",
-    icon: BoltIcon,
-    points: [
-      "Revenue quality analysis",
-      "Customer metrics evaluation",
-      "Market position scoring",
-      "Growth trajectory assessment",
-      "Operational assessment"
+      "Automated deal scoring",
+      "Deal comparison tools",
+      "Historical performance tracking",
+      "Market trend analysis",
+      "Due diligence assistance"
     ]
   }
 ];

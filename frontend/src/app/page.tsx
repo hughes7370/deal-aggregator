@@ -8,7 +8,6 @@ import SuccessStories from "@/components/home/SuccessStories";
 import BrokerLogos from "@/components/home/BrokerLogos";
 import SampleDeal from "@/components/home/SampleDeal";
 import DealFlowOverview from "@/components/home/DealFlowOverview";
-import ROICalculator from "@/components/home/ROICalculator";
 import Pricing from "@/components/home/Pricing";
 
 export default async function Home() {
@@ -27,7 +26,6 @@ export default async function Home() {
       <DealFlowOverview />
       <SampleDeal />
       <SuccessStories />
-      <ROICalculator />
       <CTASection />
     </main>
   );
