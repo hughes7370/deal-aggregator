@@ -9,6 +9,7 @@ import { useUser, useAuth } from "@clerk/nextjs";
 import { createClient } from '@supabase/supabase-js';
 import { SearchBar, SearchScope } from '@/components/dealflow/search/SearchBar';
 import SelectField from '@/components/dealtracker/SelectField';
+import { SupabaseClient, PostgrestResponse } from '@supabase/supabase-js';
 
 type SortField = 'business_name' | 'asking_price' | 'business_type' | 'status' | 'next_steps' | 'priority' | 'last_updated';
 type SortDirection = 'asc' | 'desc';
@@ -43,7 +44,7 @@ interface SavedListing {
   selected?: boolean;
 }
 
-// Add type for the Supabase response
+// Update the DealTrackerResponse interface to match the actual response structure
 interface DealTrackerResponse {
   id: string;
   user_email: string;
@@ -124,6 +125,8 @@ export default function DealTracker() {
         })
 
         setSupabaseClient(authenticatedClient)
+        // Fetch data after authentication is set up
+        await fetchSavedListings(authenticatedClient);
       } catch (error) {
         console.error('Error in Supabase auth setup:', error)
       }
@@ -271,39 +274,38 @@ export default function DealTracker() {
     }
   };
 
-  useEffect(() => {
-    fetchSavedListings();
-  }, [user]);
-
-  const fetchSavedListings = async () => {
+  const fetchSavedListings = async (client?: SupabaseClient) => {
     try {
       if (!user?.emailAddresses?.[0]?.emailAddress) {
         console.log('No user email found');
         return;
       }
 
-      // Get fresh token and client for this operation
-      const token = await getToken({ template: "supabase" });
-      if (!token) {
-        throw new Error('Failed to get authentication token');
-      }
-
-      const client = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: false
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+      // Get fresh token and client for this operation if not provided
+      let supabase = client;
+      if (!supabase) {
+        const token = await getToken({ template: "supabase" });
+        if (!token) {
+          throw new Error('Failed to get authentication token');
         }
-      });
+
+        supabase = createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: false
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        });
+      }
 
       const userEmail = user.emailAddresses[0].emailAddress;
       console.log('Fetching listings for email:', userEmail);
 
       // Fetch all data in a single query with proper joins
-      const { data, error } = await client
+      const { data, error } = await supabase
         .from('user_saved_listings')
         .select(`
           id,
@@ -337,13 +339,24 @@ export default function DealTracker() {
 
       console.log('Fetched data:', data);
 
+      if (!data) {
+        console.log('No data returned');
+        setSavedListings([]);
+        return;
+      }
+
       // Transform the data to match our SavedListing type
-      const transformedData: SavedListing[] = (data || []).map(item => ({
-        id: item.id,
-        user_email: item.user_email,
-        listing_id: item.listing_id,
-        listings: item.listings,
-        deal_tracker: item.deal_tracker || {
+      const transformedData: SavedListing[] = data.map(item => {
+        // Create the deal tracker object with proper types
+        const dealTracker = item.deal_tracker ? {
+          id: item.deal_tracker.id,
+          status: item.deal_tracker.status,
+          next_steps: item.deal_tracker.next_steps,
+          priority: item.deal_tracker.priority,
+          notes: item.deal_tracker.notes,
+          last_updated: item.deal_tracker.last_updated,
+          created_at: item.deal_tracker.created_at
+        } : {
           id: item.listing_id,
           status: 'Interested',
           next_steps: 'Review Listing',
@@ -351,8 +364,16 @@ export default function DealTracker() {
           notes: '',
           last_updated: new Date().toISOString(),
           created_at: new Date().toISOString()
-        }
-      }));
+        };
+
+        return {
+          id: item.id,
+          user_email: item.user_email,
+          listing_id: item.listing_id,
+          listings: item.listings,
+          deal_tracker: dealTracker
+        };
+      });
 
       setSavedListings(transformedData);
     } catch (error) {
@@ -361,6 +382,13 @@ export default function DealTracker() {
       setIsLoading(false);
     }
   };
+
+  // Remove the initial useEffect for fetching data since we now do it after auth setup
+  useEffect(() => {
+    if (user) {
+      fetchSavedListings();
+    }
+  }, [user]);
 
   // Add effect to refetch data when tab becomes visible
   useEffect(() => {
@@ -376,13 +404,6 @@ export default function DealTracker() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
-
-  // Initial data fetch
-  useEffect(() => {
-    if (user) {
-      fetchSavedListings();
-    }
-  }, [user]);
 
   const handleUpdateDeal = async (listingId: string, field: string, value: string | number) => {
     console.log('Updating deal:', { listingId, field, value })
