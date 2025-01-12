@@ -131,7 +131,8 @@ class SupabaseClient:
             
             # Get newsletters that are:
             # 1. Status is 'pending'
-            # 2. Either:
+            # 2. Have not been sent yet (sent_at is null)
+            # 3. Either:
             #    a. scheduled_for is not null and due (scheduled_for <= now)
             #    b. scheduled_for is null (legacy entries)
             
@@ -139,6 +140,7 @@ class SupabaseClient:
             result1 = self.client.table('newsletter_logs')\
                 .select('*')\
                 .eq('status', 'pending')\
+                .is_('sent_at', 'null')\
                 .lte('scheduled_for', now_str)\
                 .execute()
                 
@@ -146,6 +148,7 @@ class SupabaseClient:
             result2 = self.client.table('newsletter_logs')\
                 .select('*')\
                 .eq('status', 'pending')\
+                .is_('sent_at', 'null')\
                 .is_('scheduled_for', 'null')\
                 .execute()
             

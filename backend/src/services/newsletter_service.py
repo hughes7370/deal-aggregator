@@ -823,6 +823,9 @@ class NewsletterService:
                             .eq('id', alert['id'])\
                             .execute()
                         print(f"✅ Updated last notification timestamp for alert")
+                        # Update newsletter status to sent
+                        self.db.update_newsletter_status(newsletter['id'], 'sent')
+                        print(f"✅ Updated newsletter status to sent")
                     else:
                         error_msg = f"Failed to send newsletter to {user['email']}"
                         print(f"❌ {error_msg}")
