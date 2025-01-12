@@ -246,6 +246,8 @@ export default function DealTracker() {
           console.error('Error creating deal tracker:', createError);
           throw createError;
         }
+
+        console.log('Created new deal tracker:', newDealTracker);
       } else {
         // Update existing deal tracker entry
         const { error: updateError } = await supabaseClient
@@ -254,13 +256,15 @@ export default function DealTracker() {
             [field]: String(value),
             last_updated: new Date().toISOString(),
           })
-          .eq('listing_id', savedListing.listing_id)
+          .eq('id', savedListing.deal_tracker.id)  // Use deal_tracker.id instead of listing_id
           .eq('user_email', userEmail);
 
         if (updateError) {
           console.error('Error updating deal tracker:', updateError);
           throw updateError;
         }
+
+        console.log('Updated deal tracker for listing:', listingId);
       }
     } catch (error) {
       console.error('Error updating deal:', error);
@@ -660,11 +664,11 @@ export default function DealTracker() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden sm:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="hidden sm:block">
+        <table className="min-w-full table-fixed divide-y divide-gray-200">
           <thead>
             <tr>
-              <th className="px-6 py-3 bg-gray-50">
+              <th className="w-8 px-2 py-2 bg-gray-50">
                 <input
                   type="checkbox"
                   checked={selectedItems.size === filteredListings.length}
@@ -673,27 +677,26 @@ export default function DealTracker() {
                 />
               </th>
               {[
-                { key: 'business_name', label: 'Business Name' },
-                { key: 'asking_price', label: 'Price' },
-                { key: 'business_type', label: 'Type' },
-                { key: 'status', label: 'Status' },
-                { key: 'next_steps', label: 'Next Steps' },
-                { key: 'priority', label: 'Priority' },
-                { key: 'notes', label: 'Notes' },
-                { key: 'last_updated', label: 'Last Updated' },
-                { key: 'source_platform', label: 'Source' },
-                { key: 'created_at', label: 'Date Added' },
-              ].map(({ key, label }) => (
+                { key: 'business_name', label: 'Business Name', width: 'w-1/3' },
+                { key: 'asking_price', label: 'Price', width: 'w-24' },
+                { key: 'status', label: 'Status', width: 'w-28' },
+                { key: 'next_steps', label: 'Next Steps', width: 'w-32' },
+                { key: 'priority', label: 'Priority', width: 'w-24' },
+                { key: 'notes', label: 'Notes', width: 'w-48' },
+                { key: 'last_updated', label: 'Updated', width: 'w-24' },
+                { key: 'source_platform', label: 'Source', width: 'w-24' },
+                { key: 'created_at', label: 'Added', width: 'w-24' },
+              ].map(({ key, label, width }) => (
                 <th
                   key={key}
                   onClick={() => handleSort(key as SortField)}
-                  className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className={`${width} px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 truncate`}
                 >
                   <div className="flex items-center space-x-1">
                     <span>{label}</span>
                     {sortConfig.field === key && (
                       <ArrowsUpDownIcon
-                        className={`h-4 w-4 ${
+                        className={`h-3 w-3 ${
                           sortConfig.direction === 'asc' ? 'transform rotate-180' : ''
                         }`}
                       />
@@ -706,13 +709,13 @@ export default function DealTracker() {
           <tbody className="bg-white divide-y divide-gray-200">
             {isLoading ? (
               <tr>
-                <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={9} className="px-3 py-2 text-center text-sm text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : filteredListings.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={9} className="px-3 py-2 text-center text-sm text-gray-500">
                   No saved listings found. Save listings from the Deal Flow page to track them here.
                 </td>
               </tr>

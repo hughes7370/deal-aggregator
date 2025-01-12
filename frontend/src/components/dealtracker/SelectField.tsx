@@ -16,10 +16,10 @@ export default function SelectField({ value, onChange, options, className = '' }
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`block w-full py-2 px-3 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm ${className}`}
+      className={`block w-full py-1 px-2 border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent ${className}`}
     >
       {options.map((option) => (
-        <option key={option} value={option}>
+        <option key={option} value={option} className="text-xs">
           {option}
         </option>
       ))}

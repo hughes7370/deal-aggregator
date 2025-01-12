@@ -42,14 +42,11 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
       </td>
-      <td className="w-1/4 px-3 py-2 text-sm text-gray-900 truncate">
+      <td className="w-1/3 px-3 py-2 text-sm text-gray-900 truncate">
         {listing.title}
       </td>
       <td className="w-24 px-3 py-2 text-sm text-gray-900">
         ${listing.asking_price.toLocaleString()}
-      </td>
-      <td className="w-24 px-3 py-2 text-sm text-gray-500 truncate">
-        {listing.business_model}
       </td>
       <td className="w-28 px-3 py-2">
         <SelectField
