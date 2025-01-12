@@ -191,22 +191,22 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
       )}
       {isColumnVisible('asking_price') && (
         <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          ${listing.asking_price.toLocaleString()}
+          ${listing.asking_price?.toLocaleString() || '-'}
         </td>
       )}
       {isColumnVisible('revenue') && (
         <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          ${listing.revenue.toLocaleString()}
+          ${listing.revenue?.toLocaleString() || '-'}
         </td>
       )}
       {isColumnVisible('ebitda') && (
         <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          ${listing.ebitda.toLocaleString()}
+          ${listing.ebitda?.toLocaleString() || '-'}
         </td>
       )}
       {isColumnVisible('multiple') && (
         <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
-          {listing.selling_multiple.toFixed(1)}x
+          {listing.selling_multiple ? `${listing.selling_multiple.toFixed(1)}x` : '-'}
         </td>
       )}
       {isColumnVisible('status') && (

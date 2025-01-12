@@ -572,10 +572,10 @@ export default function DealTracker() {
     ];
     const rows = filteredListings.map(sl => [
       sl.listings.title,
-      sl.listings.asking_price,
-      sl.listings.revenue,
-      sl.listings.ebitda,
-      sl.listings.selling_multiple.toFixed(1) + 'x',
+      sl.listings.asking_price?.toLocaleString() || '-',
+      sl.listings.revenue?.toLocaleString() || '-',
+      sl.listings.ebitda?.toLocaleString() || '-',
+      sl.listings.selling_multiple ? `${sl.listings.selling_multiple.toFixed(1)}x` : '-',
       sl.listings.business_model,
       sl.deal_tracker?.status || 'Interested',
       sl.deal_tracker?.next_steps || 'Review Listing',
