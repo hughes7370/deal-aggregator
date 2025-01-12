@@ -261,7 +261,7 @@ export default function DealTracker() {
         
         const updatedDealTracker = {
           ...(sl.deal_tracker || {
-            id: sl.listing_id,
+            id: savedListing.listing_id,
             status: 'Interested',
             next_steps: 'Review Listing',
             priority: 'Medium',
@@ -274,7 +274,7 @@ export default function DealTracker() {
 
         return {
           ...sl,
-          deal_tracker: updatedDealTracker
+          deal_tracker: updatedDealTracker as SavedListing['deal_tracker']
         };
       });
 
@@ -306,15 +306,28 @@ export default function DealTracker() {
 
         console.log('Created new deal tracker:', newDealTracker);
       } else {
-        // Update existing deal tracker entry
+        // Get the latest deal tracker data first
+        const { data: currentTracker, error: fetchError } = await client
+          .from('deal_tracker')
+          .select('*')
+          .eq('listing_id', savedListing.listing_id)
+          .eq('user_email', userEmail)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching current deal tracker:', fetchError);
+          await fetchSavedListings(); // Revert to server state on error
+          return;
+        }
+
+        // Update existing deal tracker entry using its ID
         const { error: updateError } = await client
           .from('deal_tracker')
           .update({
             [field]: String(value),
             last_updated: new Date().toISOString(),
           })
-          .eq('listing_id', savedListing.listing_id)
-          .eq('user_email', userEmail);
+          .eq('id', currentTracker.id);
 
         if (updateError) {
           console.error('Error updating deal tracker:', updateError);
@@ -324,6 +337,9 @@ export default function DealTracker() {
 
         console.log('Updated deal tracker for listing:', listingId);
       }
+
+      // Fetch fresh data after successful update
+      await fetchSavedListings();
     } catch (error) {
       console.error('Error in handleUpdateDeal:', error);
       await fetchSavedListings(); // Revert to server state on error
