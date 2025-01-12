@@ -1001,7 +1001,18 @@ export default function DealTracker() {
 
       if (manualListingError) throw manualListingError;
 
-      // Then create the deal tracker entry
+      // Then create the user_saved_listings entry
+      const { error: savedListingError } = await client
+        .from('user_saved_listings')
+        .insert({
+          user_email: userEmail,
+          listing_id: manualListing.id,
+          saved_at: new Date().toISOString()
+        });
+
+      if (savedListingError) throw savedListingError;
+
+      // Finally create the deal tracker entry
       const { error: dealTrackerError } = await client
         .from('deal_tracker')
         .insert({
