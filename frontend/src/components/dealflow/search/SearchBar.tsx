@@ -7,11 +7,12 @@ export type SearchScope = 'all' | 'title' | 'description' | 'location'
 
 interface SearchBarProps {
   onSearch: (query: string, scope: SearchScope) => void
+  onScopeChange?: (scope: SearchScope) => void
   placeholder?: string
   className?: string
 }
 
-export function SearchBar({ onSearch, placeholder = "Search deals by keyword...", className = "" }: SearchBarProps) {
+export function SearchBar({ onSearch, onScopeChange, placeholder = "Search deals by keyword...", className = "" }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const [scope, setScope] = useState<SearchScope>('all')
   const [isOpen, setIsOpen] = useState(false)
@@ -88,6 +89,9 @@ export function SearchBar({ onSearch, placeholder = "Search deals by keyword..."
   const handleScopeChange = (newScope: SearchScope) => {
     setScope(newScope)
     setIsScopeOpen(false)
+    if (onScopeChange) {
+      onScopeChange(newScope)
+    }
   }
 
   const getScopeLabel = (scopeValue: SearchScope) => {
