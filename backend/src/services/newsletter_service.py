@@ -729,12 +729,26 @@ class NewsletterService:
             
             for newsletter in pending_newsletters:
                 try:
+                    # Double check status hasn't changed
+                    current = self.db.client.table('newsletter_logs')\
+                        .select('status, sent_at')\
+                        .eq('id', newsletter['id'])\
+                        .single()\
+                        .execute()
+                        
+                    if not current.data or current.data['status'] != 'pending' or current.data.get('sent_at'):
+                        print(f"⚠️ Newsletter {newsletter['id']} status changed, skipping")
+                        continue
+                    
                     print(f"\n📨 Processing newsletter {newsletter['id']}")
                     print(f"Newsletter details:")
                     print(f"- Created: {newsletter.get('created_at')}")
                     print(f"- Scheduled for: {newsletter.get('scheduled_for')}")
                     print(f"- User ID: {newsletter.get('user_id')}")
                     print(f"- Alert ID: {newsletter.get('alert_id')}")
+                    
+                    # Mark as processing to prevent duplicate sends
+                    self.db.update_newsletter_status(newsletter['id'], 'processing')
                     
                     # Get alert data if alert_id is present
                     alert = None

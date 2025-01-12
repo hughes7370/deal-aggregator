@@ -33,10 +33,10 @@ class SchedulerService:
             CronTrigger(hour=9, minute=0)
         )
         
-        # Process scheduled newsletters every 5 minutes
+        # Process scheduled newsletters every 15 minutes
         self.scheduler.add_job(
             self.process_newsletters,
-            CronTrigger(minute='*/5')
+            CronTrigger(minute='*/15')
         )
         
     def run_scraper(self):
@@ -216,10 +216,39 @@ class SchedulerService:
     def process_newsletters(self):
         """Process any pending newsletters that are due"""
         try:
-            print("Processing pending newsletters...")
-            self.newsletter_service.process_scheduled_newsletters()
+            print("\n📬 Processing scheduled newsletters...")
+            
+            # Get pending newsletters
+            pending = self.db.get_pending_newsletters()
+            if not pending:
+                print("ℹ️ No pending newsletters to process")
+                return
+                
+            print(f"📋 Found {len(pending)} pending newsletters")
+            
+            # Process each newsletter
+            for newsletter in pending:
+                try:
+                    # Double check status hasn't changed
+                    current = self.db.client.table('newsletter_logs')\
+                        .select('status, sent_at')\
+                        .eq('id', newsletter['id'])\
+                        .single()\
+                        .execute()
+                        
+                    if not current.data or current.data['status'] != 'pending' or current.data.get('sent_at'):
+                        print(f"⚠️ Newsletter {newsletter['id']} status changed, skipping")
+                        continue
+                        
+                    print(f"\n📨 Processing newsletter {newsletter['id']}")
+                    self.newsletter_service.process_scheduled_newsletters()
+                    
+                except Exception as e:
+                    print(f"❌ Error processing newsletter {newsletter['id']}: {str(e)}")
+                    continue
+                    
         except Exception as e:
-            print(f"Error processing pending newsletters: {str(e)}")
+            print(f"❌ Error in process_newsletters: {str(e)}")
             raise
 
     def calculate_next_schedule(self, frequency: str) -> datetime:
