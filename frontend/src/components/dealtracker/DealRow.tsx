@@ -42,17 +42,19 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
       </td>
-      <td className="w-1/3 px-3 py-2 text-sm text-gray-900 truncate">
-        {listing.title}
+      <td className="w-1/4 px-3 py-2">
+        <div className="text-sm text-gray-900 truncate max-w-[300px]">
+          {listing.title}
+        </div>
       </td>
-      <td className="w-24 px-3 py-2 text-sm text-gray-900">
+      <td className="w-24 px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
         ${listing.asking_price.toLocaleString()}
       </td>
       <td className="w-28 px-3 py-2">
         <SelectField
           value={dealTracker?.status || 'Interested'}
           onChange={(value) => onUpdate(listing.id, 'status', value)}
-          options={['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost']}
+          options={STATUS_OPTIONS}
           className={`text-xs ${statusColor}`}
         />
       </td>
@@ -60,7 +62,7 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
         <SelectField
           value={dealTracker?.next_steps || 'Review Listing'}
           onChange={(value) => onUpdate(listing.id, 'next_steps', value)}
-          options={['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None']}
+          options={NEXT_STEPS_OPTIONS}
           className="text-xs bg-gray-50"
         />
       </td>
@@ -68,7 +70,7 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
         <SelectField
           value={dealTracker?.priority || 'Medium'}
           onChange={(value) => onUpdate(listing.id, 'priority', value)}
-          options={['High', 'Medium', 'Low']}
+          options={PRIORITY_OPTIONS}
           className={`text-xs ${
             dealTracker?.priority === 'High' 
               ? 'bg-red-50 text-red-700' 
@@ -83,7 +85,7 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
           onClick={() => {
             const textarea = document.createElement('textarea');
             textarea.value = dealTracker?.notes || '';
-            textarea.className = 'w-full p-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500';
+            textarea.className = 'w-full p-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500';
             textarea.onblur = (e) => {
               const target = e.target as HTMLTextAreaElement;
               onUpdate(listing.id, 'notes', target.value);
@@ -100,18 +102,18 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
               textarea.focus();
             }
           }}
-          className="text-xs text-gray-900 cursor-pointer truncate"
+          className="text-xs text-gray-900 cursor-pointer truncate max-w-[200px]"
         >
           {dealTracker?.notes || 'Click to add notes...'}
         </div>
       </td>
-      <td className="w-24 px-3 py-2 text-xs text-gray-500">
+      <td className="w-24 px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
         {dealTracker?.last_updated ? new Date(dealTracker.last_updated).toLocaleDateString() : '-'}
       </td>
-      <td className="w-24 px-3 py-2 text-xs text-gray-500 truncate">
+      <td className="w-24 px-3 py-2 text-xs text-gray-500 truncate max-w-[100px]">
         {listing.source_platform}
       </td>
-      <td className="w-24 px-3 py-2 text-xs text-gray-500">
+      <td className="w-24 px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
         {dealTracker?.created_at ? new Date(dealTracker.created_at).toLocaleDateString() : '-'}
       </td>
     </tr>

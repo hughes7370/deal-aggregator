@@ -16,10 +16,15 @@ export default function SelectField({ value, onChange, options, className = '' }
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={`block w-full py-1 px-2 border border-gray-200 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent ${className}`}
+      className={`block w-full py-1.5 px-3 text-xs border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white ${className}`}
+      style={{ minWidth: '100px' }}
     >
       {options.map((option) => (
-        <option key={option} value={option} className="text-xs">
+        <option 
+          key={option} 
+          value={option} 
+          className="py-1 px-2 text-xs"
+        >
           {option}
         </option>
       ))}

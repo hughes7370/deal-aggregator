@@ -199,31 +199,29 @@ export default function DealTracker() {
         return;
       }
 
-      // Immediately update local state for better UX
-      setSavedListings(prev => prev.map(sl => {
+      // Create a new array with the updated listing
+      const updatedListings = savedListings.map(sl => {
         if (sl.listings.id !== listingId) return sl;
         
-        const updatedDealTracker = sl.deal_tracker
-          ? {
-              ...sl.deal_tracker,
-              [field]: value,
-              last_updated: new Date().toISOString(),
-            }
-          : {
-              id: sl.listing_id,
-              status: field === 'status' ? String(value) : 'Interested',
-              next_steps: field === 'next_steps' ? String(value) : 'Review Listing',
-              priority: field === 'priority' ? String(value) : 'Medium',
-              notes: field === 'notes' ? String(value) : '',
-              last_updated: new Date().toISOString(),
-              created_at: new Date().toISOString(),
-            };
-
         return {
           ...sl,
-          deal_tracker: updatedDealTracker
+          deal_tracker: {
+            ...(sl.deal_tracker || {
+              id: sl.listing_id,
+              status: 'Interested',
+              next_steps: 'Review Listing',
+              priority: 'Medium',
+              notes: '',
+              created_at: new Date().toISOString(),
+            }),
+            [field]: value,
+            last_updated: new Date().toISOString(),
+          }
         };
-      }));
+      });
+
+      // Update local state first
+      setSavedListings(updatedListings);
 
       if (!savedListing?.deal_tracker) {
         // Create new deal tracker entry
@@ -244,7 +242,8 @@ export default function DealTracker() {
 
         if (createError) {
           console.error('Error creating deal tracker:', createError);
-          throw createError;
+          await fetchSavedListings(); // Revert to server state on error
+          return;
         }
 
         console.log('Created new deal tracker:', newDealTracker);
@@ -256,20 +255,20 @@ export default function DealTracker() {
             [field]: String(value),
             last_updated: new Date().toISOString(),
           })
-          .eq('id', savedListing.deal_tracker.id)  // Use deal_tracker.id instead of listing_id
+          .eq('id', savedListing.deal_tracker.id)
           .eq('user_email', userEmail);
 
         if (updateError) {
           console.error('Error updating deal tracker:', updateError);
-          throw updateError;
+          await fetchSavedListings(); // Revert to server state on error
+          return;
         }
 
         console.log('Updated deal tracker for listing:', listingId);
       }
     } catch (error) {
       console.error('Error updating deal:', error);
-      // Revert local state on error
-      await fetchSavedListings();
+      await fetchSavedListings(); // Revert to server state on error
     }
   };
 
@@ -664,8 +663,8 @@ export default function DealTracker() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden sm:block">
-        <table className="min-w-full table-fixed divide-y divide-gray-200">
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead>
             <tr>
               <th className="w-8 px-2 py-2 bg-gray-50">
@@ -677,7 +676,7 @@ export default function DealTracker() {
                 />
               </th>
               {[
-                { key: 'business_name', label: 'Business Name', width: 'w-1/3' },
+                { key: 'business_name', label: 'Business Name', width: 'w-1/4' },
                 { key: 'asking_price', label: 'Price', width: 'w-24' },
                 { key: 'status', label: 'Status', width: 'w-28' },
                 { key: 'next_steps', label: 'Next Steps', width: 'w-32' },
