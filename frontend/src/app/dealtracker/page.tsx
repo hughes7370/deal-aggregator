@@ -402,7 +402,7 @@ export default function DealTracker() {
             created_at: new Date().toISOString()
           }),
           id: sl.deal_tracker?.id || sl.listing_id,
-          [field]: value,
+          [field]: String(value),
           last_updated: new Date().toISOString()
         }
         
@@ -422,12 +422,11 @@ export default function DealTracker() {
           .insert({
             user_email: userEmail,
             listing_id: listingId,
-            status: 'Interested',
-            next_steps: 'Review Listing',
-            priority: 'Medium',
-            notes: '',
+            status: field === 'status' ? String(value) : 'Interested',
+            next_steps: field === 'next_steps' ? String(value) : 'Review Listing',
+            priority: field === 'priority' ? String(value) : 'Medium',
+            notes: field === 'notes' ? String(value) : '',
             last_updated: new Date().toISOString(),
-            [field]: value
           })
 
         if (createError) throw createError
@@ -436,7 +435,7 @@ export default function DealTracker() {
         const { error: updateError } = await client
           .from('deal_tracker')
           .update({
-            [field]: value,
+            [field]: String(value),
             last_updated: new Date().toISOString(),
           })
           .eq('listing_id', listingId)
