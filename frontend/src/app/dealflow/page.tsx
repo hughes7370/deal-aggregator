@@ -202,7 +202,7 @@ export default function DealFlowPage() {
           growthRate: 0, // Placeholder for growth rate
           teamSize: listing.number_of_employees || 0,
           location: cleanLocation,
-          originalListingUrl: listing.original_listing_url || '',
+          listing_url: listing.listing_url || '',
           created_at: listing.created_at,
         }
       })

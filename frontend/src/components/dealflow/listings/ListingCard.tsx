@@ -72,7 +72,7 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
     businessType,
     source,
     location,
-    originalListingUrl
+    listing_url
   } = listing
 
   const BusinessTypeIcon = getBusinessTypeIcon(title, businessType)
@@ -189,9 +189,9 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
                 <EyeIcon className="w-5 h-5 mr-1.5" />
                 Quick View
               </button>
-              {originalListingUrl && (
+              {listing_url && (
                 <a
-                  href={originalListingUrl}
+                  href={listing_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-sm transition-colors"
@@ -213,9 +213,9 @@ export function ListingCard({ listing, viewMode, onSave, onHide, isSaved, isSavi
                 <EyeIcon className="w-5 h-5 mr-1.5" />
                 Quick View
               </button>
-              {originalListingUrl && (
+              {listing_url && (
                 <a
-                  href={originalListingUrl}
+                  href={listing_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center px-4 py-2 border border-white text-sm font-medium rounded-lg text-white hover:bg-white hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white shadow-sm transition-colors"

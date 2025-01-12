@@ -28,6 +28,7 @@ export function ListingPreviewModal({ listing, isOpen, onClose, onSave, isSaved,
     growthRate,
     teamSize,
     location,
+    listing_url
   } = listing
 
   // Helper function to hide "00" values
@@ -126,9 +127,16 @@ export function ListingPreviewModal({ listing, isOpen, onClose, onSave, isSaved,
             {/* Action Buttons */}
             <div className="mt-8 flex justify-between items-center pt-4 border-t border-gray-100">
               <div className="flex space-x-3">
-                <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                  View Full Listing
-                </button>
+                {listing_url && (
+                  <a
+                    href={listing_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  >
+                    View Full Listing
+                  </a>
+                )}
                 <button
                   onClick={onSave}
                   disabled={isSaving}

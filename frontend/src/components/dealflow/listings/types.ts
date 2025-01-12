@@ -18,7 +18,7 @@ export interface Listing {
   teamSize?: number
   location?: string
   profitMargin?: number
-  originalListingUrl?: string
+  listing_url?: string
   created_at: string
 }
 
