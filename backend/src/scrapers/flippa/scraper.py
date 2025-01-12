@@ -263,14 +263,24 @@ class FlippaScraper(BaseScraper):
             print(f"Error formatting listing: {e}")
             return None
 
-    def _parse_price(self, price_str: str) -> int:
+    def _parse_price(self, price_input: any) -> int:
         try:
+            # If input is already a number, return it as an integer
+            if isinstance(price_input, (int, float)):
+                return int(price_input)
+            
             # Convert to string and clean up basic formatting
-            price_str = str(price_str).strip().lower()
+            price_str = str(price_input).strip().lower()
+            
+            # If empty or none, return 0
+            if not price_str or price_str == 'none':
+                return 0
             
             # Remove currency indicators and other text
             price_str = price_str.replace('usd', '').replace('$', '').replace('/mo', '')
             price_str = price_str.replace('p/mo', '').replace(',', '').strip()
+            price_str = price_str.replace('eur', '').replace('€', '')
+            price_str = price_str.replace('aud', '')
             
             if 'm' in price_str:
                 return int(float(price_str.replace('m', '')) * 1000000)
@@ -279,7 +289,7 @@ class FlippaScraper(BaseScraper):
             else:
                 return int(float(price_str))
         except Exception as e:
-            print(f"Error parsing price '{price_str}': {str(e)}")
+            print(f"Error parsing price '{price_input}' (type: {type(price_input)}): {str(e)}")
             return 0
 
     def _extract_industry(self, business_type: str) -> str:
