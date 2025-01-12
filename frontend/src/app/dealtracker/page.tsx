@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, Fragment } from 'react';
-import { FunnelIcon, ArrowsUpDownIcon, ArrowDownTrayIcon, CheckIcon, ViewColumnsIcon, TrashIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, ArrowsUpDownIcon, ArrowDownTrayIcon, CheckIcon, ViewColumnsIcon, TrashIcon, ChevronDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import DealRow from '@/components/dealtracker/DealRow';
 import FilterControls from '@/components/dealtracker/controls/FilterControls';
@@ -11,6 +11,7 @@ import { SearchBar, SearchScope } from '@/components/dealflow/search/SearchBar';
 import SelectField from '@/components/dealtracker/SelectField';
 import { SupabaseClient, PostgrestResponse } from '@supabase/supabase-js';
 import { Menu, Transition } from '@headlessui/react';
+import ManualDealModal from '@/components/dealtracker/ManualDealModal';
 
 type SortField = 'business_name' | 'asking_price' | 'business_type' | 'status' | 'next_steps' | 'priority' | 'last_updated';
 type SortDirection = 'asc' | 'desc';
@@ -92,6 +93,20 @@ interface DealTrackerData {
   created_at: string;
 }
 
+interface ManualListing {
+  id: string;
+  user_email: string;
+  title: string;
+  asking_price: number | null;
+  business_model: string;
+  revenue: number | null;
+  ebitda: number | null;
+  selling_multiple: number | null;
+  source_platform: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Initialize Supabase client with auth configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -138,6 +153,7 @@ export default function DealTracker() {
     { id: 'source', label: 'Source', isVisible: true, isDefault: true },
     { id: 'added', label: 'Added', isVisible: true, isDefault: true },
   ]);
+  const [isManualDealModalOpen, setIsManualDealModalOpen] = useState(false);
 
   // Load filters when user is available
   useEffect(() => {
@@ -335,8 +351,20 @@ export default function DealTracker() {
         overridesData?.map(override => [override.listing_id, override]) || []
       );
 
+      // Fetch manual listings
+      const { data: manualListings, error: manualError } = await client
+        .from('manual_listings')
+        .select('*')
+        .eq('user_email', userEmail)
+        .returns<ManualListing[]>();
+
+      if (manualError) {
+        console.error('Error fetching manual listings:', manualError);
+        throw manualError;
+      }
+
       // Then fetch the saved listings with their details
-      const { data, error } = await client
+      const { data: savedListingsData, error: savedError } = await client
         .from('user_saved_listings')
         .select(`
           id,
@@ -357,51 +385,75 @@ export default function DealTracker() {
         .order('saved_at', { ascending: false })
         .returns<RawListing[]>();
 
-      if (error) {
-        console.error('Error fetching data:', error);
-        throw error;
+      if (savedError) {
+        console.error('Error fetching saved listings:', savedError);
+        throw savedError;
       }
 
-      if (!data) {
-        console.log('No data returned');
-        setSavedListings([]);
-        return;
-      }
+      // Transform saved listings
+      const transformedSavedListings = (savedListingsData || []).map(item => ({
+        id: item.id,
+        user_email: item.user_email,
+        listing_id: item.listing_id,
+        listings: {
+          id: item.listings.id,
+          title: item.listings.title,
+          asking_price: item.listings.asking_price,
+          business_model: item.listings.business_model,
+          source_platform: item.listings.source_platform,
+          revenue: item.listings.revenue,
+          ebitda: item.listings.ebitda,
+          selling_multiple: item.listings.selling_multiple
+        },
+        listing_override: overridesMap.get(item.listing_id),
+        deal_tracker: dealTrackerMap.get(item.listing_id) || {
+          id: item.listing_id,
+          status: 'Interested',
+          next_steps: 'Review Listing',
+          priority: 'Medium',
+          notes: '',
+          last_updated: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        }
+      }));
 
-      // Transform the data to include overrides
-      const transformedData: SavedListing[] = data.map(item => {
-        const dealTracker = dealTrackerMap.get(item.listing_id);
-        const override = overridesMap.get(item.listing_id);
-        
-        return {
+      // Transform manual listings to match the SavedListing interface
+      const transformedManualListings = (manualListings || []).map(item => ({
+        id: `manual-${item.id}`,
+        user_email: item.user_email,
+        listing_id: item.id,
+        listings: {
           id: item.id,
-          user_email: item.user_email,
-          listing_id: item.listing_id,
-          listings: {
-            id: item.listings.id,
-            title: item.listings.title,
-            asking_price: item.listings.asking_price,
-            business_model: item.listings.business_model,
-            source_platform: item.listings.source_platform,
-            revenue: item.listings.revenue,
-            ebitda: item.listings.ebitda,
-            selling_multiple: item.listings.selling_multiple
-          },
-          listing_override: override,
-          deal_tracker: dealTracker || {
-            id: item.listing_id,
-            status: 'Interested',
-            next_steps: 'Review Listing',
-            priority: 'Medium',
-            notes: '',
-            last_updated: new Date().toISOString(),
-            created_at: new Date().toISOString()
-          }
-        };
-      });
+          title: item.title,
+          asking_price: item.asking_price || 0,
+          business_model: item.business_model,
+          source_platform: 'Manual Entry',
+          revenue: item.revenue || 0,
+          ebitda: item.ebitda || 0,
+          selling_multiple: item.selling_multiple || 0
+        },
+        listing_override: null,
+        deal_tracker: dealTrackerMap.get(item.id) || {
+          id: item.id,
+          status: 'Interested',
+          next_steps: 'Review Listing',
+          priority: 'Medium',
+          notes: '',
+          last_updated: new Date().toISOString(),
+          created_at: item.created_at
+        }
+      }));
 
-      console.log('Transformed data:', transformedData);
-      setSavedListings(transformedData);
+      // Combine and sort all listings by last_updated
+      const allListings = [...transformedSavedListings, ...transformedManualListings]
+        .sort((a, b) => {
+          const dateA = new Date(a.deal_tracker?.last_updated || '');
+          const dateB = new Date(b.deal_tracker?.last_updated || '');
+          return dateB.getTime() - dateA.getTime();
+        });
+
+      console.log('All transformed listings:', allListings);
+      setSavedListings(allListings);
     } catch (error) {
       console.error('Error in fetchSavedListings:', error);
     } finally {
@@ -897,6 +949,81 @@ export default function DealTracker() {
     }
   };
 
+  // Add new function to handle manual deal submission
+  const handleAddManualDeal = async (dealData: {
+    title: string;
+    asking_price?: number;
+    business_model: string;
+    revenue?: number;
+    ebitda?: number;
+    selling_multiple?: number;
+    status: string;
+    next_steps: string;
+    priority: string;
+    notes?: string;
+  }) => {
+    try {
+      if (!user?.emailAddresses?.[0]?.emailAddress) {
+        throw new Error('No user email found');
+      }
+      const userEmail = user.emailAddresses[0].emailAddress;
+
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
+      // First, create the manual listing
+      const { data: manualListing, error: manualListingError } = await client
+        .from('manual_listings')
+        .insert({
+          user_email: userEmail,
+          title: dealData.title,
+          asking_price: dealData.asking_price,
+          business_model: dealData.business_model,
+          revenue: dealData.revenue,
+          ebitda: dealData.ebitda,
+          selling_multiple: dealData.selling_multiple
+        })
+        .select()
+        .single();
+
+      if (manualListingError) throw manualListingError;
+
+      // Then create the deal tracker entry
+      const { error: dealTrackerError } = await client
+        .from('deal_tracker')
+        .insert({
+          user_email: userEmail,
+          listing_id: manualListing.id,
+          status: dealData.status,
+          next_steps: dealData.next_steps,
+          priority: dealData.priority,
+          notes: dealData.notes,
+          last_updated: new Date().toISOString()
+        });
+
+      if (dealTrackerError) throw dealTrackerError;
+
+      // Refresh the listings
+      await fetchSavedListings();
+    } catch (error) {
+      console.error('Error adding manual deal:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-10">
       <div className="sm:flex sm:items-center">
@@ -912,6 +1039,14 @@ export default function DealTracker() {
           )}
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none space-x-2">
+          <button
+            type="button"
+            onClick={() => setIsManualDealModalOpen(true)}
+            className="inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add Deal
+          </button>
           {selectedItems.size > 0 && (
             <Menu as="div" className="relative inline-block text-left">
               <Menu.Button className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
@@ -1131,6 +1266,12 @@ export default function DealTracker() {
           </div>
         </div>
       </div>
+
+      <ManualDealModal
+        isOpen={isManualDealModalOpen}
+        onClose={() => setIsManualDealModalOpen(false)}
+        onSubmit={handleAddManualDeal}
+      />
     </div>
   );
 }
