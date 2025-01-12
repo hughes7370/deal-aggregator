@@ -1229,6 +1229,7 @@ export default function DealTracker() {
                 filters={filters}
                 onApplyFilters={handleApplyFilters}
                 onClose={() => {}}
+                variant="desktop"
                 isOpen={false}
               />
             </div>
@@ -1260,6 +1261,7 @@ export default function DealTracker() {
                       setIsFilterModalOpen(false);
                     }}
                     onClose={() => setIsFilterModalOpen(false)}
+                    variant="mobile"
                   />
                 </div>
               </div>
