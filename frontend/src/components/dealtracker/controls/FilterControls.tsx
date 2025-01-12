@@ -16,39 +16,62 @@ interface FilterControlsProps {
   onApplyFilters: (filters: any) => void;
 }
 
+type Filters = {
+  status: string[];
+  priority: string[];
+  type: string[];
+  next_steps: string[];
+};
+
 const STATUS_OPTIONS = ['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
 const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Other'];
 const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 
 export default function FilterControls({ isOpen, onClose, filters, onApplyFilters }: FilterControlsProps) {
-  const [localFilters, setLocalFilters] = useState(filters);
+  const [localFilters, setLocalFilters] = useState<Filters>({
+    status: filters.status || [],
+    priority: filters.priority || [],
+    type: filters.type || [],
+    next_steps: filters.next_steps || []
+  });
 
   // Keep local filters in sync with parent filters
   useEffect(() => {
-    setLocalFilters(filters);
+    console.log('FilterControls: Updating local filters from props:', filters);
+    setLocalFilters({
+      status: Array.isArray(filters.status) ? filters.status : [],
+      priority: Array.isArray(filters.priority) ? filters.priority : [],
+      type: Array.isArray(filters.type) ? filters.type : [],
+      next_steps: Array.isArray(filters.next_steps) ? filters.next_steps : []
+    });
   }, [filters]);
 
   const handleFilterChange = (type: string, value: string) => {
+    console.log('FilterControls: Handling filter change:', { type, value });
     setLocalFilters(prev => {
-      const currentValues = prev[type] || [];
+      const currentValues = Array.isArray(prev[type]) ? prev[type] : [];
       const newValues = currentValues.includes(value)
         ? currentValues.filter(v => v !== value)
         : [...currentValues, value];
       
-      return {
+      const updated = {
         ...prev,
         [type]: newValues
       };
+      console.log('FilterControls: Updated local filters:', updated);
+      return updated;
     });
   };
 
   const handleApply = () => {
+    console.log('FilterControls: Applying filters:', localFilters);
     onApplyFilters(localFilters);
     onClose();
   };
 
   const handleClear = () => {
+    console.log('FilterControls: Clearing filters');
     const clearedFilters = {
       status: [],
       priority: [],

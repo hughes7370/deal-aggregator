@@ -72,24 +72,44 @@ export default function DealTracker() {
 
   // Keep filters in localStorage
   useEffect(() => {
-    // Load filters from localStorage on mount
-    const savedFilters = localStorage.getItem('dealTrackerFilters');
-    console.log('Initial load - Saved filters from localStorage:', savedFilters);
-    if (savedFilters) {
-      try {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
+    try {
+      // Load filters from localStorage on mount
+      const savedFilters = localStorage.getItem('dealTrackerFilters');
+      console.log('Initial load - Saved filters from localStorage:', savedFilters);
+      if (savedFilters) {
         const parsedFilters = JSON.parse(savedFilters);
         console.log('Parsed filters:', parsedFilters);
-        setFilters(parsedFilters);
-      } catch (e) {
-        console.error('Error parsing saved filters:', e);
+        if (parsedFilters && typeof parsedFilters === 'object') {
+          setFilters({
+            status: Array.isArray(parsedFilters.status) ? parsedFilters.status : [],
+            priority: Array.isArray(parsedFilters.priority) ? parsedFilters.priority : [],
+            type: Array.isArray(parsedFilters.type) ? parsedFilters.type : [],
+            next_steps: Array.isArray(parsedFilters.next_steps) ? parsedFilters.next_steps : []
+          });
+        }
       }
+    } catch (e) {
+      console.error('Error loading filters from localStorage:', e);
     }
   }, []);
 
   // Save filters to localStorage whenever they change
   useEffect(() => {
-    console.log('Saving filters to localStorage:', filters);
-    localStorage.setItem('dealTrackerFilters', JSON.stringify(filters));
+    if (typeof window === 'undefined') return;
+
+    try {
+      console.log('Saving filters to localStorage:', filters);
+      if (Object.values(filters).some(arr => arr.length > 0)) {
+        localStorage.setItem('dealTrackerFilters', JSON.stringify(filters));
+      } else {
+        localStorage.removeItem('dealTrackerFilters');
+      }
+    } catch (e) {
+      console.error('Error saving filters to localStorage:', e);
+    }
   }, [filters]);
 
   // Set up authenticated Supabase client
@@ -484,16 +504,20 @@ export default function DealTracker() {
 
   const handleApplyFilters = (newFilters: Filters) => {
     console.log('Applying new filters:', newFilters);
-    // Ensure we maintain the filter structure
-    const updatedFilters = {
-      status: newFilters.status || [],
-      priority: newFilters.priority || [],
-      type: newFilters.type || [],
-      next_steps: newFilters.next_steps || []
-    };
-    console.log('Structured filters to apply:', updatedFilters);
-    setFilters(updatedFilters);
-    setIsFilterModalOpen(false);
+    try {
+      // Ensure we maintain the filter structure and validate arrays
+      const updatedFilters = {
+        status: Array.isArray(newFilters.status) ? newFilters.status : [],
+        priority: Array.isArray(newFilters.priority) ? newFilters.priority : [],
+        type: Array.isArray(newFilters.type) ? newFilters.type : [],
+        next_steps: Array.isArray(newFilters.next_steps) ? newFilters.next_steps : []
+      };
+      console.log('Structured filters to apply:', updatedFilters);
+      setFilters(updatedFilters);
+      setIsFilterModalOpen(false);
+    } catch (e) {
+      console.error('Error applying filters:', e);
+    }
   };
 
   // Filter the listings based on current filters
