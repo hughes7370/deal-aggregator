@@ -601,109 +601,58 @@ export default function DealFlowPage() {
               />
             </div>
           </div>
-
-          {/* Search and filters row */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="w-full sm:w-96">
-              <SearchBar
-                onSearch={setSearchQuery}
-                onScopeChange={setSearchScope}
-                placeholder="Search listings..."
-              />
-            </div>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
-              <SortDropdown value={sortBy} onChange={setSortBy} />
-              <ResultsCount count={listings.length} />
-            </div>
-          </div>
         </div>
 
         {/* Main content area */}
         <div className="mt-6 lg:grid lg:grid-cols-[280px,1fr] lg:gap-8">
           {/* Filters sidebar - desktop */}
           <div className="hidden lg:block">
-            <div className="sticky top-8 space-y-6">
-              <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
-              <RevenueFilter
-                value={revenueRange}
-                onChange={setRevenueRange}
-                isAnnual={isAnnualRevenue}
-                onIsAnnualChange={handleRevenueToggle}
-              />
-              <ProfitFilter
-                value={profitRange}
-                onChange={setProfitRange}
-                isAnnual={isAnnualProfit}
-                onIsAnnualChange={handleProfitToggle}
-              />
-              <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
-              <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
-              <SourceFilter selected={sources} onChange={setSources} />
-              <AdvancedFilters
-                profitMargin={profitMargin}
-                onProfitMarginChange={setProfitMargin}
-                growthRate={growthRate}
-                onGrowthRateChange={setGrowthRate}
-                teamSize={teamSize}
-                onTeamSizeChange={setTeamSize}
-                location={location}
-                onLocationChange={setLocation}
-              />
-            </div>
-          </div>
-
-          {/* Mobile filters dialog */}
-          {isMobileFiltersOpen && (
-            <div className="fixed inset-0 z-40 lg:hidden">
-              <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileFiltersOpen(false)} />
-              <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white shadow-xl p-6 overflow-y-auto">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-medium text-gray-900">Filters</h2>
-                  <button
-                    onClick={() => setIsMobileFiltersOpen(false)}
-                    className="text-gray-400 hover:text-gray-500"
-                  >
-                    <span className="sr-only">Close filters</span>
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="space-y-6">
-                  <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
-                  <RevenueFilter
-                    value={revenueRange}
-                    onChange={setRevenueRange}
-                    isAnnual={isAnnualRevenue}
-                    onIsAnnualChange={handleRevenueToggle}
-                  />
-                  <ProfitFilter
-                    value={profitRange}
-                    onChange={setProfitRange}
-                    isAnnual={isAnnualProfit}
-                    onIsAnnualChange={handleProfitToggle}
-                  />
-                  <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
-                  <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
-                  <SourceFilter selected={sources} onChange={setSources} />
-                  <AdvancedFilters
-                    profitMargin={profitMargin}
-                    onProfitMarginChange={setProfitMargin}
-                    growthRate={growthRate}
-                    onGrowthRateChange={setGrowthRate}
-                    teamSize={teamSize}
-                    onTeamSizeChange={setTeamSize}
-                    location={location}
-                    onLocationChange={setLocation}
-                  />
-                </div>
+            <div className="sticky top-8 space-y-6 overflow-visible">
+              <div className="w-full relative z-[100]">
+                <SearchBar
+                  onSearch={setSearchQuery}
+                  onScopeChange={setSearchScope}
+                  placeholder="Search listings..."
+                />
+              </div>
+              <div className="space-y-6 overflow-y-auto">
+                <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
+                <RevenueFilter
+                  value={revenueRange}
+                  onChange={setRevenueRange}
+                  isAnnual={isAnnualRevenue}
+                  onIsAnnualChange={handleRevenueToggle}
+                />
+                <ProfitFilter
+                  value={profitRange}
+                  onChange={setProfitRange}
+                  isAnnual={isAnnualProfit}
+                  onIsAnnualChange={handleProfitToggle}
+                />
+                <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
+                <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
+                <SourceFilter selected={sources} onChange={setSources} />
+                <AdvancedFilters
+                  profitMargin={profitMargin}
+                  onProfitMarginChange={setProfitMargin}
+                  growthRate={growthRate}
+                  onGrowthRateChange={setGrowthRate}
+                  teamSize={teamSize}
+                  onTeamSizeChange={setTeamSize}
+                  location={location}
+                  onLocationChange={setLocation}
+                />
               </div>
             </div>
-          )}
+          </div>
 
           {/* Listings section */}
           <div className="mt-6 lg:mt-0">
             <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <SortDropdown value={sortBy} onChange={setSortBy} />
+                <ResultsCount count={listings.length} />
+              </div>
               <PageSizeSelector pageSize={pageSize} onPageSizeChange={setPageSize} />
             </div>
             <ListingsGrid
@@ -720,6 +669,60 @@ export default function DealFlowPage() {
             />
           </div>
         </div>
+
+        {/* Mobile filters dialog */}
+        {isMobileFiltersOpen && (
+          <div className="fixed inset-0 z-40 lg:hidden">
+            <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileFiltersOpen(false)} />
+            <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white shadow-xl p-6 overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-medium text-gray-900">Filters</h2>
+                <button
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <span className="sr-only">Close filters</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-6">
+                <SearchBar
+                  onSearch={setSearchQuery}
+                  onScopeChange={setSearchScope}
+                  placeholder="Search listings..."
+                />
+                <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
+                <RevenueFilter
+                  value={revenueRange}
+                  onChange={setRevenueRange}
+                  isAnnual={isAnnualRevenue}
+                  onIsAnnualChange={handleRevenueToggle}
+                />
+                <ProfitFilter
+                  value={profitRange}
+                  onChange={setProfitRange}
+                  isAnnual={isAnnualProfit}
+                  onIsAnnualChange={handleProfitToggle}
+                />
+                <MultipleFilter value={multipleRange} onChange={setMultipleRange} />
+                <BusinessTypeFilter selected={businessTypes} onChange={setBusinessTypes} />
+                <SourceFilter selected={sources} onChange={setSources} />
+                <AdvancedFilters
+                  profitMargin={profitMargin}
+                  onProfitMarginChange={setProfitMargin}
+                  growthRate={growthRate}
+                  onGrowthRateChange={setGrowthRate}
+                  teamSize={teamSize}
+                  onTeamSizeChange={setTeamSize}
+                  location={location}
+                  onLocationChange={setLocation}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
