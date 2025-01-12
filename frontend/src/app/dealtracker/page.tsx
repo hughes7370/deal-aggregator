@@ -44,8 +44,8 @@ interface SavedListing {
   selected?: boolean;
 }
 
-// Update the DealTrackerResponse interface to match the actual response structure
-interface DealTrackerResponse {
+// Add interface for the raw response data
+interface RawListing {
   id: string;
   user_email: string;
   listing_id: string;
@@ -56,15 +56,18 @@ interface DealTrackerResponse {
     business_model: string;
     source_platform: string;
   };
-  deal_tracker: {
-    id: string;
-    status: string;
-    next_steps: string;
-    priority: string;
-    notes: string;
-    last_updated: string;
-    created_at: string;
-  } | null;
+}
+
+interface DealTrackerData {
+  id: string;
+  listing_id: string;
+  user_email: string;
+  status: string;
+  next_steps: string;
+  priority: string;
+  notes: string;
+  last_updated: string;
+  created_at: string;
 }
 
 // Initialize Supabase client with auth configuration
@@ -90,50 +93,6 @@ export default function DealTracker() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
-  const [supabaseClient, setSupabaseClient] = useState(() => 
-    createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: false
-      }
-    })
-  );
-
-  // Set up authenticated Supabase client
-  useEffect(() => {
-    const setupSupabase = async () => {
-      if (!user) {
-        console.log('No user found, using anonymous Supabase client')
-        return
-      }
-
-      try {
-        const token = await getToken({ template: "supabase" })
-        if (!token) {
-          console.error('Failed to get Clerk JWT token')
-          return
-        }
-
-        const authenticatedClient = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: {
-            persistSession: false
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        })
-
-        setSupabaseClient(authenticatedClient)
-        // Fetch data after authentication is set up
-        await fetchSavedListings(authenticatedClient);
-      } catch (error) {
-        console.error('Error in Supabase auth setup:', error)
-      }
-    }
-
-    setupSupabase()
-  }, [user, getToken])
 
   // Load filters when user is available
   useEffect(() => {
@@ -274,38 +233,51 @@ export default function DealTracker() {
     }
   };
 
-  const fetchSavedListings = async (client?: SupabaseClient) => {
+  // Fetch saved listings with proper authentication
+  const fetchSavedListings = async () => {
     try {
       if (!user?.emailAddresses?.[0]?.emailAddress) {
         console.log('No user email found');
         return;
       }
 
-      // Get fresh token and client for this operation if not provided
-      let supabase = client;
-      if (!supabase) {
-        const token = await getToken({ template: "supabase" });
-        if (!token) {
-          throw new Error('Failed to get authentication token');
-        }
-
-        supabase = createClient(supabaseUrl, supabaseAnonKey, {
-          auth: {
-            persistSession: false
-          },
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        });
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
       }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
 
       const userEmail = user.emailAddresses[0].emailAddress;
       console.log('Fetching listings for email:', userEmail);
 
-      // Fetch all data in a single query with proper joins
-      const { data, error } = await supabase
+      // First fetch the deal tracker data
+      const { data: dealTrackerData, error: dealTrackerError } = await client
+        .from('deal_tracker')
+        .select('*')
+        .eq('user_email', userEmail)
+        .returns<DealTrackerData[]>();
+
+      if (dealTrackerError) {
+        console.error('Error fetching deal tracker data:', dealTrackerError);
+      }
+
+      // Create a map of deal tracker data by listing_id
+      const dealTrackerMap = new Map(
+        dealTrackerData?.map(dt => [dt.listing_id, dt]) || []
+      );
+
+      // Then fetch the saved listings with their details
+      const { data, error } = await client
         .from('user_saved_listings')
         .select(`
           id,
@@ -317,27 +289,16 @@ export default function DealTracker() {
             asking_price,
             business_model,
             source_platform
-          ),
-          deal_tracker!left (
-            id,
-            status,
-            next_steps,
-            priority,
-            notes,
-            last_updated,
-            created_at
           )
         `)
         .eq('user_email', userEmail)
         .order('saved_at', { ascending: false })
-        .returns<DealTrackerResponse[]>();
+        .returns<RawListing[]>();
 
       if (error) {
         console.error('Error fetching data:', error);
         throw error;
       }
-
-      console.log('Fetched data:', data);
 
       if (!data) {
         console.log('No data returned');
@@ -347,34 +308,31 @@ export default function DealTracker() {
 
       // Transform the data to match our SavedListing type
       const transformedData: SavedListing[] = data.map(item => {
-        // Create the deal tracker object with proper types
-        const dealTracker = item.deal_tracker ? {
-          id: item.deal_tracker.id,
-          status: item.deal_tracker.status,
-          next_steps: item.deal_tracker.next_steps,
-          priority: item.deal_tracker.priority,
-          notes: item.deal_tracker.notes,
-          last_updated: item.deal_tracker.last_updated,
-          created_at: item.deal_tracker.created_at
-        } : {
-          id: item.listing_id,
-          status: 'Interested',
-          next_steps: 'Review Listing',
-          priority: 'Medium',
-          notes: '',
-          last_updated: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        };
-
+        const dealTracker = dealTrackerMap.get(item.listing_id);
         return {
           id: item.id,
           user_email: item.user_email,
           listing_id: item.listing_id,
-          listings: item.listings,
-          deal_tracker: dealTracker
+          listings: {
+            id: item.listings.id,
+            title: item.listings.title,
+            asking_price: item.listings.asking_price,
+            business_model: item.listings.business_model,
+            source_platform: item.listings.source_platform
+          },
+          deal_tracker: dealTracker || {
+            id: item.listing_id,
+            status: 'Interested',
+            next_steps: 'Review Listing',
+            priority: 'Medium',
+            notes: '',
+            last_updated: new Date().toISOString(),
+            created_at: new Date().toISOString()
+          }
         };
       });
 
+      console.log('Transformed data:', transformedData);
       setSavedListings(transformedData);
     } catch (error) {
       console.error('Error in fetchSavedListings:', error);
@@ -383,7 +341,7 @@ export default function DealTracker() {
     }
   };
 
-  // Remove the initial useEffect for fetching data since we now do it after auth setup
+  // Fetch data when user is available
   useEffect(() => {
     if (user) {
       fetchSavedListings();
@@ -393,7 +351,7 @@ export default function DealTracker() {
   // Add effect to refetch data when tab becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && user) {
         fetchSavedListings();
       }
     };
@@ -403,7 +361,7 @@ export default function DealTracker() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [user]);
 
   const handleUpdateDeal = async (listingId: string, field: string, value: string | number) => {
     console.log('Updating deal:', { listingId, field, value })
