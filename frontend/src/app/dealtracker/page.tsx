@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { FunnelIcon, ArrowsUpDownIcon, ArrowDownTrayIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useMemo, Fragment } from 'react';
+import { FunnelIcon, ArrowsUpDownIcon, ArrowDownTrayIcon, CheckIcon, ViewColumnsIcon } from '@heroicons/react/24/outline';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import DealRow from '@/components/dealtracker/DealRow';
 import FilterControls from '@/components/dealtracker/controls/FilterControls';
@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 import { SearchBar, SearchScope } from '@/components/dealflow/search/SearchBar';
 import SelectField from '@/components/dealtracker/SelectField';
 import { SupabaseClient, PostgrestResponse } from '@supabase/supabase-js';
+import { Menu, Transition } from '@headlessui/react';
 
 type SortField = 'business_name' | 'asking_price' | 'business_type' | 'status' | 'next_steps' | 'priority' | 'last_updated';
 type SortDirection = 'asc' | 'desc';
@@ -31,6 +32,9 @@ interface SavedListing {
     asking_price: number;
     business_model: string;
     source_platform: string;
+    revenue: number;
+    ebitda: number;
+    selling_multiple: number;
   };
   deal_tracker?: {
     id: string;
@@ -55,6 +59,9 @@ interface RawListing {
     asking_price: number;
     business_model: string;
     source_platform: string;
+    revenue: number;
+    ebitda: number;
+    selling_multiple: number;
   };
 }
 
@@ -74,11 +81,20 @@ interface DealTrackerData {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+// Add column configuration type
+interface ColumnConfig {
+  id: string;
+  label: string;
+  isVisible: boolean;
+  isDefault: boolean;
+}
+
 export default function DealTracker() {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [savedListings, setSavedListings] = useState<SavedListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showMetrics, setShowMetrics] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ field: SortField; direction: SortDirection }>({
     field: 'last_updated',
     direction: 'desc'
@@ -93,6 +109,20 @@ export default function DealTracker() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchScope, setSearchScope] = useState<SearchScope>('all');
+  const [columnConfig, setColumnConfig] = useState<ColumnConfig[]>([
+    { id: 'business', label: 'Business', isVisible: true, isDefault: true },
+    { id: 'asking_price', label: 'Asking Price', isVisible: true, isDefault: true },
+    { id: 'revenue', label: 'Monthly Revenue', isVisible: false, isDefault: false },
+    { id: 'ebitda', label: 'Monthly Profit', isVisible: false, isDefault: false },
+    { id: 'multiple', label: 'Multiple', isVisible: false, isDefault: false },
+    { id: 'status', label: 'Status', isVisible: true, isDefault: true },
+    { id: 'next_steps', label: 'Next Steps', isVisible: true, isDefault: true },
+    { id: 'priority', label: 'Priority', isVisible: true, isDefault: true },
+    { id: 'notes', label: 'Notes', isVisible: true, isDefault: true },
+    { id: 'last_updated', label: 'Last Updated', isVisible: true, isDefault: true },
+    { id: 'source', label: 'Source', isVisible: true, isDefault: true },
+    { id: 'added', label: 'Added', isVisible: true, isDefault: true },
+  ]);
 
   // Load filters when user is available
   useEffect(() => {
@@ -288,7 +318,10 @@ export default function DealTracker() {
             title,
             asking_price,
             business_model,
-            source_platform
+            source_platform,
+            revenue,
+            ebitda,
+            selling_multiple
           )
         `)
         .eq('user_email', userEmail)
@@ -318,7 +351,10 @@ export default function DealTracker() {
             title: item.listings.title,
             asking_price: item.listings.asking_price,
             business_model: item.listings.business_model,
-            source_platform: item.listings.source_platform
+            source_platform: item.listings.source_platform,
+            revenue: item.listings.revenue,
+            ebitda: item.listings.ebitda,
+            selling_multiple: item.listings.selling_multiple
           },
           deal_tracker: dealTracker || {
             id: item.listing_id,
@@ -521,10 +557,25 @@ export default function DealTracker() {
   };
 
   const handleExportCSV = () => {
-    const headers = ['Business Name', 'Price', 'Type', 'Status', 'Next Steps', 'Priority', 'Notes', 'Last Updated'];
+    const headers = [
+      'Business Name',
+      'Price',
+      'Monthly Revenue',
+      'Monthly Profit',
+      'Multiple',
+      'Type',
+      'Status',
+      'Next Steps',
+      'Priority',
+      'Notes',
+      'Last Updated'
+    ];
     const rows = filteredListings.map(sl => [
       sl.listings.title,
       sl.listings.asking_price,
+      sl.listings.revenue,
+      sl.listings.ebitda,
+      sl.listings.selling_multiple.toFixed(1) + 'x',
       sl.listings.business_model,
       sl.deal_tracker?.status || 'Interested',
       sl.deal_tracker?.next_steps || 'Review Listing',
@@ -629,6 +680,19 @@ export default function DealTracker() {
     });
   }, [savedListings, filters]);
 
+  const toggleColumn = (columnId: string) => {
+    setColumnConfig(prev => prev.map(col => 
+      col.id === columnId ? { ...col, isVisible: !col.isVisible } : col
+    ));
+  };
+
+  const resetToDefault = () => {
+    setColumnConfig(prev => prev.map(col => ({
+      ...col,
+      isVisible: col.isDefault
+    })));
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-10">
       <div className="sm:flex sm:items-center">
@@ -639,6 +703,58 @@ export default function DealTracker() {
           </p>
         </div>
         <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none space-x-2">
+          <Menu as="div" className="relative inline-block text-left">
+            <Menu.Button className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+              <ViewColumnsIcon className="h-5 w-5 mr-2" />
+              Columns
+            </Menu.Button>
+            <Transition
+              as={Fragment}
+              enter="transition ease-out duration-100"
+              enterFrom="transform opacity-0 scale-95"
+              enterTo="transform opacity-100 scale-100"
+              leave="transition ease-in duration-75"
+              leaveFrom="transform opacity-100 scale-100"
+              leaveTo="transform opacity-0 scale-95"
+            >
+              <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <div className="py-1">
+                  <div className="px-3 py-2 border-b border-gray-200">
+                    <button
+                      onClick={resetToDefault}
+                      className="text-sm text-gray-700 hover:text-gray-900"
+                    >
+                      Reset to Default
+                    </button>
+                  </div>
+                  {columnConfig.map((column) => (
+                    <Menu.Item key={column.id}>
+                      {({ active }) => (
+                        <button
+                          onClick={() => toggleColumn(column.id)}
+                          className={`${
+                            active ? 'bg-gray-100' : ''
+                          } flex items-center w-full px-3 py-2 text-sm text-left`}
+                        >
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={column.isVisible}
+                              onChange={() => toggleColumn(column.id)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2"
+                            />
+                            <span className={column.isVisible ? 'font-medium' : 'text-gray-500'}>
+                              {column.label}
+                            </span>
+                          </div>
+                        </button>
+                      )}
+                    </Menu.Item>
+                  ))}
+                </div>
+              </Menu.Items>
+            </Transition>
+          </Menu>
           <button
             type="button"
             onClick={() => setIsFilterModalOpen(true)}
@@ -685,33 +801,11 @@ export default function DealTracker() {
                       }}
                     />
                   </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Business
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Asking Price
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Status
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Next Steps
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Priority
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Notes
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Last Updated
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Source
-                  </th>
-                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Added
-                  </th>
+                  {columnConfig.map(column => column.isVisible && (
+                    <th key={column.id} scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                      {column.label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -732,6 +826,7 @@ export default function DealTracker() {
                       setSelectedItems(newSelected);
                     }}
                     statusColor={getStatusColor(listing.deal_tracker?.status || 'Interested')}
+                    columnConfig={columnConfig}
                   />
                 ))}
               </tbody>
