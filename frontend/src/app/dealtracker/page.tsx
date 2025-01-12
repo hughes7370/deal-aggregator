@@ -402,7 +402,7 @@ export default function DealTracker() {
             created_at: new Date().toISOString()
           }),
           id: sl.deal_tracker?.id || sl.listing_id,
-          [field]: String(value),
+          [field]: value,
           last_updated: new Date().toISOString()
         }
         
@@ -422,11 +422,12 @@ export default function DealTracker() {
           .insert({
             user_email: userEmail,
             listing_id: listingId,
-            status: field === 'status' ? String(value) : 'Interested',
-            next_steps: field === 'next_steps' ? String(value) : 'Review Listing',
-            priority: field === 'priority' ? String(value) : 'Medium',
-            notes: field === 'notes' ? String(value) : '',
+            status: 'Interested',
+            next_steps: 'Review Listing',
+            priority: 'Medium',
+            notes: '',
             last_updated: new Date().toISOString(),
+            [field]: value
           })
 
         if (createError) throw createError
@@ -435,7 +436,7 @@ export default function DealTracker() {
         const { error: updateError } = await client
           .from('deal_tracker')
           .update({
-            [field]: String(value),
+            [field]: value,
             last_updated: new Date().toISOString(),
           })
           .eq('listing_id', listingId)
@@ -646,6 +647,14 @@ export default function DealTracker() {
           >
             <FunnelIcon className="h-5 w-5 mr-2" />
             Filter
+          </button>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            Export
           </button>
         </div>
       </div>
