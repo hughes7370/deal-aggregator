@@ -116,11 +116,28 @@ export default function DealTracker() {
         return;
       }
 
+      // Get fresh token and client for this operation
+      const token = await getToken({ template: "supabase" });
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      const client = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      });
+
       const userEmail = user.emailAddresses[0].emailAddress;
       console.log('Fetching listings for email:', userEmail);
 
       // First check if we have any saved listings
-      const { data: savedListingsCheck, error: checkError } = await supabaseClient
+      const { data: savedListingsCheck, error: checkError } = await client
         .from('user_saved_listings')
         .select('id, user_email')
         .eq('user_email', userEmail);
@@ -138,7 +155,7 @@ export default function DealTracker() {
       }
 
       // Now fetch full data with joins
-      const { data, error } = await supabaseClient
+      const { data, error } = await client
         .from('user_saved_listings')
         .select(`
           id,
@@ -186,6 +203,28 @@ export default function DealTracker() {
       setIsLoading(false);
     }
   };
+
+  // Add effect to refetch data when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSavedListings();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    if (user) {
+      fetchSavedListings();
+    }
+  }, [user]);
 
   const handleUpdateDeal = async (listingId: string, field: string, value: string | number) => {
     try {
