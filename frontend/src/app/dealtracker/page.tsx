@@ -199,17 +199,44 @@ export default function DealTracker() {
         return;
       }
 
+      // Immediately update local state for better UX
+      setSavedListings(prev => prev.map(sl => {
+        if (sl.listings.id !== listingId) return sl;
+        
+        const updatedDealTracker = sl.deal_tracker
+          ? {
+              ...sl.deal_tracker,
+              [field]: value,
+              last_updated: new Date().toISOString(),
+            }
+          : {
+              id: sl.listing_id,
+              status: field === 'status' ? String(value) : 'Interested',
+              next_steps: field === 'next_steps' ? String(value) : 'Review Listing',
+              priority: field === 'priority' ? String(value) : 'Medium',
+              notes: field === 'notes' ? String(value) : '',
+              last_updated: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+            };
+
+        return {
+          ...sl,
+          deal_tracker: updatedDealTracker
+        };
+      }));
+
       if (!savedListing?.deal_tracker) {
         // Create new deal tracker entry
         const { data: newDealTracker, error: createError } = await supabaseClient
           .from('deal_tracker')
           .insert({
             user_email: userEmail,
-            listing_id: savedListing.listing_id, // Use the listing_id from user_saved_listings
-            [field]: value,
-            status: 'Interested',
-            next_steps: 'Review Listing',
-            priority: 'Medium',
+            listing_id: savedListing.listing_id,
+            [field]: String(value),
+            status: field === 'status' ? String(value) : 'Interested',
+            next_steps: field === 'next_steps' ? String(value) : 'Review Listing',
+            priority: field === 'priority' ? String(value) : 'Medium',
+            notes: field === 'notes' ? String(value) : '',
             last_updated: new Date().toISOString(),
           })
           .select()
@@ -219,43 +246,26 @@ export default function DealTracker() {
           console.error('Error creating deal tracker:', createError);
           throw createError;
         }
-        
-        setSavedListings(prev => prev.map(sl => 
-          sl.listings.id === listingId 
-            ? { ...sl, deal_tracker: newDealTracker }
-            : sl
-        ));
       } else {
         // Update existing deal tracker entry
         const { error: updateError } = await supabaseClient
           .from('deal_tracker')
           .update({
-            [field]: value,
+            [field]: String(value),
             last_updated: new Date().toISOString(),
           })
-          .eq('listing_id', savedListing.listing_id) // Use listing_id instead of id
+          .eq('listing_id', savedListing.listing_id)
           .eq('user_email', userEmail);
 
         if (updateError) {
           console.error('Error updating deal tracker:', updateError);
           throw updateError;
         }
-
-        setSavedListings(prev => prev.map(sl => 
-          sl.listings.id === listingId 
-            ? { 
-                ...sl, 
-                deal_tracker: {
-                  ...sl.deal_tracker!,
-                  [field]: value,
-                  last_updated: new Date().toISOString(),
-                }
-              }
-            : sl
-        ));
       }
     } catch (error) {
       console.error('Error updating deal:', error);
+      // Revert local state on error
+      await fetchSavedListings();
     }
   };
 

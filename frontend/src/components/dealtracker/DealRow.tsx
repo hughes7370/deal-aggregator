@@ -32,33 +32,9 @@ const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call',
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
 
 export default function DealRow({ listing, dealTracker, onUpdate, isSelected, onSelect, statusColor }: DealRowProps) {
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [notesValue, setNotesValue] = useState(dealTracker?.notes || '');
-
-  const handleNotesBlur = () => {
-    setIsEditingNotes(false);
-    if (notesValue !== dealTracker?.notes) {
-      onUpdate(listing.id, 'notes', notesValue);
-    }
-  };
-
-  const getBusinessType = (type: string | null | undefined) => {
-    // If type is null or undefined, return 'Other'
-    if (!type) return 'Other';
-    
-    // Map the business type from the listing to our options
-    const typeMap: { [key: string]: string } = {
-      'saas': 'SaaS',
-      'ecommerce': 'Ecommerce',
-      'content': 'Content',
-      'agency': 'Agency',
-    };
-    return typeMap[type.toLowerCase()] || 'Other';
-  };
-
   return (
-    <tr className={isSelected ? 'bg-blue-50' : undefined}>
-      <td className="px-6 py-4">
+    <tr className="hover:bg-gray-50">
+      <td className="w-8 px-2 py-2">
         <input
           type="checkbox"
           checked={isSelected}
@@ -66,37 +42,37 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+      <td className="w-1/4 px-3 py-2 text-sm text-gray-900 truncate">
         {listing.title}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="w-24 px-3 py-2 text-sm text-gray-900">
         ${listing.asking_price.toLocaleString()}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {getBusinessType(listing.business_model)}
+      <td className="w-24 px-3 py-2 text-sm text-gray-500 truncate">
+        {listing.business_model}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm">
+      <td className="w-28 px-3 py-2">
         <SelectField
           value={dealTracker?.status || 'Interested'}
           onChange={(value) => onUpdate(listing.id, 'status', value)}
-          options={STATUS_OPTIONS}
-          className={`min-w-[140px] ${statusColor} rounded-lg border-0 font-medium`}
+          options={['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost']}
+          className={`text-xs ${statusColor}`}
         />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="w-32 px-3 py-2">
         <SelectField
           value={dealTracker?.next_steps || 'Review Listing'}
           onChange={(value) => onUpdate(listing.id, 'next_steps', value)}
-          options={NEXT_STEPS_OPTIONS}
-          className="min-w-[140px] bg-gray-50 rounded-lg"
+          options={['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None']}
+          className="text-xs bg-gray-50"
         />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="w-24 px-3 py-2">
         <SelectField
           value={dealTracker?.priority || 'Medium'}
           onChange={(value) => onUpdate(listing.id, 'priority', value)}
-          options={PRIORITY_OPTIONS}
-          className={`min-w-[100px] rounded-lg ${
+          options={['High', 'Medium', 'Low']}
+          className={`text-xs ${
             dealTracker?.priority === 'High' 
               ? 'bg-red-50 text-red-700' 
               : dealTracker?.priority === 'Medium'
@@ -105,31 +81,40 @@ export default function DealRow({ listing, dealTracker, onUpdate, isSelected, on
           }`}
         />
       </td>
-      <td className="px-6 py-4 text-sm text-gray-500">
-        {isEditingNotes ? (
-          <textarea
-            value={notesValue}
-            onChange={(e) => setNotesValue(e.target.value)}
-            onBlur={handleNotesBlur}
-            className="w-full min-w-[200px] h-20 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            autoFocus
-          />
-        ) : (
-          <div
-            onClick={() => setIsEditingNotes(true)}
-            className="cursor-pointer hover:bg-gray-50 p-2 rounded"
-          >
-            {dealTracker?.notes || 'Click to add notes...'}
-          </div>
-        )}
+      <td className="w-48 px-3 py-2">
+        <div
+          onClick={() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = dealTracker?.notes || '';
+            textarea.className = 'w-full p-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500';
+            textarea.onblur = (e) => {
+              const target = e.target as HTMLTextAreaElement;
+              onUpdate(listing.id, 'notes', target.value);
+              if (target.parentElement) {
+                target.parentElement.replaceChild(
+                  document.createTextNode(target.value || 'Click to add notes...'),
+                  target
+                );
+              }
+            };
+            const textNode = document.createTextNode(dealTracker?.notes || 'Click to add notes...');
+            if (textNode.parentElement) {
+              textNode.parentElement.replaceChild(textarea, textNode);
+              textarea.focus();
+            }
+          }}
+          className="text-xs text-gray-900 cursor-pointer truncate"
+        >
+          {dealTracker?.notes || 'Click to add notes...'}
+        </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="w-24 px-3 py-2 text-xs text-gray-500">
         {dealTracker?.last_updated ? new Date(dealTracker.last_updated).toLocaleDateString() : '-'}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {listing.source_platform || '-'}
+      <td className="w-24 px-3 py-2 text-xs text-gray-500 truncate">
+        {listing.source_platform}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="w-24 px-3 py-2 text-xs text-gray-500">
         {dealTracker?.created_at ? new Date(dealTracker.created_at).toLocaleDateString() : '-'}
       </td>
     </tr>
