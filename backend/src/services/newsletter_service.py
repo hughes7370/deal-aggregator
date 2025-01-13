@@ -104,8 +104,11 @@ class NewsletterService:
                 print(f"User data: {user}")
                 return None
             
-            if not listings:
-                print("❌ No listings provided")
+            # Check if there are any matches
+            exact_matches = listings.get('exact_matches', [])
+            other_matches = listings.get('other_matches', [])
+            if not exact_matches and not other_matches:
+                print("ℹ️ No matches found, skipping newsletter")
                 return None
 
             # Create a newsletter log entry
@@ -814,13 +817,22 @@ class NewsletterService:
                     print(f"\n🔍 Finding matching listings...")
                     matching_listings = self.get_matching_listings(alert)
                     
-                    if not matching_listings:
+                    # Check if there are any matches
+                    exact_matches = matching_listings.get('exact_matches', [])
+                    other_matches = matching_listings.get('other_matches', [])
+                    if not exact_matches and not other_matches:
                         skip_msg = f"No matching listings found for alert '{alert['name']}' since last notification at {alert.get('last_notification_sent', 'Never')}"
                         print(f"ℹ️ {skip_msg}")
                         self.db.update_newsletter_status(newsletter['id'], 'skipped', skip_msg)
+                        # Update last notification sent timestamp even when skipped
+                        self.db.client.table('alerts')\
+                            .update({'last_notification_sent': datetime.now(UTC).isoformat()})\
+                            .eq('id', alert['id'])\
+                            .execute()
+                        print(f"✅ Updated last notification timestamp for alert")
                         continue
                     
-                    print(f"✅ Found {len(matching_listings)} matching listings")
+                    print(f"✅ Found {len(exact_matches)} exact matches and {len(other_matches)} other matches")
                     
                     # Send the newsletter
                     print(f"\n📤 Sending newsletter to {user['email']}...")
