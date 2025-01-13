@@ -4,18 +4,20 @@ services:
     env: python
     region: oregon
     buildCommand: |
+      # Install system dependencies for Playwright
+      apt-get update
+      apt-get install -y libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2
+      # Install Python dependencies
       pip install -r requirements.txt
-      PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/.playwright-browser playwright install chromium
-      PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/.playwright-browser playwright install-deps chromium
+      # Install Playwright and browsers
+      playwright install chromium
+      playwright install-deps chromium
     startCommand: |
       export PYTHONPATH=$PYTHONPATH:$(pwd)
-      export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/.playwright-browser
       python -m src.services.scheduler_service & uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: PYTHONPATH
         value: /opt/render/project/src
-      - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/project/.playwright-browser
     autoDeploy: true 
