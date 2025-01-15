@@ -161,7 +161,6 @@ export default function DealFlowPage() {
             'EmpireFlippers': 'empire_flippers',
             'Flippa': 'flippa',
             'Acquire': 'acquire',
-            'WebsiteClosers': 'website_closers',
             'VikingMergers': 'viking_mergers',
             'Latonas': 'latonas',
             'BizBuySell': 'bizbuysell',

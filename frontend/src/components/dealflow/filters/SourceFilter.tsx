@@ -3,7 +3,6 @@ export type Source =
   | 'empire_flippers'
   | 'flippa'
   | 'acquire'
-  | 'website_closers'
   | 'viking_mergers'
   | 'latonas'
   | 'bizbuysell'
@@ -16,7 +15,6 @@ const SOURCES: { value: Source; label: string }[] = [
   { value: 'empire_flippers', label: 'Empire Flippers' },
   { value: 'flippa', label: 'Flippa' },
   { value: 'acquire', label: 'Acquire' },
-  { value: 'website_closers', label: 'Website Closers' },
   { value: 'viking_mergers', label: 'Viking Mergers' },
   { value: 'latonas', label: 'Latonas' },
   { value: 'bizbuysell', label: 'BizBuySell' },
