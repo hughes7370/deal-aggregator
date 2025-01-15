@@ -656,7 +656,7 @@ export default function DealFlowPage() {
               <PageSizeSelector pageSize={pageSize} onPageSizeChange={setPageSize} />
             </div>
             <ListingsGrid
-              listings={listings}
+              listings={filteredListings}
               viewMode={viewMode}
               onSaveListing={handleSaveListing}
               onHideListing={handleHideListing}
