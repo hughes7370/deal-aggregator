@@ -17,7 +17,7 @@ class ListingPageScraper:
 
     def scrape_listing_page(self, url: str) -> Optional[Dict]:
         """
-        Scrape a single listing page from Website Closers
+        Scrape a single listing page
         """
         try:
             print(f"\nScraping detailed listing page: {url}")

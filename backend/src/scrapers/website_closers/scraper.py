@@ -2,14 +2,12 @@ from ..base_scraper import BaseScraper
 from typing import Dict, List, Optional
 from datetime import datetime
 from bs4 import BeautifulSoup
-from backend.src.services.listing_parser import ListingParser
-from config.search_queries import BASE_URLS
-import requests
+from src.services.listing_parser import ListingParser
 
 class WebsiteClosersScraper(BaseScraper):
     def __init__(self):
         super().__init__()
-        self.base_url = BASE_URLS.get("websiteclosers", "https://www.websiteclosers.com/businesses-for-sale/")
+        self.base_url = "https://www.websiteclosers.com/businesses-for-sale/"
         self.parser = ListingParser()
 
     def get_listings(self, max_pages: int = 1) -> List[Dict]:
@@ -17,66 +15,42 @@ class WebsiteClosersScraper(BaseScraper):
         listings = []
         
         try:
-            response = requests.get(self.base_url)
+            soup = self._make_request(self.base_url)
+            content_divs = soup.find_all('div', class_='post_content')
             
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                content_divs = soup.find_all('div', class_='post_content')
+            if content_divs:
+                print(f"\nFound {len(content_divs)} listings")
                 
-                if content_divs:
-                    print(f"\nFound {len(content_divs)} potential listings")
-                    
-                    # First, collect all URLs
-                    listing_urls = []
-                    for div in content_divs:
+                for div in content_divs:
+                    try:
+                        # Get title element first to check URL
                         title_elem = div.find('a', class_='post_title')
-                        if title_elem and title_elem.get('href'):
-                            listing_urls.append(title_elem['href'])
-                    
-                    # Check which URLs don't exist in database
-                    from backend.src.database.supabase_db import SupabaseClient
-                    db_client = SupabaseClient()
-                    existing_urls = db_client.get_existing_listing_urls(listing_urls)
-                    new_urls = set(listing_urls) - set(existing_urls)
-                    
-                    if new_urls:
-                        print(f"\nFound {len(new_urls)} new listings to process")
-                    else:
-                        print("\nNo new listings found")
-                        return []
-                    
-                    # Only process new listings
-                    for div in content_divs:
-                        try:
-                            title_elem = div.find('a', class_='post_title')
-                            if not title_elem or not title_elem.get('href'):
-                                continue
-                                
-                            # Skip if URL already exists
-                            if title_elem['href'] not in new_urls:
-                                continue
-                            
-                            listing_data = {
-                                'raw_html': str(div),
-                                'raw_text': div.get_text(separator=' ', strip=True),
-                                'title_elem': title_elem,
-                                'price_elem': div.find('div', class_='asking_price'),
-                                'cash_flow_elem': div.find('div', class_='cash_flow'),
-                                'description_elem': div.find('div', class_='the_content'),
-                                'source_platform': 'WebsiteClosers',
-                                'listing_url': title_elem['href']
-                            }
-                            
-                            parsed_listing = self.parser.parse_listing(listing_data)
-                            if parsed_listing:
-                                listings.append(parsed_listing)
-                            
-                        except Exception as e:
-                            print(f"Error extracting listing: {e}")
+                        if not title_elem or not title_elem.get('href'):
                             continue
                             
-                return listings
-                
+                        # Get all the data we can find
+                        listing_data = {
+                            'raw_html': str(div),
+                            'raw_text': div.get_text(separator=' ', strip=True),
+                            'title_elem': title_elem,
+                            'price_elem': div.find('div', class_='asking_price'),
+                            'cash_flow_elem': div.find('div', class_='cash_flow'),
+                            'description_elem': div.find('div', class_='the_content'),
+                            'source_platform': 'WebsiteClosers',
+                            'listing_url': title_elem['href']  # Ensure URL is always included
+                        }
+                        
+                        # Let the ListingParser handle all parsing and storage
+                        parsed_listing = self.parser.parse_listing(listing_data)
+                        if parsed_listing:
+                            listings.append(parsed_listing)
+                        
+                    except Exception as e:
+                        print(f"Error extracting listing: {e}")
+                        continue
+                        
+            return listings
+            
         except Exception as e:
             print(f"Error fetching listings: {e}")
             return []

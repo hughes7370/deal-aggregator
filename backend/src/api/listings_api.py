@@ -5,7 +5,6 @@ import requests
 from time import sleep
 from config.config import SCRAPER_API_KEY
 from backend.src.services.listing_page_scraper import ListingPageScraper
-from backend.src.scrapers.website_closers.scraper import WebsiteClosersScraper
 from backend.src.scrapers.business_exits.scraper import BusinessExitsScraper
 from backend.src.database.supabase_db import SupabaseClient
 from backend.src.scrapers.bizbuysell.scraper import BizBuySellScraper
@@ -23,12 +22,6 @@ def get_all_listings(limit: int = None, queries: Dict[str, Dict[str, str]] = Non
     Fetch listings from all platforms
     """
     all_results = {}
-    
-    print("\nFetching listings from Website Closers...")
-    website_closers_results = fetch_websiteclosers_listings(max_pages=1)
-    if website_closers_results:
-        all_results['WebsiteClosers'] = website_closers_results
-        print(f"Found {len(website_closers_results)} listings from Website Closers")
     
     print("\nFetching listings from Business Exits...")
     business_exits_results = fetch_businessexits_listings(max_pages=1)
@@ -85,13 +78,6 @@ def get_all_listings(limit: int = None, queries: Dict[str, Dict[str, str]] = Non
         print(f"Found {len(acquire_results)} listings from Acquire")
     
     return all_results
-
-def fetch_websiteclosers_listings(max_pages: int) -> List[Dict]:
-    """
-    Fetch listings from websiteclosers.com
-    """
-    scraper = WebsiteClosersScraper()
-    return scraper.get_listings(max_pages=max_pages)
 
 def fetch_businessexits_listings(max_pages: int) -> List[Dict]:
     """
