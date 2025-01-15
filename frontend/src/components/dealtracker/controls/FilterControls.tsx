@@ -25,7 +25,23 @@ type Filters = {
 
 const STATUS_OPTIONS = ['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
-const TYPE_OPTIONS = ['SaaS', 'E-commerce', 'Content', 'Service', 'Marketplace', 'Other'];
+
+// Updated business type options to match Deal Flow page
+const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Service', 'Other'];
+
+// Add mapping for business type variations
+const BUSINESS_TYPE_MAPPING: { [key: string]: string } = {
+  'saas': 'SaaS',
+  'software': 'SaaS',
+  'software/saas': 'SaaS',
+  'e-commerce': 'Ecommerce',
+  'ecommerce': 'Ecommerce',
+  'content': 'Content',
+  'service': 'Service',
+  'agency': 'Service',
+  'marketplace': 'Other'
+};
+
 const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 
 export default function FilterControls({ isOpen, onClose, filters, onApplyFilters }: FilterControlsProps) {
@@ -51,9 +67,19 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
     console.log('FilterControls: Handling filter change:', { type, value });
     setLocalFilters(prev => {
       const currentValues = prev[type] || [];
-      const newValues = currentValues.includes(value)
-        ? currentValues.filter(v => v !== value)
-        : [...currentValues, value];
+      let newValues;
+
+      if (type === 'type') {
+        // For business type, check if we need to include variations
+        const mappedValue = BUSINESS_TYPE_MAPPING[value.toLowerCase()] || value;
+        newValues = currentValues.includes(mappedValue)
+          ? currentValues.filter(v => v !== mappedValue)
+          : [...currentValues, mappedValue];
+      } else {
+        newValues = currentValues.includes(value)
+          ? currentValues.filter(v => v !== value)
+          : [...currentValues, value];
+      }
       
       const updated = {
         ...prev,
