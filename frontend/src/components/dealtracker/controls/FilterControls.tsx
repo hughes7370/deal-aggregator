@@ -25,23 +25,7 @@ type Filters = {
 
 const STATUS_OPTIONS = ['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
-
-// Updated business type options to match Deal Flow page
-const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Service', 'Other'];
-
-// Add mapping for business type variations
-const BUSINESS_TYPE_MAPPING: { [key: string]: string } = {
-  'saas': 'SaaS',
-  'software': 'SaaS',
-  'software/saas': 'SaaS',
-  'e-commerce': 'Ecommerce',
-  'ecommerce': 'Ecommerce',
-  'content': 'Content',
-  'service': 'Service',
-  'agency': 'Service',
-  'marketplace': 'Other'
-};
-
+const TYPE_OPTIONS = ['SaaS', 'E-commerce', 'Content', 'Service', 'Marketplace', 'Other'];
 const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 
 export default function FilterControls({ isOpen, onClose, filters, onApplyFilters }: FilterControlsProps) {
@@ -67,19 +51,9 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
     console.log('FilterControls: Handling filter change:', { type, value });
     setLocalFilters(prev => {
       const currentValues = prev[type] || [];
-      let newValues;
-
-      if (type === 'type') {
-        // For business type, check if we need to include variations
-        const mappedValue = BUSINESS_TYPE_MAPPING[value.toLowerCase()] || value;
-        newValues = currentValues.includes(mappedValue)
-          ? currentValues.filter(v => v !== mappedValue)
-          : [...currentValues, mappedValue];
-      } else {
-        newValues = currentValues.includes(value)
-          ? currentValues.filter(v => v !== value)
-          : [...currentValues, value];
-      }
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter(v => v !== value)
+        : [...currentValues, value];
       
       const updated = {
         ...prev,
@@ -210,7 +184,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                         </div>
                       </div>
 
-                      {/* Business Type Filter */}
+                      {/* Business Type Filter - Temporarily Commented Out
                       <div>
                         <h4 className="text-sm font-medium text-gray-900 mb-3">Business Type</h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -234,6 +208,7 @@ export default function FilterControls({ isOpen, onClose, filters, onApplyFilter
                           ))}
                         </div>
                       </div>
+                      */}
 
                       {/* Next Steps Filter */}
                       <div>

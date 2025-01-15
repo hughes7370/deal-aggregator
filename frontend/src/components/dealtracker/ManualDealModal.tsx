@@ -20,23 +20,10 @@ interface ManualDealModalProps {
   }) => Promise<{ success: boolean; message: string }>;
 }
 
-const BUSINESS_TYPES = ['SaaS', 'Ecommerce', 'Content', 'Service', 'Other'];
+const BUSINESS_TYPES = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Service', 'Other'];
 const STATUS_OPTIONS = ['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost'];
 const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
-
-// Add mapping for business type variations
-const BUSINESS_TYPE_MAPPING: { [key: string]: string } = {
-  'saas': 'SaaS',
-  'software': 'SaaS',
-  'software/saas': 'SaaS',
-  'e-commerce': 'Ecommerce',
-  'ecommerce': 'Ecommerce',
-  'content': 'Content',
-  'service': 'Service',
-  'agency': 'Service',
-  'marketplace': 'Other'
-};
 
 export default function ManualDealModal({ isOpen, onClose, onSubmit }: ManualDealModalProps) {
   const [formData, setFormData] = useState({
@@ -92,17 +79,7 @@ export default function ManualDealModal({ isOpen, onClose, onSubmit }: ManualDea
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    let updatedValue = value;
-
-    // Map business model to standardized type if needed
-    if (name === 'business_model') {
-      updatedValue = BUSINESS_TYPE_MAPPING[value.toLowerCase()] || value;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: updatedValue
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (

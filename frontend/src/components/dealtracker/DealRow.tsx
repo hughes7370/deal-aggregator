@@ -54,21 +54,7 @@ interface DealRowProps {
   columnConfig: ColumnConfig[];
 }
 
-const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Service', 'Other'];
-
-// Add mapping for business type variations
-const BUSINESS_TYPE_MAPPING: { [key: string]: string } = {
-  'saas': 'SaaS',
-  'software': 'SaaS',
-  'software/saas': 'SaaS',
-  'e-commerce': 'Ecommerce',
-  'ecommerce': 'Ecommerce',
-  'content': 'Content',
-  'service': 'Service',
-  'agency': 'Service',
-  'marketplace': 'Other'
-};
-
+const TYPE_OPTIONS = ['SaaS', 'Ecommerce', 'Content', 'Agency', 'Other'];
 const STATUS_OPTIONS = ['Interested', 'Contacted', 'Due Diligence', 'Offer Made', 'Not Interested', 'Closed', 'Lost'];
 const NEXT_STEPS_OPTIONS = ['Review Listing', 'Contact Seller', 'Schedule Call', 'Request Info', 'Submit Offer', 'None'];
 const PRIORITY_OPTIONS = ['High', 'Medium', 'Low'];
@@ -215,19 +201,10 @@ export default function DealRow({
 
   // Helper function to get the effective value (override or original)
   const getEffectiveValue = (field: keyof ListingOverride) => {
-    let value;
     if (listing_override && field in listing_override && listing_override[field] !== null) {
-      value = listing_override[field];
-    } else {
-      value = listing[field as keyof typeof listing];
+      return listing_override[field];
     }
-
-    // Map business model to standardized type if needed
-    if (field === 'business_model' && typeof value === 'string') {
-      return BUSINESS_TYPE_MAPPING[value.toLowerCase()] || value;
-    }
-
-    return value;
+    return listing[field as keyof typeof listing];
   };
 
   return (
