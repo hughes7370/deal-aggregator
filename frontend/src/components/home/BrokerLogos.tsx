@@ -7,7 +7,7 @@ const brokers = [
   { name: 'Empire Flippers', logo: '/images/logos/logo2.png' },
   { name: 'Flippa', logo: '/images/logos/logo3.jpeg' },
   { name: 'Acquire.com', logo: '/images/logos/logo4.png' },
-  { name: 'Website Closers', logo: '/images/logos/logo5.png' },
+  { name: 'BizBuySell', logo: '/images/logos/logo6.png' },
   // Add more brokers here
 ];
 
