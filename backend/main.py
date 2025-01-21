@@ -3,8 +3,43 @@ from backend.src.services.deal_analyzer import analyze_listings
 from backend.src.services.listing_details_scraper import ListingDetailsScraper
 from config.search_queries import get_queries_from_db
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from backend.src.database.supabase_db import SupabaseClient
+import threading
+import signal
+
+# Global flag for scraper status
+_scraper_running = False
+_scraper_lock = threading.Lock()
+
+def is_scraper_running():
+    """Check if scraper is currently running"""
+    with _scraper_lock:
+        return _scraper_running
+
+def set_scraper_running(status: bool):
+    """Set scraper running status"""
+    with _scraper_lock:
+        global _scraper_running
+        _scraper_running = status
+
+def run_with_timeout(func, timeout_seconds):
+    """Run a function with a timeout"""
+    def handler(signum, frame):
+        raise TimeoutError("Function execution timed out")
+    
+    # Set up the timeout
+    signal.signal(signal.SIGALRM, handler)
+    signal.alarm(timeout_seconds)
+    
+    try:
+        result = func()
+        signal.alarm(0)  # Disable the alarm
+        return result
+    except TimeoutError as e:
+        raise e
+    finally:
+        signal.alarm(0)  # Ensure the alarm is disabled
 
 def main():
     try:
@@ -57,29 +92,46 @@ def run_scrapers():
     """
     Run all scrapers and store results in the database
     """
+    # Check if scraper is already running
+    if is_scraper_running():
+        print("Scraper is already running, skipping this run")
+        return
+    
     try:
+        # Set scraper as running
+        set_scraper_running(True)
+        
         # Initialize database client
         db = SupabaseClient()
         
-        # Get listings from all sources
-        print("Starting scraper run...")
-        all_listings = get_all_listings()
+        def scraper_task():
+            # Get listings from all sources
+            print("Starting scraper run...")
+            all_listings = get_all_listings()
+            
+            # Store listings in database
+            for platform, listings in all_listings.items():
+                print(f"\nProcessing {len(listings)} listings from {platform}")
+                for listing in listings:
+                    try:
+                        db.store_listing(listing)
+                    except Exception as e:
+                        print(f"Error storing listing: {e}")
+                        continue
+            
+            print("\nScraper run completed successfully")
         
-        # Store listings in database
-        for platform, listings in all_listings.items():
-            print(f"\nProcessing {len(listings)} listings from {platform}")
-            for listing in listings:
-                try:
-                    db.store_listing(listing)
-                except Exception as e:
-                    print(f"Error storing listing: {e}")
-                    continue
+        # Run the scraper with a 45-minute timeout
+        run_with_timeout(scraper_task, 45 * 60)  # 45 minutes in seconds
         
-        print("\nScraper run completed successfully")
-        
+    except TimeoutError:
+        print("Scraper run timed out after 45 minutes")
     except Exception as e:
         print(f"Error in scraper run: {e}")
         raise
+    finally:
+        # Always mark scraper as not running when done
+        set_scraper_running(False)
 
 if __name__ == "__main__":
     main()
