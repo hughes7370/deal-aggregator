@@ -127,37 +127,50 @@ def run_scrapers():
             # Get listings from all sources
             print("\n🔄 Starting scraper run...")
             print("📊 Fetching listings from all platforms")
-            all_listings = get_all_listings()
+            try:
+                all_listings = get_all_listings()
+            except Exception as e:
+                print(f"❌ Error getting listings: {e}")
+                print(f"📜 Traceback:\n{traceback.format_exc()}")
+                all_listings = {}  # Continue with empty listings rather than failing
             
             total_processed = 0
             total_errors = 0
             
             # Store listings in database
             for platform, listings in all_listings.items():
-                print(f"\n📦 Processing {len(listings)} listings from {platform}")
-                platform_processed = 0
-                platform_errors = 0
-                
-                for listing in listings:
-                    try:
-                        print(f"💾 Storing listing: {listing.get('title', 'Unknown Title')}")
-                        db.store_listing(listing)
-                        platform_processed += 1
-                        total_processed += 1
-                    except Exception as e:
-                        print(f"❌ Error storing listing: {e}")
-                        platform_errors += 1
-                        total_errors += 1
-                        continue
-                
-                print(f"\n📊 Platform Summary - {platform}:")
-                print(f"✅ Successfully stored: {platform_processed}")
-                print(f"❌ Errors: {platform_errors}")
+                try:
+                    print(f"\n📦 Processing {len(listings)} listings from {platform}")
+                    platform_processed = 0
+                    platform_errors = 0
+                    
+                    for listing in listings:
+                        try:
+                            print(f"💾 Storing listing: {listing.get('title', 'Unknown Title')[:100]}...")  # Truncate long titles
+                            db.store_listing(listing)
+                            platform_processed += 1
+                            total_processed += 1
+                        except Exception as e:
+                            print(f"❌ Error storing listing: {str(e)[:500]}")  # Truncate long error messages
+                            platform_errors += 1
+                            total_errors += 1
+                            continue
+                    
+                    print(f"\n📊 Platform Summary - {platform}:")
+                    print(f"✅ Successfully stored: {platform_processed}")
+                    print(f"❌ Errors: {platform_errors}")
+                except Exception as e:
+                    print(f"❌ Error processing platform {platform}: {e}")
+                    print(f"📜 Traceback:\n{traceback.format_exc()}")
+                    continue
             
             print("\n📈 Overall Scraper Summary:")
             print(f"✅ Total listings processed: {total_processed}")
             print(f"❌ Total errors: {total_errors}")
-            print("✨ Scraper run completed successfully")
+            if total_processed > 0:
+                print("✨ Scraper run completed with some successes")
+            else:
+                print("⚠️ Scraper run completed but no listings were processed")
         
         # Run the scraper with a 45-minute timeout
         print("\n⏱️ Starting scraper task with 45-minute timeout...")
