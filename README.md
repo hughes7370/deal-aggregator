@@ -1,277 +1,149 @@
-# Agentic AI Bot
+# Open Source MicroSaaS Deal Sourcing Platform
 
-## Overview
+A full-stack web application that aggregates business listings and sends personalized newsletters to subscribers based on their preferences.
 
-Agentic AI Bot is a sophisticated multi-agent AI application that processes user queries using multiple APIs and provides detailed analysis. The system uses a modular architecture with support for multiple languages and persistent data storage.
+## Features
 
-## Key Features
-
-- Multi-agent framework for complex query processing
-- Support for multiple languages (English, German, Portuguese)
-- Real-time data analysis capabilities
-- User authentication and session management
-- Persistent chat history
-- File upload support
-- Speech-to-text functionality
-- Dark/Light theme support
-- Customizable UI
-
-## Technical Stack
-
-### Core Technologies
-- Backend: Python 3.11
-- Framework: Chainlit (≥1.0.401)
-- Database: PostgreSQL
-
-### AI Services
-- OpenAI
-- Azure AI
-- Anthropic
-
-### Additional Services
-- SimilarWeb Scraper
-- Google Trends Scraper
-- SpyFu Scraper
-
-## Prerequisites
-
-- Python 3.11+
-- PostgreSQL
-- Docker (optional)
-
-## Installation
-
-1. Clone the repository
-
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables:
-   Copy the env_sample_file to .env and fill in the required values:
-   ```env
-   AZURE_API_KEY=""
-   AZURE_API_TYPE=""
-   AZURE_API_BASE=""
-   AZURE_API_VERSION=""
-   AZURE_DEPLOYMENT_NAME=""
-   AZURE_EMBEDDING_DEPLOYMENT_NAME=""
-   AZURE_MODEL_NAME=""
-
-   OPENAI_API_KEY=""
-   OPENAI_MODEL_NAME=""   
-
-   DATABSE_DIRECTORY="/vectorStore"
-
-   BASE_URL=""
-   TOKEN_URL=""
-   OAUTH_JSON_FILE=""
-
-   # Embedding files
-   OPENAPI_SPEC_DIR="./store/apiSpecs"
-   EMBEDDINGS_JSON_FILE="./store/embeddings_json/embeddings.json"
-
-   MAX_RETRIES=3
-
-   # Tranformation filter keys files
-   FILTER_KEYS_DIR="./store/transformation_filters"
-
-   # LLM prompt response pairs csv directory
-   LLM_LOGS_DIR="./llm_pr_pairs"
-
-   # LLM prompt response pairs file
-   LLM_PR_QUERIES_PATH="./store/llm_pr_queries.json"
-
-   # Random secret, can be obtained using `python3 -m chainlit create-secret`
-   CHAINLIT_AUTH_SECRET=""
-
-   # Database configuration
-   POSTGRES_HOST="localhost"
-   POSTGRES_PORT=5432
-   POSTGRES_USERNAME="root"
-   POSTGRES_PASSWORD="root"
-   POSTGRES_DB="LOCAL"
-   ```
-
-## Configuration
-
-### Database Setup
-
-The application uses PostgreSQL for data persistence. The database models are defined as follows:
-
-```python
-from database.manager import DatabaseServiceManager
-from common.base import Main
-import datetime
-from chainlit.step import StepDict
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, JSON, ARRAY, Table, Boolean
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import relationship, class_mapper
-
-database_manageer = DatabaseServiceManager()
-Base = database_manageer.postgres_db_service().base
-engine = database_manageer.postgres_db_service().engine
-
-class User(Base):
-    __tablename__ = 'users'
-
-    id = Column(String(100), primary_key=True)
-    identifier = Column(String(100), nullable=False, unique=True)
-    createdAt = Column("createdAt", DateTime(), default=datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S"))
-    updatedAt = Column("updatedAt", DateTime(), default=datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S"), onupdate=datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S"))
-    metadata_ = Column("metadata_", JSON, default=lambda: {})
-
-class Step(Base):
-    __tablename__ = 'steps'
-
-    name = Column(String)
-    type = Column(String)
-    id = Column(String, primary_key=True)
-    threadId = Column("threadId", String)
-    parentId = Column("parentId", String, ForeignKey('steps.id'))
-    disableFeedback = Column("disableFeedback", Boolean)
-    streaming = Column("streaming", Boolean)
-    waitForAnswer = Column("waitForAnswer", Boolean)
-    isError = Column("isError", Boolean)
-    metadata_ = Column("metadata_", JSON, default=lambda: {})
-    input = Column(JSON, default=lambda: {})
-    output = Column(JSON, default=lambda: {})
-    createdAt = Column("createdAt", String, default=datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%d %H:%M:%S"))
-    start = Column(String)
-    end = Column(String)
-    generation = Column(JSON, default=lambda: {})
-    showInput = Column(String)
-    language = Column(String)
-    indent = Column(Integer)
-    feedback = Column(JSON, default=lambda: {})
-    tags = Column(JSON, default=lambda: {})
-    attachments = Column(ARRAY(JSON))
-```
-
-### API Credentials
-
-Store your API credentials in the appropriate configuration files. Default credentials structure:
-
-```json
-{
-    "random_property": "abc",
-    "random_property_2": "xyz",
-    "app_data": {
-        "required_property": "value"
-    }
-}
-```
-
-### Available Prompts
-
-The system comes with pre-configured prompts for different scenarios:
-
-```
-You are a Management Consultant with extreme attention to detail. In response to any question, you are able to break down the question into a series of steps. 
-
-You have the following tools at your disposal:
-[Summarization] A tool that helps summarize the data that has already been collected by the previous steps
-[API] A tool that helps convert your request into an API call. You can use the endpoints defined in "Usable_Endpoints" 
-[Search] A search tool that can provide you with search results from the internet in natural language
-
-----
-Usable_Endpoints:
-1. /acts/emastra~google-trends-scraper/run-sync-get-dataset-items?clean=true&format=json
-   Google trends scraper API: Scrape data from Google Trends by search terms or URLs. Specify locations, define time ranges, select categories to get interest by subregion and over time, related queries and topics, and more.
-
-2. /acts/canadesk~spyfu/run-sync-get-dataset-items?clean=true&format=json
-   Spyfu scraper API: Get the most valuable and successful keywords, top ads, domain statistics and top competitors from Spyfu public data.
-
-3. /acts/m0uka~similarweb-scraper/run-sync-get-dataset-items?clean=true&format=json
-   Similarweb scraper API: Provides data on website popularity and other metrics around the website 
-
-------
-Example queries and your response:
-
-User query: Retrieve the locations with the highest interest for 'elections' in India
-1. [API] Use the google trends scraper for search term "elections" and geography India
-2. [Summarization] Consider the above data points to answer the user's question. Provide assumptions and use your internal knowledge where needed
-
-------
-MOST IMPORTANT INSTRUCTIONS:
-1. Create well thought through plans. Your plans should be a maximum of 7 steps and not more
-2. For Similarweb scraper API, make sure you only send one website at a time. Use this particular API very sparingly as it's slow and expensive
-3. Remember to call the summarization at the end AND ONLY ONCE
-4. Remember to make your steps modular and atomic
-5. If the user's question has relative dates, make use of the "Current date" in your plan
-6. Remember to separate the steps in the plan into new lines
-7. Remember, each step will be fully contained inside a single line
-8. Your response should always be in JSON format, with no text before or after
-```
-
-## Running the Application
-
-### Using Python
-```bash
-python src/runner.py -e ./etc/.env
-```
-
-### Using Docker
-
-Dockerfile:
-```dockerfile
-FROM python:3.11.5
-ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-COPY requirements.txt /app/requirements.txt
-RUN pip install --disable-pip-version-check --no-cache-dir --no-input --quiet --requirement /app/requirements.txt
-RUN apt-get update -y
-COPY src /app
-WORKDIR /app
-USER root
-CMD ["/bin/bash", "-c", "python3 runner -e ./etc/.env"]
-```
-
-Build and run the Docker container:
-```bash
-docker build -t proai-bot -f dockerfiles/Dockerfile .
-docker run -p 8000:8000 proai-bot
-```
-
-## Usage Examples
-
-### Sample Queries
-- What is the market size of the [industry] industry in [location]?
-- Identify the fastest growing industry verticals in Industry: [Industry]
-- Determine customer loyalty to products in Industry: [Industry], Region: [Region]
-- Compare the customer demographics of [website1] with [website2]
+- **Smart Deal Filtering**: Automatically remove spam and low-quality listings while assessing platform risk and growth potential
+- **Deep Analysis**: Comprehensive evaluation of revenue stability, market position, and risk factors with comparable deal data
+- **Priority Alerts**: Customizable notification timing with mobile & email delivery, including detailed PDF reports
 
 ## Project Structure
+
 ```
-bot_service/
-├── src/
-│   ├── LLM/                 # LLM integration
-│   ├── chainlit_data_pers/  # Data persistence
-│   ├── common/              # Common utilities
-│   ├── conversation/        # Conversation handling
-│   ├── store/              # Configuration stores
-│   └── public/             # Static assets
-├── dockerfiles/            # Docker configurations
-└── requirements.txt        # Python dependencies
+.
+├── backend/           # Backend service implementation
+│   ├── run.py        # Main backend server
+│   └── src/          # Backend source code
+├── src/              # Main application source
+│   ├── app/          # Next.js pages and routes
+│   ├── components/   # Reusable React components
+│   ├── scrapers/     # Web scraping implementations
+│   ├── services/     # Business logic
+│   └── api/          # API route handlers
+└── config/           # Configuration files
 ```
 
-## Internationalization
+## Tech Stack
 
-The application supports multiple languages through translation files located in `.chainlit/translations/`:
-- English (en-US, en-GB)
-- German (de-GB)
-- Portuguese (pt-BR)
+### Backend
+- Python with Flask
+- GPT-4 integration for content analysis
+- ScraperAPI for data collection
+- Multiple platform scrapers (Business Exits, Website Closers, Quiet Light, BizBuySell)
 
-## Security
-- Authentication required for access
-- API keys stored in local storage
-- Session timeout configuration
-- CORS protection
+### Frontend
+- Next.js 15.1 with React 18.2.0
+- TypeScript
+- Tailwind CSS 3.3.0
+- Clerk 6.9.3 for authentication
+- React Hook Form 7.54.1 with Zod validation
+
+### Database
+- Supabase for production
+- SQLite for development
+- Structured migrations system
+
+## Prerequisites
+- Node.js and npm
+- Python 3.x
+- Required environment variables:
+  - `SUPABASE_URL`
+  - `SUPABASE_KEY`
+  - `RESEND_API_KEY`
+  - `DATABASE_URL`
+  - `SCRAPER_API_KEY`
+  - `OPENAI_API_KEY`
+  - `CLERK_SECRET_KEY`
+  - `CLERK_WEBHOOK_SECRET`
+
+## Development Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   # Install Node.js dependencies
+   npm install
+   
+   # Set up Python virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   
+   # Install Python dependencies
+   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
+   ```
+3. Set up environment variables in `.env` and `backend/.env`
+4. Run the development servers:
+   ```bash
+   # Start the frontend
+   npm run dev
+   
+   # In a separate terminal, start the backend
+   cd backend
+   python run.py
+   ```
+
+## Monitoring
+- Check newsletter_logs table in database
+- Monitor scheduler status in /dashboard/status
+- View application logs in backend/logs directory
+
+## Newsletter System
+
+The application includes a comprehensive newsletter system that sends personalized deal updates to users based on their preferences. The system includes:
+
+### Newsletter Frequencies
+Users can choose from four notification frequencies:
+- **Instantly**: Receive notifications as soon as new matching listings are added
+- **Daily**: Receive a digest of new listings from the past 24 hours
+- **Weekly**: Receive a weekly summary of new listings
+- **Monthly**: Receive a monthly digest of new listings
+
+### Content Filtering
+The system ensures relevant content by:
+- Filtering listings based on user's price range preferences
+- Matching industry preferences
+- Preventing duplicate listings
+- Only showing listings added since the last notification
+- Limiting to 10 most recent listings per email
+- Ordering listings by newest first
+
+### Scheduling Logic
+- **Instant**: Triggered immediately when new matching listings are added
+- **Daily**: Sent at 9 AM UTC if last sent > 20 hours ago
+- **Weekly**: Sent at 9 AM UTC if last sent > 6 days ago
+- **Monthly**: Sent at 9 AM UTC if last sent > 27 days ago
+
+### Logging and Monitoring
+All newsletter activities are tracked in the `newsletter_logs` table with:
+- Delivery status (pending, sent, failed, skipped)
+- Scheduled delivery time
+- Actual send time
+- Error messages (if any)
+- User and analysis references
+
+### Testing
+The newsletter system includes comprehensive tests covering:
+- Log creation
+- Scheduled delivery
+- Error handling
+- Scheduler integration
+
+To run the newsletter tests:
+```bash
+pytest backend/tests/test_newsletter_logs.py -v
+```
+
+### Environment Variables
+The newsletter system requires:
+```bash
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=your_from_email
+```
+
+### Monitoring
+Monitor the newsletter system through:
+- `newsletter_logs` table in Supabase
+- Application logs in `backend/logs`
+- Dashboard status at `/dashboard/status`
